@@ -256,6 +256,11 @@ namespace FoodStreetApp.ViewModels
             await _narrationService.StopNarrationAsync();
         }
 
+        public async Task RestartTrackingAsync()
+        {
+            await _locationService.StartTrackingAsync();
+        }
+
         public void ResetAllGeofences()
         {
             _geofenceService.ResetAllGeofences();

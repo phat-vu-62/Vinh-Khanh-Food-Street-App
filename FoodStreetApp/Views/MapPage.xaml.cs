@@ -11,6 +11,7 @@ namespace FoodStreetApp.Views
         private readonly Dictionary<int, Circle> _poiCircles = new();
         private bool _isMapInitialized = false;
         private bool _isInitializing = false;
+        private readonly HashSet<int> _shownPoiIds = new();
 
         public MapPage(MapPageViewModel viewModel)
         {
@@ -40,6 +41,11 @@ namespace FoodStreetApp.Views
                     // Re-assert after permission grant so Android activates the My Location button
                     map.IsShowingUser = true;
                 }
+            }
+            else if (_isMapInitialized)
+            {
+                // Page reappeared after being hidden — restart tracking that was stopped on disappear
+                await _viewModel.RestartTrackingAsync();
             }
 
             // Center map on current location if available
@@ -113,18 +119,34 @@ namespace FoodStreetApp.Views
         }
 
         /// <summary>
-        /// Clear and redraw pins and geofence circles for the 5 nearest POIs.
+        /// Refresh pins and geofence circles for the 5 nearest POIs.
         /// Pulls from the full POI list (not just clustered) so all nearby restaurants
         /// are visible regardless of the spacing filter.
+        /// When the set of visible POIs has not changed, only distance labels are updated
+        /// to avoid the cost of clearing and rebuilding the map every GPS tick.
         /// </summary>
         private void RefreshNearbyMapElements(Location location)
         {
             var nearby = _viewModel.GetNearbyPOIs(location, 5);
+            var newIds = new HashSet<int>(nearby.Select(x => x.poi.Id));
 
+            if (newIds.SetEquals(_shownPoiIds))
+            {
+                // Same POIs still in view — only update the distance labels
+                foreach (var (poi, distance) in nearby)
+                {
+                    if (_poiPins.TryGetValue(poi.Id, out var existingPin))
+                        existingPin.Address = $"{poi.Description} ({distance:F0}m away)";
+                }
+                return;
+            }
+
+            // Visible set changed — full clear and redraw
             map.Pins.Clear();
             map.MapElements.Clear();
             _poiPins.Clear();
             _poiCircles.Clear();
+            _shownPoiIds.Clear();
 
             System.Diagnostics.Debug.WriteLine($"[MAP] Refreshed — {nearby.Count} nearest POIs:");
 
@@ -154,6 +176,7 @@ namespace FoodStreetApp.Views
                 map.MapElements.Add(circle);
                 _poiPins[poi.Id] = pin;
                 _poiCircles[poi.Id] = circle;
+                _shownPoiIds.Add(poi.Id);
             }
         }
 
@@ -194,6 +217,7 @@ namespace FoodStreetApp.Views
         /// </summary>
         private void OnResetClicked(object sender, EventArgs e)
         {
+            _shownPoiIds.Clear(); // Force full map redraw on next GPS tick
             _viewModel.ResetAllGeofences();
             DisplayAlert("Reset", "All POI cooldowns have been reset", "OK");
         }
