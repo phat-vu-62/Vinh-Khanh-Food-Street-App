@@ -42,6 +42,12 @@ namespace FoodStreetApp
             builder.Services.AddTransient<MapPageViewModel>();
             builder.Services.AddTransient<MapPage>();
 
+            builder.Services.AddTransient<POIListViewModel>();
+            builder.Services.AddTransient<POIListPage>();
+
+            builder.Services.AddTransient<SettingsViewModel>();
+            builder.Services.AddTransient<SettingsPage>();
+
             return builder.Build();
         }
     }

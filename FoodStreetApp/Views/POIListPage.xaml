@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="FoodStreetApp.Views.POIListPage"
+             Title="POIs">
+
+    <Grid RowDefinitions="Auto, *">
+
+        <!-- Header -->
+        <Frame Grid.Row="0"
+               BackgroundColor="White"
+               Padding="16,12"
+               Margin="12,12,12,8"
+               CornerRadius="12"
+               HasShadow="True">
+            <VerticalStackLayout Spacing="2">
+                <Label Text="Points of Interest"
+                       FontSize="18"
+                       FontAttributes="Bold"
+                       TextColor="{StaticResource Primary}" />
+                <Label Text="Vinh Khanh Street Restaurants"
+                       FontSize="13"
+                       TextColor="#666" />
+            </VerticalStackLayout>
+        </Frame>
+
+        <!-- POI List -->
+        <CollectionView Grid.Row="1"
+                        ItemsSource="{Binding POIs}"
+                        Margin="12,0,12,12">
+            <CollectionView.ItemTemplate>
+                <DataTemplate>
+                    <Frame Padding="16"
+                           Margin="0,6"
+                           CornerRadius="12"
+                           HasShadow="True"
+                           BackgroundColor="White">
+
+                        <Grid RowDefinitions="Auto, Auto, Auto" ColumnDefinitions="*, Auto">
+
+                            <!-- POI Name -->
+                            <Label Grid.Row="0" Grid.Column="0"
+                                   Text="{Binding Name}"
+                                   FontSize="16"
+                                   FontAttributes="Bold"
+                                   TextColor="#333"
+                                   Margin="0,0,0,6" />
+
+                            <!-- POI Description -->
+                            <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                   Text="{Binding Description}"
+                                   FontSize="13"
+                                   TextColor="#666"
+                                   Margin="0,0,0,8" />
+
+                            <!-- Metadata Row -->
+                            <HorizontalStackLayout Grid.Row="2" Grid.Column="0" Spacing="12">
+                                <Border BackgroundColor="#F0F0F0"
+                                        StrokeThickness="0"
+                                        Padding="8,4"
+                                        StrokeShape="RoundRectangle 6">
+                                    <Label Text="{Binding Priority, StringFormat='Priority: {0}'}"
+                                           FontSize="11"
+                                           TextColor="{StaticResource Primary}"
+                                           FontAttributes="Bold" />
+                                </Border>
+
+                                <Border BackgroundColor="#F0F0F0"
+                                        StrokeThickness="0"
+                                        Padding="8,4"
+                                        StrokeShape="RoundRectangle 6">
+                                    <Label Text="{Binding Radius, StringFormat='{0}m radius'}"
+                                           FontSize="11"
+                                           TextColor="#666" />
+                                </Border>
+                            </HorizontalStackLayout>
+
+                            <!-- Preview Button -->
+                            <Button Grid.Row="0" Grid.Column="1" Grid.RowSpan="3"
+                                    Text="▶ Preview"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type ContentPage}}, Path=BindingContext.PlayPreviewCommand}"
+                                    CommandParameter="{Binding .}"
+                                    BackgroundColor="{StaticResource Primary}"
+                                    TextColor="White"
+                                    FontSize="12"
+                                    FontAttributes="Bold"
+                                    CornerRadius="8"
+                                    Padding="12,8"
+                                    VerticalOptions="Center"
+                                    WidthRequest="90" />
+
+                        </Grid>
+                    </Frame>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+
+    </Grid>
+
+</ContentPage>

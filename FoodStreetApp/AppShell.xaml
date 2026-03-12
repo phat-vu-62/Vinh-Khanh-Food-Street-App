@@ -4,11 +4,23 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:views="clr-namespace:FoodStreetApp.Views"
-    Title="Food Street App">
+    Title="Food Street Guide">
 
-    <ShellContent
-        Title="Map"
-        ContentTemplate="{DataTemplate views:MapPage}"
-        Route="MapPage" />
+    <TabBar>
+        <ShellContent
+            Title="Map"
+            ContentTemplate="{DataTemplate views:MapPage}"
+            Route="MapPage" />
+
+        <ShellContent
+            Title="POIs"
+            ContentTemplate="{DataTemplate views:POIListPage}"
+            Route="POIListPage" />
+
+        <ShellContent
+            Title="Settings"
+            ContentTemplate="{DataTemplate views:SettingsPage}"
+            Route="SettingsPage" />
+    </TabBar>
 
 </Shell>

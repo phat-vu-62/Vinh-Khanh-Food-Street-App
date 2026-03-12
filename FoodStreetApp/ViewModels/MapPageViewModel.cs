@@ -17,8 +17,10 @@ namespace FoodStreetApp.ViewModels
         private string _statusMessage = "Initializing...";
         private string _currentLocationText = "📍 GPS: Acquiring location...";
         private string _nearestPoiText = "🎯 Nearest POI: Searching...";
+        private POI? _lastTriggeredPoi;
 
         public event PropertyChangedEventHandler? PropertyChanged;
+        public event EventHandler<Location>? LocationChanged; // Event for MapPage to subscribe
 
         public ObservableCollection<POI> POIs { get; } = new();
 
@@ -29,6 +31,12 @@ namespace FoodStreetApp.ViewModels
             {
                 _currentLocation = value;
                 OnPropertyChanged();
+
+                // Notify subscribers (MapPage) of location change
+                if (value != null)
+                {
+                    LocationChanged?.Invoke(this, value);
+                }
             }
         }
 
@@ -80,10 +88,27 @@ namespace FoodStreetApp.ViewModels
         {
             try
             {
+                System.Diagnostics.Debug.WriteLine("\n>>> === MAP PAGE INITIALIZATION START ===");
+
+                // Check location permissions first
+                StatusMessage = "Checking permissions...";
+                var hasPermissions = await CheckLocationPermissionsAsync();
+
+                if (!hasPermissions)
+                {
+                    StatusMessage = "❌ Location permissions required. Please grant permissions in Settings.";
+                    System.Diagnostics.Debug.WriteLine(">>> ❌ Location permissions not granted");
+                    return;
+                }
+
+                System.Diagnostics.Debug.WriteLine(">>> ✅ Permissions OK");
+
                 StatusMessage = "Loading POIs from database...";
                 await _poiService.InitializeAsync();
 
                 var pois = await _poiService.GetActivePOIsAsync();
+                System.Diagnostics.Debug.WriteLine($">>> Loaded {pois.Count} POIs from database");
+
                 POIs.Clear();
                 foreach (var poi in pois)
                 {
@@ -92,55 +117,122 @@ namespace FoodStreetApp.ViewModels
 
                 await _geofenceService.InitializeAsync(pois);
 
-                StatusMessage = "Getting GPS location...";
+                // After clustering, rebuild the map collection with only the surviving POIs.
+                // This prevents map circles from overlapping on dense street segments.
+                var clusteredPois = _geofenceService.GetClusteredPOIs();
+                POIs.Clear();
+                foreach (var poi in clusteredPois)
+                {
+                    POIs.Add(poi);
+                }
+                System.Diagnostics.Debug.WriteLine(
+                    $"[MAP] Displaying {POIs.Count} clustered POIs on map (of {pois.Count} total)");
+
+                StatusMessage = "Getting location...";
                 var location = await _locationService.GetCurrentLocationAsync();
                 if (location != null)
                 {
                     CurrentLocation = location;
                     UpdateLocationDisplay(location);
+                    System.Diagnostics.Debug.WriteLine($">>> Initial location: {location.Latitude:F6}, {location.Longitude:F6}");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine(">>> ⚠️ Could not get initial location");
                 }
 
-                StatusMessage = "Starting location tracking...";
-                await _locationService.StartTrackingAsync();
-                StatusMessage = "Ready - Exploring Vinh Khanh Street";
+                StatusMessage = "Starting tracking...";
+                var trackingStarted = await _locationService.StartTrackingAsync();
+
+                if (trackingStarted)
+                {
+                    StatusMessage = "Exploring Vinh Khanh Street";
+                    System.Diagnostics.Debug.WriteLine(">>> ✅ Initialization completed successfully");
+                }
+                else
+                {
+                    StatusMessage = "Location tracking failed";
+                    System.Diagnostics.Debug.WriteLine(">>> ⚠️ Location tracking failed");
+                }
+
+                System.Diagnostics.Debug.WriteLine(">>> === MAP PAGE INITIALIZATION END ===\n");
             }
             catch (Exception ex)
             {
-                StatusMessage = $"Error: {ex.Message}";
-                System.Diagnostics.Debug.WriteLine($"Initialization error: {ex}");
+                StatusMessage = $"❌ Error: {ex.Message}";
+                System.Diagnostics.Debug.WriteLine($">>> ❌ Initialization error: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($">>> Stack trace: {ex.StackTrace}");
+            }
+        }
+
+        private async Task<bool> CheckLocationPermissionsAsync()
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine(">>> Checking location permissions...");
+
+                var status = await Permissions.CheckStatusAsync<Permissions.LocationWhenInUse>();
+                System.Diagnostics.Debug.WriteLine($">>> LocationWhenInUse status: {status}");
+
+                if (status != PermissionStatus.Granted)
+                {
+                    System.Diagnostics.Debug.WriteLine(">>> Requesting LocationWhenInUse permission...");
+                    status = await Permissions.RequestAsync<Permissions.LocationWhenInUse>();
+                    System.Diagnostics.Debug.WriteLine($">>> Permission result: {status}");
+                }
+
+                if (status == PermissionStatus.Granted)
+                {
+                    System.Diagnostics.Debug.WriteLine(">>> ✅ Location permissions granted");
+                    return true;
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($">>> ❌ Location permission denied: {status}");
+                    return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($">>> ❌ Error checking permissions: {ex.Message}");
+                return false;
             }
         }
 
         private void OnLocationChanged(object? sender, Location location)
         {
+            System.Diagnostics.Debug.WriteLine($"\n[GPS] 📍 {location.Latitude:F6}, {location.Longitude:F6} (Accuracy: {location.Accuracy:F1}m)");
             CurrentLocation = location;
             UpdateLocationDisplay(location);
 
             var triggeredPoi = _geofenceService.CheckGeofences(location);
             if (triggeredPoi != null)
             {
-                StatusMessage = $"🎵 Playing: {triggeredPoi.Name}";
+                System.Diagnostics.Debug.WriteLine($"[GPS] ✅ Narration triggered: '{triggeredPoi.Name}'");
+                StatusMessage = $"Playing: {triggeredPoi.Name}";
                 _poiService.UpdatePOIStatus(triggeredPoi);
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine("[GPS] No narration triggered this update");
             }
         }
 
         private void UpdateLocationDisplay(Location location)
         {
-            CurrentLocationText = $"📍 {location.Latitude:F6}, {location.Longitude:F6}";
+            // Use the same 70m radius as GeofenceService so status text matches narration behaviour
+            const double triggerRadius = 70.0;
 
-            var nearestPoi = FindNearestPOI(location);
-            if (nearestPoi.poi != null)
+            CurrentLocationText = $"GPS: {location.Latitude:F6}, {location.Longitude:F6}";
+
+            var nearbyList = GetNearbyPOIs(location, 1);
+            if (nearbyList.Count > 0)
             {
-                NearestPoiText = $"🎯 {nearestPoi.poi.Name} - {nearestPoi.distance:F0}m (Priority: {nearestPoi.poi.Priority})";
-
-                if (nearestPoi.distance < nearestPoi.poi.Radius)
-                {
-                    StatusMessage = $"✅ Inside {nearestPoi.poi.Name} zone";
-                }
-                else
-                {
-                    StatusMessage = $"Walk {nearestPoi.distance:F0}m to {nearestPoi.poi.Name}";
-                }
+                var (poi, distance) = nearbyList[0];
+                NearestPoiText = $"{poi.Name} — {distance:F0}m";
+                StatusMessage = distance <= triggerRadius
+                    ? $"Inside {poi.Name} zone"
+                    : $"{distance:F0}m to {poi.Name}";
             }
             else
             {
@@ -149,37 +241,12 @@ namespace FoodStreetApp.ViewModels
             }
         }
 
-        private (POI? poi, double distance) FindNearestPOI(Location location)
-        {
-            POI? nearestPoi = null;
-            double minDistance = double.MaxValue;
-
-            foreach (var poi in POIs.Where(p => p.IsActive))
-            {
-                var distance = CalculateDistance(location.Latitude, location.Longitude, poi.Latitude, poi.Longitude);
-                if (distance < minDistance)
-                {
-                    minDistance = distance;
-                    nearestPoi = poi;
-                }
-            }
-
-            return (nearestPoi, minDistance);
-        }
-
-        private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
-        {
-            const double earthRadiusKm = 6371.0;
-            var dLat = DegreesToRadians(lat2 - lat1);
-            var dLon = DegreesToRadians(lon2 - lon1);
-            var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
-                    Math.Cos(DegreesToRadians(lat1)) * Math.Cos(DegreesToRadians(lat2)) *
-                    Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
-            var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-            return earthRadiusKm * c * 1000;
-        }
-
-        private double DegreesToRadians(double degrees) => degrees * Math.PI / 180.0;
+        /// <summary>
+        /// Returns up to <paramref name="count"/> nearest active POIs to <paramref name="location"/>,
+        /// sorted by ascending distance. Used by MapPage to redraw geofence circles every GPS tick.
+        /// </summary>
+        public List<(POI poi, double distance)> GetNearbyPOIs(Location location, int count)
+            => _geofenceService.GetNearbyPOIs(location, count);
 
         public async Task CleanupAsync()
         {
