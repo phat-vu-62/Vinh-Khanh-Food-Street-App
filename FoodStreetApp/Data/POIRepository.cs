@@ -25,7 +25,7 @@ namespace FoodStreetApp.Data
 
         // Increment this whenever seed data changes so all devices get the updated POIs on next launch.
         private const string SeedVersionKey = "poi_seed_version";
-        private const int CurrentSeedVersion = 5; // v5: real GPS coordinates verified on Google Maps, Vinh Khanh Street District 4
+        private const int CurrentSeedVersion = 7; // v7: removed Ốc Biển Ngọc + Quán Ếch Thành Đạt; added Ốc Phát, Ốc Hồng Nhung, Win Coffee, Ốc Nhi 20k, Ốc Ty
 
         public async Task InitializeAsync()
         {
@@ -104,20 +104,37 @@ namespace FoodStreetApp.Data
             var db = await GetDatabaseAsync();
 
             // Real GPS coordinates verified on Google Maps, Vinh Khanh Food Street, District 4.
-            // Route: Ốc Thảo → Lẩu gà lá é Con Gà Trống (south-east along Vinh Khanh St.)
-            // Radius = 30 m (display circle); narration trigger uses GeofenceService.TriggerRadiusMeters.
+            // Route: Ốc Phát → Ốc Ty (west to east along Vinh Khanh St.)
+            // Radius = 15 m (display circle); narration trigger uses GeofenceService.TriggerRadiusMeters.
 
             var samplePOIs = new List<POI>
             {
-                // POI #1 - Ốc Thảo
+                // POI #1 - Ốc Phát
+                new POI
+                {
+                    Name = "Ốc Phát",
+                    Latitude = 10.761943,
+                    Longitude = 106.702050,
+                    Radius = 15,
+                    ApproachRadius = 200,
+                    Priority = 13,
+                    Description = "Quán ốc tươi ngon đầu đường Vĩnh Khánh",
+                    TtsText = "Bạn đang đến gần Ốc Phát, quán ốc tươi ngon đầu đường Vĩnh Khánh.",
+                    TtsTextEn = "You are approaching Oc Phat, a fresh snail restaurant at the start of Vinh Khanh Street.",
+                    UseTts = true,
+                    CooldownSeconds = 60,
+                    IsActive = true
+                },
+
+                // POI #2 - Ốc Thảo
                 new POI
                 {
                     Name = "Ốc Thảo",
                     Latitude = 10.761687,
                     Longitude = 106.702396,
-                    Radius = 30,
+                    Radius = 15,
                     ApproachRadius = 200,
-                    Priority = 10,
+                    Priority = 12,
                     Description = "Quán ốc tươi ngon trên đường Vĩnh Khánh",
                     TtsText = "Bạn đang đến gần Ốc Thảo, quán ốc tươi ngon trên đường Vĩnh Khánh.",
                     TtsTextEn = "You are approaching Oc Thao, a fresh snail restaurant on Vinh Khanh Street.",
@@ -126,15 +143,15 @@ namespace FoodStreetApp.Data
                     IsActive = true
                 },
 
-                // POI #2 - Ốc Vũ
+                // POI #3 - Ốc Vũ
                 new POI
                 {
                     Name = "Ốc Vũ",
                     Latitude = 10.761398,
                     Longitude = 106.702722,
-                    Radius = 30,
+                    Radius = 15,
                     ApproachRadius = 200,
-                    Priority = 9,
+                    Priority = 11,
                     Description = "Quán ốc đông khách với nhiều món chế biến đa dạng",
                     TtsText = "Ốc Vũ, quán ốc đông khách với nhiều món ốc chế biến đa dạng.",
                     TtsTextEn = "Oc Vu, a busy snail restaurant with many different preparations.",
@@ -143,15 +160,32 @@ namespace FoodStreetApp.Data
                     IsActive = true
                 },
 
-                // POI #3 - Ốc Oanh
+                // POI #4 - Ốc Hồng Nhung
+                new POI
+                {
+                    Name = "Ốc Hồng Nhung",
+                    Latitude = 10.761153,
+                    Longitude = 106.703071,
+                    Radius = 15,
+                    ApproachRadius = 200,
+                    Priority = 10,
+                    Description = "Quán ốc nổi tiếng trên đường Vĩnh Khánh",
+                    TtsText = "Ốc Hồng Nhung, quán ốc nổi tiếng trên đường Vĩnh Khánh.",
+                    TtsTextEn = "Oc Hong Nhung, a well-known snail restaurant on Vinh Khanh Street.",
+                    UseTts = true,
+                    CooldownSeconds = 60,
+                    IsActive = true
+                },
+
+                // POI #5 - Ốc Oanh
                 new POI
                 {
                     Name = "Ốc Oanh",
                     Latitude = 10.760736,
                     Longitude = 106.703298,
-                    Radius = 30,
+                    Radius = 15,
                     ApproachRadius = 200,
-                    Priority = 8,
+                    Priority = 9,
                     Description = "Quán ốc nổi tiếng trên đường Vĩnh Khánh",
                     TtsText = "Bạn đang đến gần Ốc Oanh, một quán ốc nổi tiếng trên đường Vĩnh Khánh.",
                     TtsTextEn = "You are approaching Oc Oanh, a popular snail restaurant on Vinh Khanh Street.",
@@ -160,15 +194,15 @@ namespace FoodStreetApp.Data
                     IsActive = true
                 },
 
-                // POI #4 - A FAT HOT POT
+                // POI #6 - A FAT HOT POT
                 new POI
                 {
                     Name = "A FAT HOT POT",
                     Latitude = 10.760600,
                     Longitude = 106.703528,
-                    Radius = 30,
+                    Radius = 15,
                     ApproachRadius = 200,
-                    Priority = 7,
+                    Priority = 8,
                     Description = "Nhà hàng lẩu đặc sắc trên đường Vĩnh Khánh",
                     TtsText = "Chào mừng bạn đến với A FAT HOT POT, nhà hàng lẩu đặc sắc.",
                     TtsTextEn = "Welcome to A FAT HOT POT, a distinctive hot pot restaurant.",
@@ -177,15 +211,15 @@ namespace FoodStreetApp.Data
                     IsActive = true
                 },
 
-                // POI #5 - Ốc Bụi
+                // POI #7 - Ốc Bụi
                 new POI
                 {
                     Name = "Ốc Bụi",
                     Latitude = 10.760615,
                     Longitude = 106.703932,
-                    Radius = 30,
+                    Radius = 15,
                     ApproachRadius = 200,
-                    Priority = 6,
+                    Priority = 7,
                     Description = "Quán ốc vỉa hè dân dã với nhiều món ngon",
                     TtsText = "Ốc Bụi, quán ốc vỉa hè dân dã với nhiều món ngon.",
                     TtsTextEn = "Oc Bui, a street-style snail eatery with many tasty dishes.",
@@ -194,31 +228,32 @@ namespace FoodStreetApp.Data
                     IsActive = true
                 },
 
-                // POI #6 - Ốc Biển Ngọc
+                // POI #8 - Win - Trà Sữa - Coffee
                 new POI
                 {
-                    Name = "Ốc Biển Ngọc",
-                    Latitude = 10.7607448,
-                    Longitude = 106.7044479,
-                    Radius = 30,
+                    Name = "Win - Trà Sữa - Coffee",
+                    Latitude = 10.760705,
+                    Longitude = 106.704130,
+                    Radius = 15,
                     ApproachRadius = 200,
-                    Priority = 5,
-                    Description = "Hải sản tươi ngon phong phú",
-                    TtsText = "Ốc Biển Ngọc, nơi phục vụ hải sản tươi ngon phong phú.",
-                    TtsTextEn = "Oc Bien Ngoc, serving a variety of fresh seafood.",
+                    Priority = 6,
+                    Description = "Điểm dừng chân giải khát trà sữa và cà phê",
+                    TtsText = "Win Trà Sữa Coffee, điểm dừng chân giải khát trên đường Vĩnh Khánh.",
+                    TtsTextEn = "Win Tea and Coffee, a refreshment stop on Vinh Khanh Street.",
                     UseTts = true,
                     CooldownSeconds = 60,
                     IsActive = true
                 },
 
-                // POI #7 - Ốc Đào 2
+                // POI #9 - Ốc Đào 2
                 new POI
                 {
                     Name = "Ốc Đào 2",
                     Latitude = 10.761180,
                     Longitude = 106.704961,
-                    Radius = 30,
-                    Priority = 4,
+                    Radius = 15,
+                    ApproachRadius = 200,
+                    Priority = 5,
                     Description = "Quán ốc quen thuộc với nhiều món đặc trưng",
                     TtsText = "Ốc Đào 2, quán ốc quen thuộc với nhiều món ốc đặc trưng.",
                     TtsTextEn = "Oc Dao 2, a familiar snail restaurant with signature snail dishes.",
@@ -227,30 +262,32 @@ namespace FoodStreetApp.Data
                     IsActive = true
                 },
 
-                // POI #8 - Quán Ếch Thành Đạt
+                // POI #10 - Ốc Nhi 20k
                 new POI
                 {
-                    Name = "Quán Ếch Thành Đạt",
-                    Latitude = 10.7613347,
-                    Longitude = 106.705222,
-                    Radius = 30,
-                    Priority = 3,
-                    Description = "Chuyên các món ếch độc đáo và ngon miệng",
-                    TtsText = "Quán Ếch Thành Đạt, chuyên các món ếch độc đáo và ngon miệng.",
-                    TtsTextEn = "Quan Ech Thanh Dat, specializing in unique and delicious frog dishes.",
+                    Name = "Ốc Nhi 20k",
+                    Latitude = 10.761299,
+                    Longitude = 106.705973,
+                    Radius = 15,
+                    ApproachRadius = 200,
+                    Priority = 4,
+                    Description = "Quán ốc giá rẻ với nhiều món ngon",
+                    TtsText = "Ốc Nhi 20k, quán ốc giá rẻ với nhiều món ngon trên đường Vĩnh Khánh.",
+                    TtsTextEn = "Oc Nhi 20k, a budget-friendly snail restaurant with many tasty dishes.",
                     UseTts = true,
                     CooldownSeconds = 60,
                     IsActive = true
                 },
 
-                // POI #9 - Ốc Diễm
+                // POI #11 - Ốc Diễm
                 new POI
                 {
                     Name = "Ốc Diễm",
                     Latitude = 10.761178,
                     Longitude = 106.706166,
-                    Radius = 30,
-                    Priority = 2,
+                    Radius = 15,
+                    ApproachRadius = 200,
+                    Priority = 3,
                     Description = "Quán ốc tươi với không gian thoải mái",
                     TtsText = "Ốc Diễm, quán ốc tươi với không gian thoải mái.",
                     TtsTextEn = "Oc Diem, fresh snails in a relaxed atmosphere.",
@@ -259,17 +296,35 @@ namespace FoodStreetApp.Data
                     IsActive = true
                 },
 
-                // POI #10 - Lẩu gà lá é Con Gà Trống
+                // POI #12 - Lẩu gà lá é Con Gà Trống
                 new POI
                 {
                     Name = "Lẩu gà lá é Con Gà Trống",
                     Latitude = 10.760877,
                     Longitude = 106.706715,
-                    Radius = 30,
-                    Priority = 1,
+                    Radius = 15,
+                    ApproachRadius = 200,
+                    Priority = 2,
                     Description = "Nhà hàng lẩu gà lá é đặc biệt",
                     TtsText = "Chào mừng bạn đến với Lẩu gà lá é Con Gà Trống, nhà hàng lẩu gà lá é đặc biệt.",
                     TtsTextEn = "Welcome to Lau Ga La E Con Ga Trong, featuring special lemon leaf chicken hot pot.",
+                    UseTts = true,
+                    CooldownSeconds = 60,
+                    IsActive = true
+                },
+
+                // POI #13 - Ốc Ty
+                new POI
+                {
+                    Name = "Ốc Ty",
+                    Latitude = 10.760725,
+                    Longitude = 106.706940,
+                    Radius = 15,
+                    ApproachRadius = 200,
+                    Priority = 1,
+                    Description = "Quán ốc cuối đường Vĩnh Khánh",
+                    TtsText = "Bạn đang đến gần Ốc Ty, quán ốc cuối đường Vĩnh Khánh.",
+                    TtsTextEn = "You are approaching Oc Ty, a snail restaurant at the end of Vinh Khanh Street.",
                     UseTts = true,
                     CooldownSeconds = 60,
                     IsActive = true

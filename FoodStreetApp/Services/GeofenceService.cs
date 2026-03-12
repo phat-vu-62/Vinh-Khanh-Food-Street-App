@@ -4,11 +4,14 @@ namespace FoodStreetApp.Services
 {
     /// <summary>
     /// POC geofence service for Vinh Khanh street:
-    ///   - ALL active POIs are checked on every GPS tick (no clustering for narration)
-    ///   - Nearest POI within <see cref="TriggerRadiusMeters"/> wins; priority as tiebreaker
-    ///   - Per-POI cooldown prevents re-triggering the same restaurant too quickly
-    ///   - Global narration gap prevents back-to-back narrations from adjacent POIs
-    ///   - "Last narrated" guard resets when the user walks outside every geofence
+    ///   - ALL active POIs are checked on every GPS tick
+    ///   - Active POIs are sorted nearest-first before evaluation
+    ///   - Boundary-crossing detection: narration fires only when the user ENTERS the radius
+    ///   - HasPlayed flag ensures each POI narrates exactly once per session
+    ///   - Nearest POI inside the radius wins; priority as tiebreaker when distances are equal
+    ///   - Distance-spacing guard: next narration is only allowed once the user has moved
+    ///     at least <see cref="MinimumSpacingMeters"/> from the last narrated POI, preventing
+    ///     rapid re-triggering while ensuring no nearby POI is skipped
     ///   - Clustering filter is used ONLY for map-display via <see cref="GetClusteredPOIs"/>
     /// </summary>
     public class GeofenceService : IGeofenceService
@@ -19,12 +22,17 @@ namespace FoodStreetApp.Services
 
         // --- Narration flow state ---
         private POI? _lastNarratedPoi;
-        private DateTime? _lastNarrationTime;
+
+        // --- Boundary-crossing state ---
+        // Tracks which POI IDs the user is currently inside.
+        // Populated on entry, cleared on exit, so a crossing that happens during the
+        // global narration gap is still served once the gap expires.
+        private readonly HashSet<int> _enteredPoiIds = new();
 
         // --- POC configuration constants ---
 
-        /// <summary>Fixed trigger radius in meters — narration fires when the user is within this distance of a POI.</summary>
-        private const double TriggerRadiusMeters = 50.0;
+        /// <summary>Fixed trigger radius in meters — narration fires when the user enters within this distance of a POI.</summary>
+        private const double TriggerRadiusMeters = 15.0;
 
         /// <summary>
         /// Minimum spacing between retained POIs after clustering (meters).
@@ -32,8 +40,12 @@ namespace FoodStreetApp.Services
         /// </summary>
         private const double MinimumPOISpacingMeters = 30.0;
 
-        /// <summary>Minimum seconds that must pass between any two narrations (global gap).</summary>
-        private const double MinimumNarrationGapSeconds = 15.0;
+        /// <summary>
+        /// Minimum distance in meters the user must move from the last narrated POI before
+        /// another narration can fire. Prevents rapid re-triggering on dense streets while
+        /// still allowing every nearby POI to be served as the user walks past.
+        /// </summary>
+        private const double MinimumSpacingMeters = 15.0;
 
         public GeofenceService(INarrationService narrationService)
         {
@@ -88,65 +100,81 @@ namespace FoodStreetApp.Services
         /// Evaluate the current GPS location against ALL active POIs.
         ///
         /// Trigger order:
-        ///   1. Skip if global narration gap has not elapsed.
-        ///   2. Calculate distance to every active POI; build candidates within 70 m with expired cooldown.
-        ///      When zero candidates: reset the "last narrated" guard so re-entry triggers again.
-        ///   3. Sort candidates: nearest first, priority as tiebreaker.
-        ///   4. Skip if the best candidate is the same POI narrated last (prevents instant repeat).
-        ///   5. Trigger narration for the winning POI.
+        ///   1. Spacing guard: skip if the user has not yet moved
+        ///      <see cref="MinimumSpacingMeters"/> from the last narrated POI.
+        ///      This replaces a fixed time gap and prevents skipping on dense streets:
+        ///      a time gap can expire while the user is still inside an adjacent POI's
+        ///      radius, causing it to be evicted from <see cref="_enteredPoiIds"/> before
+        ///      it ever fires.
+        ///   2. Compute distances to all active POIs, sort nearest-first, then update
+        ///      boundary-crossing state. A POI joins <see cref="_enteredPoiIds"/> the moment
+        ///      the user steps inside its radius and is removed when they leave.
+        ///   3. Candidates = entered POIs where <see cref="POI.HasPlayed"/> is false.
+        ///   4. Nearest candidate wins; priority as tiebreaker.
+        ///   5. Set HasPlayed = true and fire narration.
         /// </summary>
         public POI? CheckGeofences(Location currentLocation)
         {
-            var now = DateTime.UtcNow;
-
-            // --- 1. Global narration gap ---
-            if (_lastNarrationTime.HasValue)
+            // --- 1. Distance-spacing guard ---
+            // Block new narration until the user has walked MinimumSpacingMeters from the
+            // last narrated POI. Unlike a time gate, this tracks physical movement so no
+            // POI is skipped because the user walks through it during a timer window.
+            if (_lastNarratedPoi != null)
             {
-                var elapsed = (now - _lastNarrationTime.Value).TotalSeconds;
-                if (elapsed < MinimumNarrationGapSeconds)
+                var distanceFromLast = CalculateDistanceInMeters(
+                    currentLocation.Latitude, currentLocation.Longitude,
+                    _lastNarratedPoi.Latitude, _lastNarratedPoi.Longitude);
+
+                if (distanceFromLast < MinimumSpacingMeters)
                 {
                     System.Diagnostics.Debug.WriteLine(
-                        $"[GEOFENCE] Global gap: {MinimumNarrationGapSeconds - elapsed:F1}s remaining (last: '{_lastNarratedPoi?.Name}')");
+                        $"[GEOFENCE] Spacing: {distanceFromLast:F0}m from '{_lastNarratedPoi.Name}' (need {MinimumSpacingMeters:F0}m to unlock next)");
                     return null;
                 }
             }
 
-            // --- 2. Distance check for ALL active POIs ---
-            var activePois = _allPois.Where(p => p.IsActive).ToList();
+            // --- 2. Distance computation, nearest-first sort, boundary-crossing update ---
+            // Distances are computed once and reused for both sorting and candidate building.
+            var activePois = _allPois
+                .Where(p => p.IsActive)
+                .Select(p => (
+                    poi: p,
+                    distance: CalculateDistanceInMeters(
+                        currentLocation.Latitude, currentLocation.Longitude,
+                        p.Latitude, p.Longitude)))
+                .OrderBy(x => x.distance)
+                .ToList();
+
             var candidates = new List<(POI poi, double distance)>();
 
             System.Diagnostics.Debug.WriteLine($"[GEOFENCE] Checking {activePois.Count} POIs (trigger radius {TriggerRadiusMeters:F0}m):");
-            foreach (var poi in activePois)
+            foreach (var (poi, currentDistance) in activePois)
             {
-                var distance = CalculateDistanceInMeters(
-                    currentLocation.Latitude, currentLocation.Longitude,
-                    poi.Latitude, poi.Longitude);
+                var previousDistance = poi.LastDistance;
+                poi.LastDistance = currentDistance;
 
-                var cooldownOk = !poi.LastTriggered.HasValue ||
-                    (now - poi.LastTriggered.Value).TotalSeconds >= poi.CooldownSeconds;
+                var isNowInside = currentDistance <= TriggerRadiusMeters;
+                var wasOutside  = previousDistance  > TriggerRadiusMeters;
 
-                poi.LastDistance = distance;
+                // Maintain entered-set: add on inward crossing, remove when outside
+                if (isNowInside && wasOutside)
+                    _enteredPoiIds.Add(poi.Id);
+                else if (!isNowInside)
+                    _enteredPoiIds.Remove(poi.Id);
 
-                var inRange = distance <= TriggerRadiusMeters;
-                var tag = inRange && cooldownOk ? "✅ IN " : inRange ? "⏱ CD " : "📏 OUT";
+                var isEntered = _enteredPoiIds.Contains(poi.Id);
+
+                var tag = isEntered && !poi.HasPlayed ? "✅ IN " : isEntered ? "🔇 PLY" : "📏 OUT";
                 System.Diagnostics.Debug.WriteLine(
-                    $"  [{tag}] '{poi.Name}' {distance:F0}m | P{poi.Priority}" +
-                    (!cooldownOk
-                        ? $" | cd {poi.CooldownSeconds - (now - poi.LastTriggered!.Value).TotalSeconds:F0}s left"
-                        : ""));
+                    $"  [{tag}] '{poi.Name}' {currentDistance:F0}m | P{poi.Priority}");
 
-                if (inRange && cooldownOk)
-                    candidates.Add((poi, distance));
+                if (isEntered && !poi.HasPlayed)
+                    candidates.Add((poi, currentDistance));
             }
 
-            // No POIs in range — clear the last-narrated guard so re-entry triggers again
+            // No POIs entered or all already played
             if (candidates.Count == 0)
             {
-                if (_lastNarratedPoi != null)
-                {
-                    System.Diagnostics.Debug.WriteLine("[GEOFENCE] Outside all geofences — last-narrated guard cleared");
-                    _lastNarratedPoi = null;
-                }
                 System.Diagnostics.Debug.WriteLine("[GEOFENCE] No candidates in range");
                 return null;
             }
@@ -157,22 +185,13 @@ namespace FoodStreetApp.Services
                 .ThenByDescending(c => c.poi.Priority)
                 .First();
 
-            // --- 4. Same-POI guard (prevents repeating without leaving range) ---
-            if (best.poi == _lastNarratedPoi)
-            {
-                System.Diagnostics.Debug.WriteLine(
-                    $"[GEOFENCE] '{best.poi.Name}' still last-narrated — walk away to reset");
-                return null;
-            }
-
-            // --- 5. Trigger ---
+            // --- 4. Trigger ---
             System.Diagnostics.Debug.WriteLine(
                 $"[TRIGGER] ▶ '{best.poi.Name}' at {best.distance:F0}m (Priority: {best.poi.Priority})");
 
-            best.poi.LastTriggered = now;
             best.poi.HasPlayed = true;
+            best.poi.LastTriggered = DateTime.UtcNow;
             _lastNarratedPoi = best.poi;
-            _lastNarrationTime = now;
 
             _ = _narrationService.PlayNarrationAsync(best.poi);
             return best.poi;
@@ -189,8 +208,8 @@ namespace FoodStreetApp.Services
                 poi.LastTriggered = null;
                 poi.LastDistance = double.MaxValue;
             }
+            _enteredPoiIds.Clear();
             _lastNarratedPoi = null;
-            _lastNarrationTime = null;
             System.Diagnostics.Debug.WriteLine("[GEOFENCE] All geofences and narration state reset");
         }
 
@@ -205,6 +224,7 @@ namespace FoodStreetApp.Services
                 poi.HasPlayed = false;
                 poi.LastTriggered = null;
                 poi.LastDistance = double.MaxValue;
+                _enteredPoiIds.Remove(poiId);
                 System.Diagnostics.Debug.WriteLine($"[GEOFENCE] Reset POI: '{poi.Name}'");
             }
         }

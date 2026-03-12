@@ -37,6 +37,8 @@ namespace FoodStreetApp.Views
                 {
                     InitializeMapElements();
                     _isMapInitialized = true;
+                    // Re-assert after permission grant so Android activates the My Location button
+                    map.IsShowingUser = true;
                 }
             }
 
@@ -165,6 +167,12 @@ namespace FoodStreetApp.Views
                 var location = new Location(_viewModel.CurrentLocation.Latitude, _viewModel.CurrentLocation.Longitude);
                 map.MoveToRegion(MapSpan.FromCenterAndRadius(location, Distance.FromMeters(300)));
                 System.Diagnostics.Debug.WriteLine($">>> Map centered to: {location.Latitude:F6}, {location.Longitude:F6}");
+            }
+            else
+            {
+                var vinhKhanh = new Location(10.7610, 106.7040);
+                map.MoveToRegion(MapSpan.FromCenterAndRadius(vinhKhanh, Distance.FromMeters(250)));
+                System.Diagnostics.Debug.WriteLine(">>> Map centered to Vinh Khanh Street (no GPS fix yet)");
             }
         }
 
