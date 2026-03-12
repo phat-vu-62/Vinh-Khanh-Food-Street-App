@@ -13,7 +13,7 @@ namespace FoodStreetApp.Services
             {
                 System.Diagnostics.Debug.WriteLine(">>> Requesting GPS location...");
 
-                var request = new GeolocationRequest(GeolocationAccuracy.Best, TimeSpan.FromSeconds(10));
+                var request = new GeolocationRequest(GeolocationAccuracy.Best, TimeSpan.FromSeconds(1));
 
                 // This will use mock location if enabled in device settings
                 var location = await Geolocation.Default.GetLocationAsync(request);
@@ -91,7 +91,7 @@ namespace FoodStreetApp.Services
                                 System.Diagnostics.Debug.WriteLine(">>> Location is null, retrying...");
                             }
 
-                            await Task.Delay(2000, _cancelTokenSource.Token);
+                            await Task.Delay(1000, _cancelTokenSource.Token);
                         }
                         catch (OperationCanceledException)
                         {
@@ -101,7 +101,7 @@ namespace FoodStreetApp.Services
                         catch (Exception ex)
                         {
                             System.Diagnostics.Debug.WriteLine($">>> Location tracking error: {ex.Message}");
-                            await Task.Delay(2000); // Wait before retry
+                            await Task.Delay(1000); // Wait before retry
                         }
                     }
 

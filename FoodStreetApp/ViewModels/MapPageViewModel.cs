@@ -15,8 +15,8 @@ namespace FoodStreetApp.ViewModels
 
         private Location? _currentLocation;
         private string _statusMessage = "Initializing...";
-        private string _currentLocationText = "📍 GPS: Acquiring location...";
-        private string _nearestPoiText = "🎯 Nearest POI: Searching...";
+        private string _currentLocationText = "GPS: Acquiring location...";
+        private string _nearestPoiText = "Nearest POI: Searching...";
         private POI? _lastTriggeredPoi;
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -84,7 +84,7 @@ namespace FoodStreetApp.ViewModels
             _locationService.LocationChanged += OnLocationChanged;
         }
 
-        public async Task InitializeAsync()
+        public async Task<bool> InitializeAsync()
         {
             try
             {
@@ -98,7 +98,7 @@ namespace FoodStreetApp.ViewModels
                 {
                     StatusMessage = "❌ Location permissions required. Please grant permissions in Settings.";
                     System.Diagnostics.Debug.WriteLine(">>> ❌ Location permissions not granted");
-                    return;
+                    return false;
                 }
 
                 System.Diagnostics.Debug.WriteLine(">>> ✅ Permissions OK");
@@ -156,12 +156,14 @@ namespace FoodStreetApp.ViewModels
                 }
 
                 System.Diagnostics.Debug.WriteLine(">>> === MAP PAGE INITIALIZATION END ===\n");
+                return true;
             }
             catch (Exception ex)
             {
                 StatusMessage = $"❌ Error: {ex.Message}";
                 System.Diagnostics.Debug.WriteLine($">>> ❌ Initialization error: {ex.Message}");
                 System.Diagnostics.Debug.WriteLine($">>> Stack trace: {ex.StackTrace}");
+                return false;
             }
         }
 

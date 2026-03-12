@@ -24,7 +24,7 @@ namespace FoodStreetApp.Services
         // --- POC configuration constants ---
 
         /// <summary>Fixed trigger radius in meters — narration fires when the user is within this distance of a POI.</summary>
-        private const double TriggerRadiusMeters = 70.0;
+        private const double TriggerRadiusMeters = 50.0;
 
         /// <summary>
         /// Minimum spacing between retained POIs after clustering (meters).

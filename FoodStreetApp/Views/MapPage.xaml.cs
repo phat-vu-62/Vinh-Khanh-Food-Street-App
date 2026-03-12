@@ -10,6 +10,7 @@ namespace FoodStreetApp.Views
         private readonly Dictionary<int, Pin> _poiPins = new();
         private readonly Dictionary<int, Circle> _poiCircles = new();
         private bool _isMapInitialized = false;
+        private bool _isInitializing = false;
 
         public MapPage(MapPageViewModel viewModel)
         {
@@ -25,12 +26,18 @@ namespace FoodStreetApp.Views
         {
             base.OnAppearing();
 
-            // Initialize only once
-            if (!_isMapInitialized)
+            // Initialize only once, but retry if a previous attempt failed (e.g. permission denied)
+            if (!_isMapInitialized && !_isInitializing)
             {
-                await _viewModel.InitializeAsync();
-                InitializeMapElements();
-                _isMapInitialized = true;
+                _isInitializing = true;
+                var success = await _viewModel.InitializeAsync();
+                _isInitializing = false;
+
+                if (success)
+                {
+                    InitializeMapElements();
+                    _isMapInitialized = true;
+                }
             }
 
             // Center map on current location if available
@@ -80,9 +87,9 @@ namespace FoodStreetApp.Views
                 {
                     Center = new Location(poi.Latitude, poi.Longitude),
                     Radius = new Distance(poi.Radius),
-                    StrokeColor = GetColorForPriority(poi.Priority),
+                    StrokeColor = Colors.Blue,
                     StrokeWidth = 2,
-                    FillColor = GetColorForPriority(poi.Priority).WithAlpha(0.15f)
+                    FillColor = Color.FromArgb("#330000FF")
                 };
 
                 map.Pins.Add(pin);
@@ -92,21 +99,6 @@ namespace FoodStreetApp.Views
 
                 System.Diagnostics.Debug.WriteLine($"[MAP] Added POI: {poi.Name} (Priority: {poi.Priority}, Radius: {poi.Radius}m)");
             }
-        }
-
-        /// <summary>
-        /// Get color based on POI priority (higher priority = more visible)
-        /// </summary>
-        private Color GetColorForPriority(int priority)
-        {
-            return priority switch
-            {
-                >= 9 => Colors.Red,      // Highest priority
-                >= 7 => Colors.Orange,   // High priority
-                >= 5 => Colors.Blue,     // Medium priority
-                >= 3 => Colors.Green,    // Low priority
-                _ => Colors.Gray         // Lowest priority
-            };
         }
 
         /// <summary>
@@ -151,9 +143,9 @@ namespace FoodStreetApp.Views
                 {
                     Center = new Location(poi.Latitude, poi.Longitude),
                     Radius = new Distance(poi.Radius),
-                    StrokeColor = GetColorForPriority(poi.Priority),
+                    StrokeColor = Colors.Blue,
                     StrokeWidth = 2,
-                    FillColor = GetColorForPriority(poi.Priority).WithAlpha(0.15f)
+                    FillColor = Color.FromArgb("#330000FF")
                 };
 
                 map.Pins.Add(pin);
