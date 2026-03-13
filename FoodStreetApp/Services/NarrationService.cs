@@ -77,17 +77,27 @@ namespace FoodStreetApp.Services
                 // --- Priority 1: TTS ---
                 if (poi.UseTts)
                 {
-                    var ttsText = poi.GetTtsText(_currentLanguage);
+                    // Check if we need to fall back to English text because the device lacks the requested TTS voice
+                    var activeLanguage = _currentLanguage;
+                    var locale = GetLocaleFromCache(_currentLanguage);
+
+                    if (locale != null && !locale.Language.StartsWith(_currentLanguage, StringComparison.OrdinalIgnoreCase))
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[NARRATION]   Device lacks TTS voice for '{_currentLanguage}'. Falling back to English text.");
+                        activeLanguage = "en";
+                    }
+
+                    var ttsText = poi.GetTtsText(activeLanguage);
                     System.Diagnostics.Debug.WriteLine($"[NARRATION]   TTS text: '{ttsText}'");
 
                     if (!string.IsNullOrWhiteSpace(ttsText))
                     {
-                        await SpeakWithTtsAsync(ttsText);
+                        await SpeakWithTtsAsync(ttsText, locale);
                         _isSpeaking = false;
                         return;
                     }
 
-                    System.Diagnostics.Debug.WriteLine($"[NARRATION]   TTS text is empty for '{_currentLanguage}' — trying audio file or fallback");
+                    System.Diagnostics.Debug.WriteLine($"[NARRATION]   TTS text is empty for '{activeLanguage}' — trying audio file or fallback");
                 }
 
                 // --- Priority 2: Audio file ---
@@ -110,11 +120,19 @@ namespace FoodStreetApp.Services
                 }
 
                 // --- Fallback: TTS generic text (covers UseTts=false + no audio file) ---
-                var fallbackText = poi.GetTtsText(_currentLanguage);
+                var fallbackLanguage = _currentLanguage;
+                var fallbackLocale = GetLocaleFromCache(_currentLanguage);
+
+                if (fallbackLocale != null && !fallbackLocale.Language.StartsWith(_currentLanguage, StringComparison.OrdinalIgnoreCase))
+                {
+                    fallbackLanguage = "en";
+                }
+
+                var fallbackText = poi.GetTtsText(fallbackLanguage);
                 if (!string.IsNullOrWhiteSpace(fallbackText))
                 {
                     System.Diagnostics.Debug.WriteLine($"[NARRATION]   Using fallback TTS: '{fallbackText}'");
-                    await SpeakWithTtsAsync(fallbackText);
+                    await SpeakWithTtsAsync(fallbackText, fallbackLocale);
                 }
                 else
                 {
@@ -140,10 +158,10 @@ namespace FoodStreetApp.Services
         /// Speak text using TTS with a fresh CancellationToken.
         /// Using the cached locale avoids any blocking .GetLocalesAsync().Result call.
         /// </summary>
-        private async Task SpeakWithTtsAsync(string text)
+        private async Task SpeakWithTtsAsync(string text, Locale? locale = null)
         {
             _ttsCancelToken = new CancellationTokenSource();
-            var locale = GetLocaleFromCache(_currentLanguage);
+            locale ??= GetLocaleFromCache(_currentLanguage);
 
             System.Diagnostics.Debug.WriteLine(
                 $"[NARRATION]   → TextToSpeech.SpeakAsync | locale: '{locale?.Language ?? "system default"}'");
@@ -202,8 +220,7 @@ namespace FoodStreetApp.Services
 
         /// <summary>
         /// Returns the best available locale for the given language code using the
-        /// pre-cached locale list. Always non-blocking. Returns null if not found
-        /// (TextToSpeech will then use the system default voice).
+        /// pre-cached locale list. Always non-blocking. Returns fallback "en" if not found.
         /// </summary>
         private Locale? GetLocaleFromCache(string languageCode)
         {
@@ -216,10 +233,26 @@ namespace FoodStreetApp.Services
             var locale = _cachedLocales.FirstOrDefault(l =>
                 l.Language.StartsWith(languageCode, StringComparison.OrdinalIgnoreCase));
 
+            // Fallback to English if the requested language is not supported
+            if (locale == null)
+            {
+                System.Diagnostics.Debug.WriteLine($"[NARRATION]   No locale for '{languageCode}' — falling back to 'en-US'");
+                locale = _cachedLocales.FirstOrDefault(l =>
+                    l.Language.Equals("en", StringComparison.OrdinalIgnoreCase) &&
+                    string.Equals(l.Country, "US", StringComparison.OrdinalIgnoreCase));
+
+                // If en-US is not found, fallback to any 'en'
+                if (locale == null)
+                {
+                    locale = _cachedLocales.FirstOrDefault(l =>
+                        l.Language.StartsWith("en", StringComparison.OrdinalIgnoreCase));
+                }
+            }
+
             if (locale != null)
-                System.Diagnostics.Debug.WriteLine($"[NARRATION]   Locale found: {locale.Language}-{locale.Country}");
+                System.Diagnostics.Debug.WriteLine($"[NARRATION]   Locale applied: {locale.Language}-{locale.Country}");
             else
-                System.Diagnostics.Debug.WriteLine($"[NARRATION]   No locale for '{languageCode}' — using system default");
+                System.Diagnostics.Debug.WriteLine($"[NARRATION]   Fallback locale not found — using system default");
 
             return locale;
         }
