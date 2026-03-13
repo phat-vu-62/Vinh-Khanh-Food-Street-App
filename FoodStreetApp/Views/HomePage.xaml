@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:models="clr-namespace:FoodStreetApp.Models"
+             xmlns:viewmodels="clr-namespace:FoodStreetApp.ViewModels"
+             x:Class="FoodStreetApp.Views.HomePage"
+             Title="Home"
+             Shell.NavBarIsVisible="False">
+
+    <ContentPage.BindingContext>
+        <viewmodels:HomeViewModel />
+    </ContentPage.BindingContext>
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="0">
+            <!-- Hero Header Section -->
+            <Grid HeightRequest="250">
+                <Image Source="bona.jpg" Aspect="AspectFill" />
+                <BoxView Color="#3498db" CornerRadius="0,0,24,24" Opacity="0.4" />
+                <BoxView Color="Black" Opacity="0.4" CornerRadius="0,0,24,24" />
+
+                <VerticalStackLayout VerticalOptions="End" Padding="20">
+                    <Label Text="Discover Vinh Khanh Food Street" 
+                           TextColor="White" 
+                           FontSize="24" 
+                           FontAttributes="Bold" />
+                    <Label Text="Famous seafood street in District 4" 
+                           TextColor="White" 
+                           FontSize="16" />
+                </VerticalStackLayout>
+            </Grid>
+
+            <VerticalStackLayout Padding="20" Spacing="25">
+                <!-- Featured Section (Horizontal Scroll) -->
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="🔥 Featured on Vinh Khanh" 
+                           FontSize="20" 
+                           FontAttributes="Bold" />
+
+                    <CollectionView ItemsSource="{Binding FeaturedStalls}"
+                                    ItemsLayout="HorizontalList"
+                                    HeightRequest="260">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:FoodPlace">
+                                <Border Margin="0,5,15,15" 
+                                        WidthRequest="260"
+                                        StrokeShape="RoundRectangle 16"
+                                        StrokeThickness="0"
+                                        Background="{AppThemeBinding Light=White, Dark=#1E1E1E}">
+                                    <Border.Shadow>
+                                        <Shadow Brush="Black" Offset="0,4" Radius="8" Opacity="0.1" />
+                                    </Border.Shadow>
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:HomeViewModel}}, Path=GoToDetailCommand}"
+                                                              CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+                                    <Grid RowDefinitions="146, Auto">
+                                        <Image Source="{Binding Image}" Aspect="AspectFill" Grid.Row="0" />
+
+                                        <VerticalStackLayout Grid.Row="1" Padding="15" Spacing="4">
+                                            <Label Text="{Binding Name}" FontSize="16" FontAttributes="Bold" />
+                                            <Label Text="{Binding Rating, StringFormat='⭐ {0}'}" FontSize="14" TextColor="#FF9800" FontAttributes="Bold" />
+                                            <Label Text="{Binding Description}" FontSize="12" TextColor="Gray" MaxLines="2" LineBreakMode="TailTruncation" />
+                                        </VerticalStackLayout>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+
+                <!-- Popular Spots Section (2 Column Grid) -->
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="⭐ Popular Seafood" 
+                           FontSize="20" 
+                           FontAttributes="Bold" />
+
+                    <CollectionView ItemsSource="{Binding PopularSeafoodStalls}">
+                        <CollectionView.ItemsLayout>
+                            <GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="15" VerticalItemSpacing="15" />
+                        </CollectionView.ItemsLayout>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:FoodPlace">
+                                <Border StrokeShape="RoundRectangle 16"
+                                        StrokeThickness="0"
+                                        Background="{AppThemeBinding Light=White, Dark=#1E1E1E}"
+                                        Margin="0,0,0,10">
+                                    <Border.Shadow>
+                                        <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
+                                    </Border.Shadow>
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:HomeViewModel}}, Path=GoToDetailCommand}"
+                                                              CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+                                    <Grid RowDefinitions="120, Auto">
+                                        <Image Source="{Binding Image}" Aspect="AspectFill" Grid.Row="0" />
+
+                                        <VerticalStackLayout Grid.Row="1" Padding="12" Spacing="4">
+                                            <Label Text="{Binding Name}" FontSize="14" FontAttributes="Bold" LineBreakMode="TailTruncation" />
+                                            <Label Text="{Binding Rating, StringFormat='⭐ {0}'}" FontSize="12" TextColor="#FF9800" FontAttributes="Bold" />
+                                            <HorizontalStackLayout Spacing="4">
+                                                <Label Text="📍" FontSize="10" VerticalOptions="Center" />
+                                                <Label Text="Vinh Khanh Str" FontSize="10" TextColor="Gray" VerticalOptions="Center" LineBreakMode="TailTruncation" />
+                                            </HorizontalStackLayout>
+                                        </VerticalStackLayout>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+
+                <!-- Drinks & Snacks Section -->
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="🥤 Drinks &amp; Snacks" 
+                           FontSize="20" 
+                           FontAttributes="Bold" />
+
+                    <CollectionView ItemsSource="{Binding DrinksStalls}">
+                        <CollectionView.ItemsLayout>
+                            <GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="15" VerticalItemSpacing="15" />
+                        </CollectionView.ItemsLayout>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:FoodPlace">
+                                <Border StrokeShape="RoundRectangle 16"
+                                        StrokeThickness="0"
+                                        Background="{AppThemeBinding Light=White, Dark=#1E1E1E}"
+                                        Margin="0,0,0,10">
+                                    <Border.Shadow>
+                                        <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
+                                    </Border.Shadow>
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:HomeViewModel}}, Path=GoToDetailCommand}"
+                                                              CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+                                    <Grid RowDefinitions="120, Auto">
+                                        <Image Source="{Binding Image}" Aspect="AspectFill" Grid.Row="0" />
+
+                                        <VerticalStackLayout Grid.Row="1" Padding="12" Spacing="4">
+                                            <Label Text="{Binding Name}" FontSize="14" FontAttributes="Bold" LineBreakMode="TailTruncation" />
+                                            <Label Text="{Binding Rating, StringFormat='⭐ {0}'}" FontSize="12" TextColor="#FF9800" FontAttributes="Bold" />
+                                            <HorizontalStackLayout Spacing="4">
+                                                <Label Text="📍" FontSize="10" VerticalOptions="Center" />
+                                                <Label Text="Vinh Khanh Str" FontSize="10" TextColor="Gray" VerticalOptions="Center" LineBreakMode="TailTruncation" />
+                                            </HorizontalStackLayout>
+                                        </VerticalStackLayout>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

@@ -39,6 +39,12 @@ namespace FoodStreetApp
             builder.Services.AddSingleton<IGeofenceService, GeofenceService>();
 
             // ViewModels & Views
+            builder.Services.AddTransient<HomeViewModel>();
+            builder.Services.AddTransient<HomePage>();
+
+            builder.Services.AddTransient<FoodDetailViewModel>();
+            builder.Services.AddTransient<FoodDetailPage>();
+
             builder.Services.AddTransient<MapPageViewModel>();
             builder.Services.AddTransient<MapPage>();
 

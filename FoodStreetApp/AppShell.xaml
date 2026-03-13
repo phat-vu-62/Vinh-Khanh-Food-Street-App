@@ -8,6 +8,11 @@
 
     <TabBar>
         <ShellContent
+            Title="Home"
+            ContentTemplate="{DataTemplate views:HomePage}"
+            Route="HomePage" />
+
+        <ShellContent
             Title="Map"
             ContentTemplate="{DataTemplate views:MapPage}"
             Route="MapPage" />

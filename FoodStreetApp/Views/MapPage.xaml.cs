@@ -4,7 +4,7 @@ using Microsoft.Maui.Maps;
 
 namespace FoodStreetApp.Views
 {
-    public partial class MapPage : ContentPage
+    public partial class MapPage : ContentPage, IQueryAttributable
     {
         private readonly MapPageViewModel _viewModel;
         private readonly Dictionary<int, Pin> _poiPins = new();
@@ -12,6 +12,7 @@ namespace FoodStreetApp.Views
         private bool _isMapInitialized = false;
         private bool _isInitializing = false;
         private readonly HashSet<int> _shownPoiIds = new();
+        private Location? _targetLocation;
 
         public MapPage(MapPageViewModel viewModel)
         {
@@ -180,12 +181,34 @@ namespace FoodStreetApp.Views
             }
         }
 
+        public void ApplyQueryAttributes(IDictionary<string, object> query)
+        {
+            if (query.ContainsKey("lat") && query.ContainsKey("lon"))
+            {
+                if (double.TryParse(query["lat"].ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double lat) &&
+                    double.TryParse(query["lon"].ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double lon))
+                {
+                    _targetLocation = new Location(lat, lon);
+                    if (_isMapInitialized)
+                    {
+                        CenterMapOnCurrentLocation();
+                    }
+                }
+            }
+        }
+
         /// <summary>
-        /// Center map on current location
+        /// Center map on current location or target location from navigation
         /// </summary>
         private void CenterMapOnCurrentLocation()
         {
-            if (_viewModel.CurrentLocation != null)
+            if (_targetLocation != null)
+            {
+                map.MoveToRegion(MapSpan.FromCenterAndRadius(_targetLocation, Distance.FromMeters(100)));
+                System.Diagnostics.Debug.WriteLine($">>> Map centered to Target: {_targetLocation.Latitude:F6}, {_targetLocation.Longitude:F6}");
+                _targetLocation = null; // Reset after using it once
+            }
+            else if (_viewModel.CurrentLocation != null)
             {
                 var location = new Location(_viewModel.CurrentLocation.Latitude, _viewModel.CurrentLocation.Longitude);
                 map.MoveToRegion(MapSpan.FromCenterAndRadius(location, Distance.FromMeters(300)));

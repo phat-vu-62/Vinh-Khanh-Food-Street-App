@@ -220,10 +220,12 @@ namespace FoodStreetApp.ViewModels
             }
         }
 
+        private bool IsInsideZone = false;
+        private string _lastTargetPoiName = string.Empty;
+
         private void UpdateLocationDisplay(Location location)
         {
-            // Use the same 70m radius as GeofenceService so status text matches narration behaviour
-            const double triggerRadius = 70.0;
+            const double POI_TRIGGER_RADIUS = 18.0;
 
             CurrentLocationText = $"GPS: {location.Latitude:F6}, {location.Longitude:F6}";
 
@@ -232,12 +234,29 @@ namespace FoodStreetApp.ViewModels
             {
                 var (poi, distance) = nearbyList[0];
                 NearestPoiText = $"{poi.Name} — {distance:F0}m";
-                StatusMessage = distance <= triggerRadius
-                    ? $"Inside {poi.Name} zone"
-                    : $"{distance:F0}m to {poi.Name}";
+
+                if (distance <= POI_TRIGGER_RADIUS)
+                {
+                    IsInsideZone = true;
+                    _lastTargetPoiName = poi.Name;
+                    StatusMessage = $"Inside {poi.Name} zone";
+                }
+                else
+                {
+                    if (IsInsideZone)
+                    {
+                        StatusMessage = $"Leaving {_lastTargetPoiName} zone";
+                        IsInsideZone = false;
+                    }
+                    else
+                    {
+                        StatusMessage = $"Nearest POI: {poi.Name} — {distance:F0}m";
+                    }
+                }
             }
             else
             {
+                IsInsideZone = false;
                 NearestPoiText = "No POIs nearby";
                 StatusMessage = "Exploring Vinh Khanh Street";
             }
