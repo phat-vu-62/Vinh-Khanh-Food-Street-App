@@ -273,6 +273,12 @@ namespace FoodStreetApp.ViewModels
             await _locationService.StartTrackingAsync();
         }
 
+        public async Task<POI?> GetPOIByNameAsync(string name)
+        {
+            var pois = await _poiService.GetActivePOIsAsync();
+            return pois.FirstOrDefault(p => p.Name == name);
+        }
+
         public void ResetAllGeofences()
         {
             _geofenceService.ResetAllGeofences();

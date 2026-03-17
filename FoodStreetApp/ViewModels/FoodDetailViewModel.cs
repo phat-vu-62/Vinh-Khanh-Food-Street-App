@@ -59,8 +59,10 @@ namespace FoodStreetApp.ViewModels
 
                 string latStr = Place.Latitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 string lonStr = Place.Longitude.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                // Navigate to Map tab and pass coordinates
-                await Shell.Current.GoToAsync($"///MapPage?lat={latStr}&lon={lonStr}");
+                string nameEncoded = Uri.EscapeDataString(Place.Name);
+
+                // Navigate to Map tab (which is at the root) and pass coordinates
+                await Shell.Current.GoToAsync($"///MapPage?lat={latStr}&lon={lonStr}&name={nameEncoded}");
             });
 
             ToggleNarrationCommand = new Command(() =>

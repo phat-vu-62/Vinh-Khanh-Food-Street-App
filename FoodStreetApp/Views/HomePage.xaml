@@ -11,9 +11,13 @@
         <VerticalStackLayout Spacing="0">
             <!-- Hero Header Section -->
             <Grid HeightRequest="250">
-                <Image Source="bona.jpg" Aspect="AspectFill" />
-                <BoxView Color="#3498db" CornerRadius="0,0,24,24" Opacity="0.4" />
-                <BoxView Color="Black" Opacity="0.4" CornerRadius="0,0,24,24" />
+                <Image Source="vinhkhanh.jpg" Aspect="AspectFill" />
+
+                <!-- Lớp gradient mờ ở phần dưới để chữ hiển thị rõ -->
+                <BoxView BackgroundColor="Black" 
+                         Opacity="0.4"
+                         VerticalOptions="End" 
+                         HeightRequest="100" />
 
                 <VerticalStackLayout VerticalOptions="End" Padding="20">
                     <Label Text="Discover Vinh Khanh Food Street" 
@@ -62,7 +66,7 @@
 
                                         <VerticalStackLayout Grid.Row="1" Padding="15" Spacing="4">
                                             <Label Text="{Binding Name}" FontSize="16" FontAttributes="Bold" />
-                                            <Label Text="{Binding Rating, StringFormat='⭐ {0}'}" FontSize="14" TextColor="#FF9800" FontAttributes="Bold" />
+                                            <Label Text="{Binding Rating, StringFormat='⭐ {0:F1}'}" FontSize="14" TextColor="#FF9800" FontAttributes="Bold" />
                                             <Label Text="{Binding Description}" FontSize="12" TextColor="Gray" MaxLines="2" LineBreakMode="TailTruncation" />
                                         </VerticalStackLayout>
                                     </Grid>
@@ -100,10 +104,10 @@
 
                                         <VerticalStackLayout Grid.Row="1" Padding="12" Spacing="4">
                                             <Label Text="{Binding Name}" FontSize="14" FontAttributes="Bold" LineBreakMode="TailTruncation" />
-                                            <Label Text="{Binding Rating, StringFormat='⭐ {0}'}" FontSize="12" TextColor="#FF9800" FontAttributes="Bold" />
+                                            <Label Text="{Binding Rating, StringFormat='⭐ {0:F1}'}" FontSize="12" TextColor="#FF9800" FontAttributes="Bold" />
                                             <HorizontalStackLayout Spacing="4">
                                                 <Label Text="📍" FontSize="10" VerticalOptions="Center" />
-                                                <Label Text="Vinh Khanh Str" FontSize="10" TextColor="Gray" VerticalOptions="Center" LineBreakMode="TailTruncation" />
+                                                <Label Text="Vinh Khanh Street" FontSize="10" TextColor="Gray" VerticalOptions="Center" LineBreakMode="TailTruncation" />
                                             </HorizontalStackLayout>
                                         </VerticalStackLayout>
                                     </Grid>
@@ -143,7 +147,7 @@
                                         <!-- Details -->
                                         <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="4">
                                             <Label Text="{Binding Name}" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
-                                            <Label Text="{Binding Rating, StringFormat='⭐ {0}'}" FontSize="12" TextColor="#FF9800" FontAttributes="Bold" />
+                                            <Label Text="{Binding Rating, StringFormat='⭐ {0:F1}'}" FontSize="12" TextColor="#FF9800" FontAttributes="Bold" />
                                             <Label Text="{Binding Description}" FontSize="12" TextColor="Gray" MaxLines="2" LineBreakMode="TailTruncation" />
                                         </VerticalStackLayout>
                                     </Grid>

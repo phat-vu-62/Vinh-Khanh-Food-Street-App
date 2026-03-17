@@ -148,6 +148,14 @@ namespace FoodStreetApp.ViewModels
                     else if (poi.Name.Contains("Ty")) imageName = "octy.jpg";
                     else if (poi.Name.Contains("Lãng Quán")) imageName = "langquan.jpg";
                     else if (poi.Name.Contains("Win")) imageName = "wincoffee.jpg";
+                    else if (poi.Name.Contains("Thảo")) imageName = "octhao.jpg";
+                    else if (poi.Name.Contains("Vũ")) imageName = "ocvu.jpg";
+                    else if (poi.Name.Contains("Oanh")) imageName = "ocoanh.jpg";
+                    else if (poi.Name.Contains("A FAT")) imageName = "afathotpot.jpg";
+                    else if (poi.Name.Contains("Bụi")) imageName = "ocbui.jpg";
+                    else if (poi.Name.Contains("Đào 2")) imageName = "ocdao2.jpg";
+                    else if (poi.Name.Contains("Diễm")) imageName = "ocdiem.jpg";
+                    else if (poi.Name.Contains("Lẩu gà lá é")) imageName = "laugalae.jpg";
 
                     var place = new FoodPlace
                     {

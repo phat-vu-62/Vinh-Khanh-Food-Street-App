@@ -13,6 +13,7 @@ namespace FoodStreetApp.Views
         private bool _isInitializing = false;
         private readonly HashSet<int> _shownPoiIds = new();
         private Location? _targetLocation;
+        private Pin? _targetPin;
 
         public MapPage(MapPageViewModel viewModel)
         {
@@ -57,6 +58,14 @@ namespace FoodStreetApp.Views
         {
             base.OnDisappearing();
             await _viewModel.CleanupAsync();
+
+            MarkerInfoCard.IsVisible = false;
+
+            if (_targetPin != null && map.Pins.Contains(_targetPin))
+            {
+                map.Pins.Remove(_targetPin);
+                _targetPin = null;
+            }
         }
 
         /// <summary>
@@ -169,6 +178,12 @@ namespace FoodStreetApp.Views
                         }
                     }
                 }
+
+                if (_targetPin != null && MarkerInfoCard.IsVisible && !map.Pins.Contains(_targetPin))
+                {
+                    map.Pins.Add(_targetPin);
+                }
+
                 return;
             }
 
@@ -215,6 +230,11 @@ namespace FoodStreetApp.Views
                 _poiCircles[poi.Id] = circle;
                 _shownPoiIds.Add(poi.Id);
             }
+
+            if (_targetPin != null && MarkerInfoCard.IsVisible)
+            {
+                map.Pins.Add(_targetPin);
+            }
         }
 
         public void ApplyQueryAttributes(IDictionary<string, object> query)
@@ -227,6 +247,8 @@ namespace FoodStreetApp.Views
                     var targetLoc = new Location(lat, lon);
                     _targetLocation = targetLoc;
 
+                    string targetName = query.ContainsKey("name") ? Uri.UnescapeDataString(query["name"].ToString() ?? "") : string.Empty;
+
                     MainThread.BeginInvokeOnMainThread(async () =>
                     {
                         while (map.Width <= 0 || map.Height <= 0)
@@ -235,8 +257,39 @@ namespace FoodStreetApp.Views
                         }
                         await Task.Delay(300);
 
-                        map.MoveToRegion(MapSpan.FromCenterAndRadius(targetLoc, Distance.FromMeters(100)));
+                        // Mức zoom gần hơn (50m thay vì 100m) giống Google Maps
+                        map.MoveToRegion(MapSpan.FromCenterAndRadius(targetLoc, Distance.FromMeters(50)));
                         System.Diagnostics.Debug.WriteLine($">>> Map centered to Target via QueryAttributes: {targetLoc.Latitude:F6}, {targetLoc.Longitude:F6}");
+
+                        if (_targetPin != null && map.Pins.Contains(_targetPin))
+                        {
+                            map.Pins.Remove(_targetPin);
+                        }
+
+                        // Hiển thị Card thông tin quán ngay lập tức
+                        if (!string.IsNullOrEmpty(targetName))
+                        {
+                            var poi = await _viewModel.GetPOIByNameAsync(targetName);
+                            if (poi != null)
+                            {
+                                MarkerTitleLabel.Text = poi.Name;
+                                MarkerDescLabel.Text = poi.Description;
+                                MarkerRatingLabel.Text = poi.Rating.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+                                MarkerReviewCountLabel.Text = $"({poi.ReviewCount}+)";
+                                MarkerInfoCard.IsVisible = true;
+
+                                _targetPin = new Pin
+                                {
+                                    Label = poi.Name,
+                                    Address = poi.Description,
+                                    Type = PinType.Place,
+                                    Location = new Location(poi.Latitude, poi.Longitude)
+                                };
+                                _targetPin.MarkerClicked += OnPinMarkerClicked;
+                                map.Pins.Add(_targetPin);
+                            }
+                        }
+
                         _targetLocation = null;
                     });
                 }
@@ -288,20 +341,29 @@ namespace FoodStreetApp.Views
                 MarkerTitleLabel.Text = pin.Label;
                 MarkerDescLabel.Text = pin.Address;
 
-                var poi = _viewModel.POIs.FirstOrDefault(p => p.Name == pin.Label);
-                if (poi != null)
+                MainThread.BeginInvokeOnMainThread(async () =>
                 {
-                    MarkerRatingLabel.Text = poi.Rating.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
-                    MarkerReviewCountLabel.Text = $"({poi.ReviewCount}+)";
-                }
+                    var poi = await _viewModel.GetPOIByNameAsync(pin.Label);
+                    if (poi != null)
+                    {
+                        MarkerRatingLabel.Text = poi.Rating.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+                        MarkerReviewCountLabel.Text = $"({poi.ReviewCount}+)";
+                    }
 
-                MarkerInfoCard.IsVisible = true;
+                    MarkerInfoCard.IsVisible = true;
+                });
             }
         }
 
         private void OnCloseMarkerInfoClicked(object sender, EventArgs e)
         {
             MarkerInfoCard.IsVisible = false;
+            
+            if (_targetPin != null && map.Pins.Contains(_targetPin))
+            {
+                map.Pins.Remove(_targetPin);
+                _targetPin = null;
+            }
         }
 
         /// <summary>
