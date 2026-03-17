@@ -10,12 +10,18 @@ namespace FoodStreetApp.Services
         private volatile bool _isSpeaking = false;
         private string _currentLanguage = "vi";
 
-        // CancellationToken used to cancel an in-progress SpeakAsync call.
-        // Cancelled in StopNarrationAsync() instead of calling SpeakAsync(" ").
         private CancellationTokenSource? _ttsCancelToken;
-
-        // Locales cached once at startup so GetLocaleFromCache() is always non-blocking.
         private IEnumerable<Locale>? _cachedLocales;
+
+        private readonly Queue<POI> _narrationQueue = new();
+        private bool _isProcessingQueue = false;
+        
+        private TaskCompletionSource<bool>? _audioCompletionSource;
+        public event EventHandler? NarrationFinished;
+
+        private string? _lastTtsText = null;
+        private Locale? _lastTtsLocale = null;
+        private bool _isTtsPaused = false;
 
         public NarrationService(IAudioManager audioManager)
         {
@@ -63,11 +69,40 @@ namespace FoodStreetApp.Services
         /// Fallback:   TTS with the generic template from GetTtsText().
         /// Safe to call from any thread (UI or background).
         /// </summary>
-        public async Task PlayNarrationAsync(POI poi)
+        public async Task PlayNarrationAsync(POI poi, bool isManual = false)
+        {
+            if (isManual)
+            {
+                _narrationQueue.Clear();
+                await StopNarrationAsync();
+                await ProcessSingleNarrationAsync(poi);
+            }
+            else
+            {
+                _narrationQueue.Enqueue(poi);
+                if (!_isProcessingQueue)
+                {
+                    _ = ProcessQueueAsync();
+                }
+            }
+        }
+
+        private async Task ProcessQueueAsync()
+        {
+            _isProcessingQueue = true;
+            while (_narrationQueue.Count > 0)
+            {
+                var poi = _narrationQueue.Dequeue();
+                await ProcessSingleNarrationAsync(poi);
+            }
+            _isProcessingQueue = false;
+        }
+
+        private async Task ProcessSingleNarrationAsync(POI poi)
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"[NARRATION] ▶ PlayNarrationAsync: '{poi.Name}'");
+                System.Diagnostics.Debug.WriteLine($"[NARRATION] ▶ ProcessSingleNarrationAsync: '{poi.Name}'");
                 System.Diagnostics.Debug.WriteLine($"[NARRATION]   Language: '{_currentLanguage}' | UseTts: {poi.UseTts} | AudioFile: '{poi.AudioFile}'");
 
                 // Stop whatever is currently playing before starting new narration.
@@ -94,6 +129,7 @@ namespace FoodStreetApp.Services
                     {
                         await SpeakWithTtsAsync(ttsText, locale);
                         _isSpeaking = false;
+                        NarrationFinished?.Invoke(this, EventArgs.Empty);
                         return;
                     }
 
@@ -108,9 +144,16 @@ namespace FoodStreetApp.Services
                     {
                         var stream = await FileSystem.OpenAppPackageFileAsync(poi.AudioFile);
                         _currentPlayer = _audioManager.CreatePlayer(stream);
+                        _audioCompletionSource = new TaskCompletionSource<bool>();
+                        _currentPlayer.PlaybackEnded += (s, e) =>
+                        {
+                            _audioCompletionSource?.TrySetResult(true);
+                        };
                         _currentPlayer.Play();
                         System.Diagnostics.Debug.WriteLine($"[NARRATION]   ✅ Audio playback started: '{poi.AudioFile}'");
+                        await _audioCompletionSource.Task;
                         _isSpeaking = false;
+                        NarrationFinished?.Invoke(this, EventArgs.Empty);
                         return;
                     }
                     catch (Exception audioEx)
@@ -140,6 +183,7 @@ namespace FoodStreetApp.Services
                 }
 
                 _isSpeaking = false;
+                NarrationFinished?.Invoke(this, EventArgs.Empty);
             }
             catch (OperationCanceledException)
             {
@@ -162,6 +206,10 @@ namespace FoodStreetApp.Services
         {
             _ttsCancelToken = new CancellationTokenSource();
             locale ??= GetLocaleFromCache(_currentLanguage);
+
+            _lastTtsText = text;
+            _lastTtsLocale = locale;
+            _isTtsPaused = false;
 
             System.Diagnostics.Debug.WriteLine(
                 $"[NARRATION]   → TextToSpeech.SpeakAsync | locale: '{locale?.Language ?? "system default"}'");
@@ -201,6 +249,9 @@ namespace FoodStreetApp.Services
                     _currentPlayer = null;
                     System.Diagnostics.Debug.WriteLine("[NARRATION] Audio player stopped");
                 }
+                
+                _audioCompletionSource?.TrySetCanceled();
+                _audioCompletionSource = null;
 
                 _isSpeaking = false;
 

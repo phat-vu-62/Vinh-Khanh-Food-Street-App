@@ -96,12 +96,12 @@ namespace FoodStreetApp.Views
                 {
                     Center = new Location(poi.Latitude, poi.Longitude),
                     Radius = new Distance(poi.Radius),
-                    StrokeColor = Colors.Blue,
-                    StrokeWidth = 2,
-                    FillColor = Color.FromArgb("#330000FF")
+                    StrokeColor = Colors.Transparent,
+                    StrokeWidth = 0,
+                    FillColor = Colors.Transparent
                 };
 
-                map.Pins.Add(pin);
+                // Do not add pin initially, it will be added when user gets close
                 map.MapElements.Add(circle);
                 _poiPins[poi.Id] = pin;
                 _poiCircles[poi.Id] = circle;
@@ -128,16 +128,46 @@ namespace FoodStreetApp.Views
         /// </summary>
         private void RefreshNearbyMapElements(Location location)
         {
-            var nearby = _viewModel.GetNearbyPOIs(location, 5);
+            var nearby = _viewModel.GetNearbyPOIs(location, 50);
             var newIds = new HashSet<int>(nearby.Select(x => x.poi.Id));
 
             if (newIds.SetEquals(_shownPoiIds))
             {
-                // Same POIs still in view — only update the distance labels
+                // Same POIs still in view — only update the distance labels and circle colors
                 foreach (var (poi, distance) in nearby)
                 {
+                    bool isInside = distance <= 18.0;
+
                     if (_poiPins.TryGetValue(poi.Id, out var existingPin))
-                        existingPin.Address = $"{poi.Description} ({distance:F0}m away)";
+                    {
+                        existingPin.Address = poi.Description;
+
+                        bool pinExistsOnMap = map.Pins.Contains(existingPin);
+                        if (isInside && !pinExistsOnMap)
+                        {
+                            map.Pins.Add(existingPin);
+                        }
+                        else if (!isInside && pinExistsOnMap)
+                        {
+                            map.Pins.Remove(existingPin);
+                        }
+                    }
+
+                    if (_poiCircles.TryGetValue(poi.Id, out var existingCircle))
+                    {
+                        if (isInside) // POI_TRIGGER_RADIUS
+                        {
+                            existingCircle.StrokeWidth = 2;
+                            existingCircle.StrokeColor = Colors.Red;
+                            existingCircle.FillColor = Color.FromArgb("#33FF0000");
+                        }
+                        else
+                        {
+                            existingCircle.StrokeWidth = 0;
+                            existingCircle.StrokeColor = Colors.Transparent;
+                            existingCircle.FillColor = Colors.Transparent;
+                        }
+                    }
                 }
                 return;
             }
@@ -155,25 +185,31 @@ namespace FoodStreetApp.Views
             {
                 System.Diagnostics.Debug.WriteLine($"[MAP]   '{poi.Name}' — {distance:F0}m (Priority: {poi.Priority})");
 
+                bool isInside = distance <= 18.0;
+
                 var pin = new Pin
                 {
                     Label = poi.Name,
-                    Address = $"{poi.Description} ({distance:F0}m away)",
+                    Address = poi.Description,
                     Type = PinType.Place,
                     Location = new Location(poi.Latitude, poi.Longitude)
                 };
                 pin.MarkerClicked += OnPinMarkerClicked;
 
+                if (isInside)
+                {
+                    map.Pins.Add(pin);
+                }
+
                 var circle = new Circle
                 {
                     Center = new Location(poi.Latitude, poi.Longitude),
                     Radius = new Distance(poi.Radius),
-                    StrokeColor = Colors.Blue,
-                    StrokeWidth = 2,
-                    FillColor = Color.FromArgb("#330000FF")
+                    StrokeColor = isInside ? Colors.Red : Colors.Transparent,
+                    StrokeWidth = isInside ? 2 : 0,
+                    FillColor = isInside ? Color.FromArgb("#33FF0000") : Colors.Transparent
                 };
 
-                map.Pins.Add(pin);
                 map.MapElements.Add(circle);
                 _poiPins[poi.Id] = pin;
                 _poiCircles[poi.Id] = circle;
@@ -188,11 +224,21 @@ namespace FoodStreetApp.Views
                 if (double.TryParse(query["lat"].ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double lat) &&
                     double.TryParse(query["lon"].ToString(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out double lon))
                 {
-                    _targetLocation = new Location(lat, lon);
-                    if (_isMapInitialized)
+                    var targetLoc = new Location(lat, lon);
+                    _targetLocation = targetLoc;
+
+                    MainThread.BeginInvokeOnMainThread(async () =>
                     {
-                        CenterMapOnCurrentLocation();
-                    }
+                        while (map.Width <= 0 || map.Height <= 0)
+                        {
+                            await Task.Delay(100);
+                        }
+                        await Task.Delay(300);
+
+                        map.MoveToRegion(MapSpan.FromCenterAndRadius(targetLoc, Distance.FromMeters(100)));
+                        System.Diagnostics.Debug.WriteLine($">>> Map centered to Target via QueryAttributes: {targetLoc.Latitude:F6}, {targetLoc.Longitude:F6}");
+                        _targetLocation = null;
+                    });
                 }
             }
         }
@@ -202,37 +248,60 @@ namespace FoodStreetApp.Views
         /// </summary>
         private void CenterMapOnCurrentLocation()
         {
-            if (_targetLocation != null)
+            MainThread.BeginInvokeOnMainThread(async () =>
             {
-                map.MoveToRegion(MapSpan.FromCenterAndRadius(_targetLocation, Distance.FromMeters(100)));
-                System.Diagnostics.Debug.WriteLine($">>> Map centered to Target: {_targetLocation.Latitude:F6}, {_targetLocation.Longitude:F6}");
-                _targetLocation = null; // Reset after using it once
-            }
-            else if (_viewModel.CurrentLocation != null)
-            {
-                var location = new Location(_viewModel.CurrentLocation.Latitude, _viewModel.CurrentLocation.Longitude);
-                map.MoveToRegion(MapSpan.FromCenterAndRadius(location, Distance.FromMeters(300)));
-                System.Diagnostics.Debug.WriteLine($">>> Map centered to: {location.Latitude:F6}, {location.Longitude:F6}");
-            }
-            else
-            {
-                var vinhKhanh = new Location(10.7610, 106.7040);
-                map.MoveToRegion(MapSpan.FromCenterAndRadius(vinhKhanh, Distance.FromMeters(250)));
-                System.Diagnostics.Debug.WriteLine(">>> Map centered to Vinh Khanh Street (no GPS fix yet)");
-            }
+                // Ensure map is rendered (width/height > 0) to avoid silent failure on MoveToRegion
+                if (map.Width <= 0 || map.Height <= 0)
+                {
+                    await Task.Delay(500);
+                }
+
+                if (_targetLocation != null)
+                {
+                    map.MoveToRegion(MapSpan.FromCenterAndRadius(_targetLocation, Distance.FromMeters(100)));
+                    System.Diagnostics.Debug.WriteLine($">>> Map centered to Target: {_targetLocation.Latitude:F6}, {_targetLocation.Longitude:F6}");
+                    _targetLocation = null; // Reset after using it once
+                }
+                else if (_viewModel.CurrentLocation != null)
+                {
+                    var location = new Location(_viewModel.CurrentLocation.Latitude, _viewModel.CurrentLocation.Longitude);
+                    map.MoveToRegion(MapSpan.FromCenterAndRadius(location, Distance.FromMeters(300)));
+                    System.Diagnostics.Debug.WriteLine($">>> Map centered to: {location.Latitude:F6}, {location.Longitude:F6}");
+                }
+                else
+                {
+                    var vinhKhanh = new Location(10.7610, 106.7040);
+                    map.MoveToRegion(MapSpan.FromCenterAndRadius(vinhKhanh, Distance.FromMeters(250)));
+                    System.Diagnostics.Debug.WriteLine(">>> Map centered to Vinh Khanh Street (no GPS fix yet)");
+                }
+            });
         }
 
         /// <summary>
         /// Handle pin click to show POI details
         /// </summary>
-        private async void OnPinMarkerClicked(object? sender, PinClickedEventArgs e)
+        private void OnPinMarkerClicked(object? sender, PinClickedEventArgs e)
         {
             e.HideInfoWindow = true;
-
             if (sender is Pin pin)
             {
-                await DisplayAlert(pin.Label, pin.Address, "OK");
+                MarkerTitleLabel.Text = pin.Label;
+                MarkerDescLabel.Text = pin.Address;
+
+                var poi = _viewModel.POIs.FirstOrDefault(p => p.Name == pin.Label);
+                if (poi != null)
+                {
+                    MarkerRatingLabel.Text = poi.Rating.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+                    MarkerReviewCountLabel.Text = $"({poi.ReviewCount}+)";
+                }
+
+                MarkerInfoCard.IsVisible = true;
             }
+        }
+
+        private void OnCloseMarkerInfoClicked(object sender, EventArgs e)
+        {
+            MarkerInfoCard.IsVisible = false;
         }
 
         /// <summary>

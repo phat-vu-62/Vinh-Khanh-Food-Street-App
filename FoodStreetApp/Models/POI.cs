@@ -28,6 +28,10 @@ namespace FoodStreetApp.Models
         [NotNull]
         public int Priority { get; set; } = 1;
 
+        public double Rating { get; set; } = 4.5;
+
+        public int ReviewCount { get; set; } = 99;
+
         [MaxLength(500)]
         public string Description { get; set; } = string.Empty;
 

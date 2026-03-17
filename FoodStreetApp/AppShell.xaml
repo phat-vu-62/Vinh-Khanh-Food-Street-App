@@ -18,11 +18,6 @@
             Route="MapPage" />
 
         <ShellContent
-            Title="POIs"
-            ContentTemplate="{DataTemplate views:POIListPage}"
-            Route="POIListPage" />
-
-        <ShellContent
             Title="Settings"
             ContentTemplate="{DataTemplate views:SettingsPage}"
             Route="SettingsPage" />

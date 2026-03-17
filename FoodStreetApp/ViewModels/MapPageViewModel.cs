@@ -243,15 +243,8 @@ namespace FoodStreetApp.ViewModels
                 }
                 else
                 {
-                    if (IsInsideZone)
-                    {
-                        StatusMessage = $"Leaving {_lastTargetPoiName} zone";
-                        IsInsideZone = false;
-                    }
-                    else
-                    {
-                        StatusMessage = $"Nearest POI: {poi.Name} — {distance:F0}m";
-                    }
+                    IsInsideZone = false;
+                    StatusMessage = $"Nearest POI: {poi.Name} — {distance:F0}m";
                 }
             }
             else

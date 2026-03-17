@@ -7,10 +7,6 @@
              Title="Home"
              Shell.NavBarIsVisible="False">
 
-    <ContentPage.BindingContext>
-        <viewmodels:HomeViewModel />
-    </ContentPage.BindingContext>
-
     <ScrollView>
         <VerticalStackLayout Spacing="0">
             <!-- Hero Header Section -->
@@ -30,7 +26,14 @@
                 </VerticalStackLayout>
             </Grid>
 
-            <VerticalStackLayout Padding="20" Spacing="25">
+            <Grid Padding="20,10,20,20">
+                <VerticalStackLayout Spacing="25">
+
+                    <!-- Search Bar -->
+                    <Border StrokeShape="RoundRectangle 12" StrokeThickness="1" Stroke="#E0E0E0" BackgroundColor="{AppThemeBinding Light=White, Dark=#1E1E1E}" Padding="10,0" ZIndex="1">
+                        <SearchBar Placeholder="Search restaurants..." Text="{Binding SearchText}" BackgroundColor="Transparent" />
+                    </Border>
+
                 <!-- Featured Section (Horizontal Scroll) -->
                 <VerticalStackLayout Spacing="10">
                     <Label Text="🔥 Featured on Vinh Khanh" 
@@ -110,39 +113,38 @@
                     </CollectionView>
                 </VerticalStackLayout>
 
-                <!-- Drinks & Snacks Section -->
-                <VerticalStackLayout Spacing="10">
-                    <Label Text="🥤 Drinks &amp; Snacks" 
+                <!-- Search & All Restaurants Section -->
+                <VerticalStackLayout Spacing="10" Margin="0, 15, 0, 10">
+                    <Label Text="🍽 All Restaurants" 
                            FontSize="20" 
                            FontAttributes="Bold" />
 
-                    <CollectionView ItemsSource="{Binding DrinksStalls}">
-                        <CollectionView.ItemsLayout>
-                            <GridItemsLayout Orientation="Vertical" Span="2" HorizontalItemSpacing="15" VerticalItemSpacing="15" />
-                        </CollectionView.ItemsLayout>
+                    <!-- All Restaurants List -->
+                    <CollectionView ItemsSource="{Binding AllRestaurants}" Margin="0,10,0,0">
                         <CollectionView.ItemTemplate>
                             <DataTemplate x:DataType="models:FoodPlace">
-                                <Border StrokeShape="RoundRectangle 16"
+                                <Border StrokeShape="RoundRectangle 12"
                                         StrokeThickness="0"
                                         Background="{AppThemeBinding Light=White, Dark=#1E1E1E}"
-                                        Margin="0,0,0,10">
+                                        Margin="0,0,0,15">
                                     <Border.Shadow>
-                                        <Shadow Brush="Black" Offset="0,2" Radius="6" Opacity="0.1" />
+                                        <Shadow Brush="Black" Offset="0,2" Radius="5" Opacity="0.1" />
                                     </Border.Shadow>
                                     <Border.GestureRecognizers>
                                         <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:HomeViewModel}}, Path=GoToDetailCommand}"
                                                               CommandParameter="{Binding .}" />
                                     </Border.GestureRecognizers>
-                                    <Grid RowDefinitions="120, Auto">
-                                        <Image Source="{Binding Image}" Aspect="AspectFill" Grid.Row="0" />
+                                    <Grid ColumnDefinitions="100, *" Padding="10" ColumnSpacing="15">
+                                        <!-- Image -->
+                                        <Border Grid.Column="0" StrokeShape="RoundRectangle 10" StrokeThickness="0" BackgroundColor="LightGray" HeightRequest="90">
+                                            <Image Source="{Binding Image}" Aspect="AspectFill" />
+                                        </Border>
 
-                                        <VerticalStackLayout Grid.Row="1" Padding="12" Spacing="4">
-                                            <Label Text="{Binding Name}" FontSize="14" FontAttributes="Bold" LineBreakMode="TailTruncation" />
+                                        <!-- Details -->
+                                        <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="4">
+                                            <Label Text="{Binding Name}" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
                                             <Label Text="{Binding Rating, StringFormat='⭐ {0}'}" FontSize="12" TextColor="#FF9800" FontAttributes="Bold" />
-                                            <HorizontalStackLayout Spacing="4">
-                                                <Label Text="📍" FontSize="10" VerticalOptions="Center" />
-                                                <Label Text="Vinh Khanh Str" FontSize="10" TextColor="Gray" VerticalOptions="Center" LineBreakMode="TailTruncation" />
-                                            </HorizontalStackLayout>
+                                            <Label Text="{Binding Description}" FontSize="12" TextColor="Gray" MaxLines="2" LineBreakMode="TailTruncation" />
                                         </VerticalStackLayout>
                                     </Grid>
                                 </Border>
@@ -150,8 +152,50 @@
                         </CollectionView.ItemTemplate>
                     </CollectionView>
                 </VerticalStackLayout>
+                </VerticalStackLayout>
 
-            </VerticalStackLayout>
+                <!-- Search Results Overlay -->
+                <Border StrokeShape="RoundRectangle 12" 
+                        StrokeThickness="1" 
+                        Stroke="#E0E0E0"
+                        Background="{AppThemeBinding Light=White, Dark=#1E1E1E}" 
+                        IsVisible="{Binding IsSearching}"
+                        Margin="0,55,0,0"
+                        Padding="0"
+                        VerticalOptions="Start"
+                        MaximumHeightRequest="300"
+                        ZIndex="10">
+                    <Border.Shadow>
+                        <Shadow Brush="Black" Offset="0,4" Radius="8" Opacity="0.2" />
+                    </Border.Shadow>
+                    <CollectionView ItemsSource="{Binding SearchResults}" SelectionMode="None">
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="models:FoodPlace">
+                                <StackLayout Padding="15,10">
+                                    <StackLayout.GestureRecognizers>
+                                        <TapGestureRecognizer Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:HomeViewModel}}, Path=GoToDetailCommand}"
+                                                              CommandParameter="{Binding .}" />
+                                    </StackLayout.GestureRecognizers>
+                                    <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
+                                        <Image HeightRequest="20" WidthRequest="20" VerticalOptions="Center">
+                                            <Image.Source>
+                                                <FontImageSource FontFamily="OpenSansRegular" Glyph="🔍" Size="18" Color="Gray"/>
+                                            </Image.Source>
+                                        </Image>
+                                        <VerticalStackLayout VerticalOptions="Center">
+                                            <Label Text="{Binding Name}" FontSize="15" FontAttributes="Bold" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
+                                            <Label Text="{Binding Description}" FontSize="12" TextColor="Gray" MaxLines="1" LineBreakMode="TailTruncation" />
+                                        </VerticalStackLayout>
+                                    </HorizontalStackLayout>
+                                </StackLayout>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                        <CollectionView.EmptyView>
+                            <Label Text="No restaurants found" Padding="15" TextColor="Gray" HorizontalOptions="Center" />
+                        </CollectionView.EmptyView>
+                    </CollectionView>
+                </Border>
+            </Grid>
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>
