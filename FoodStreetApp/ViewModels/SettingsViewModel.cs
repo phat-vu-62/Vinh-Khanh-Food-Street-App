@@ -23,14 +23,12 @@ namespace FoodStreetApp.ViewModels
         private const string KEY_ENABLE_AUDIO = "enable_audio";
         private const string KEY_BACKGROUND_TRACKING = "background_tracking";
         private const string KEY_APP_LANGUAGE = "app_language";
+        private const string KEY_APP_UI_LANGUAGE = "app_ui_language";
 
         private readonly INarrationService? _narrationService;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        public ICommand TestTtsCommand { get; }
-        public ICommand TestNarrationCommand { get; }
-        public ICommand TestGpsCommand { get; }
         public ObservableCollection<LanguageOption> AvailableLanguages { get; }
 
         private LanguageOption? _selectedLanguage;
@@ -39,12 +37,40 @@ namespace FoodStreetApp.ViewModels
             get => _selectedLanguage;
             set
             {
+                if (_selectedLanguage == value) return;
+
                 _selectedLanguage = value;
                 if (value != null)
                 {
                     Preferences.Set(KEY_APP_LANGUAGE, value.Code);
                     (_narrationService as NarrationService)?.SetLanguage(value.Code);
-                    System.Diagnostics.Debug.WriteLine($"Language changed to: {value.Name} ({value.Code})");
+                    System.Diagnostics.Debug.WriteLine($"Narration Language changed to: {value.Name} ({value.Code})");
+                }
+                OnPropertyChanged();
+            }
+        }
+
+        private LanguageOption? _selectedAppLanguage;
+        public LanguageOption? SelectedAppLanguage
+        {
+            get => _selectedAppLanguage;
+            set
+            {
+                if (_selectedAppLanguage == value) return;
+
+                // Only act if there's a real change avoiding initialization trigger
+                bool isInitialization = _selectedAppLanguage == null;
+                _selectedAppLanguage = value;
+                if (value != null)
+                {
+                    Preferences.Set(KEY_APP_UI_LANGUAGE, value.Code);
+                    System.Diagnostics.Debug.WriteLine($"App UI Language changed to: {value.Name} ({value.Code})");
+
+                    if (!isInitialization)
+                    {
+                        var culture = new System.Globalization.CultureInfo(value.Code);
+                        LocalizationResourceManager.Instance.SetCulture(culture);
+                    }
                 }
                 OnPropertyChanged();
             }
@@ -56,6 +82,7 @@ namespace FoodStreetApp.ViewModels
             get => _updateFrequency;
             set
             {
+                if (_updateFrequency == value) return;
                 _updateFrequency = value;
                 Preferences.Set(KEY_UPDATE_FREQUENCY, value);
                 OnPropertyChanged();
@@ -69,6 +96,7 @@ namespace FoodStreetApp.ViewModels
             get => _defaultRadius;
             set
             {
+                if (_defaultRadius == value) return;
                 _defaultRadius = value;
                 Preferences.Set(KEY_DEFAULT_RADIUS, value);
                 OnPropertyChanged();
@@ -82,6 +110,7 @@ namespace FoodStreetApp.ViewModels
             get => _cooldownMinutes;
             set
             {
+                if (_cooldownMinutes == value) return;
                 _cooldownMinutes = value;
                 Preferences.Set(KEY_COOLDOWN_MINUTES, value);
                 OnPropertyChanged();
@@ -95,6 +124,7 @@ namespace FoodStreetApp.ViewModels
             get => _preferTts;
             set
             {
+                if (_preferTts == value) return;
                 _preferTts = value;
                 Preferences.Set(KEY_PREFER_TTS, value);
                 OnPropertyChanged();
@@ -108,6 +138,7 @@ namespace FoodStreetApp.ViewModels
             get => _enableAudio;
             set
             {
+                if (_enableAudio == value) return;
                 _enableAudio = value;
                 Preferences.Set(KEY_ENABLE_AUDIO, value);
                 OnPropertyChanged();
@@ -121,11 +152,12 @@ namespace FoodStreetApp.ViewModels
             get => _enableBackgroundTracking;
             set
             {
+                if (_enableBackgroundTracking == value) return;
                 _enableBackgroundTracking = value;
                 Preferences.Set(KEY_BACKGROUND_TRACKING, value);
                 OnPropertyChanged();
                 System.Diagnostics.Debug.WriteLine($"Settings: Background tracking = {value}");
-                
+
                 if (value)
                 {
                     StartBackgroundService();
@@ -140,9 +172,6 @@ namespace FoodStreetApp.ViewModels
         public SettingsViewModel(INarrationService narrationService)
         {
             _narrationService = narrationService;
-            TestTtsCommand = new Command(async () => await TestTts());
-            TestNarrationCommand = new Command(async () => await TestNarration());
-            TestGpsCommand = new Command(async () => await TestGps());
 
             // Initialize language options
             AvailableLanguages = new ObservableCollection<LanguageOption>
@@ -157,104 +186,6 @@ namespace FoodStreetApp.ViewModels
             LoadSettings();
         }
 
-        private async Task TestGps()
-        {
-            try
-            {
-                System.Diagnostics.Debug.WriteLine("\n>>> ===== GPS TEST STARTED =====");
-                System.Diagnostics.Debug.WriteLine(">>> Requesting current location...");
-
-                var request = new GeolocationRequest(GeolocationAccuracy.Best, TimeSpan.FromSeconds(10));
-                var location = await Geolocation.Default.GetLocationAsync(request);
-
-                if (location != null)
-                {
-                    System.Diagnostics.Debug.WriteLine($">>> ✅ GPS TEST SUCCESS!");
-                    System.Diagnostics.Debug.WriteLine($">>> Latitude: {location.Latitude:F6}");
-                    System.Diagnostics.Debug.WriteLine($">>> Longitude: {location.Longitude:F6}");
-                    System.Diagnostics.Debug.WriteLine($">>> Accuracy: {location.Accuracy}m");
-                    System.Diagnostics.Debug.WriteLine($">>> Altitude: {location.Altitude}m");
-                    System.Diagnostics.Debug.WriteLine($">>> Timestamp: {location.Timestamp}");
-
-#if ANDROID
-                    if (location.IsFromMockProvider)
-                    {
-                        System.Diagnostics.Debug.WriteLine($">>> 📍 Location source: MOCK (from emulator/mock app)");
-                    }
-                    else
-                    {
-                        System.Diagnostics.Debug.WriteLine($">>> 📍 Location source: REAL GPS");
-                    }
-#endif
-
-                    await Application.Current!.MainPage!.DisplayAlert(
-                        "GPS Test Success",
-                        $"Lat: {location.Latitude:F6}\nLon: {location.Longitude:F6}\nAccuracy: {location.Accuracy:F0}m",
-                        "OK");
-                }
-                else
-                {
-                    System.Diagnostics.Debug.WriteLine($">>> ❌ GPS TEST FAILED: Location is null");
-                    await Application.Current!.MainPage!.DisplayAlert(
-                        "GPS Test Failed",
-                        "Unable to get location. Check permissions and GPS settings.",
-                        "OK");
-                }
-
-                System.Diagnostics.Debug.WriteLine(">>> ===== GPS TEST ENDED =====\n");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($">>> ❌ GPS test exception: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($">>> Stack trace: {ex.StackTrace}");
-
-                await Application.Current!.MainPage!.DisplayAlert(
-                    "GPS Test Error",
-                    $"Error: {ex.Message}",
-                    "OK");
-            }
-        }
-
-        private async Task TestTts()
-        {
-            try
-            {
-                System.Diagnostics.Debug.WriteLine(">>> Testing TTS directly...");
-                await TextToSpeech.Default.SpeakAsync("Xin chào, đây là test thuyết minh bằng Text to Speech");
-                System.Diagnostics.Debug.WriteLine(">>> TTS test completed");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($">>> TTS test failed: {ex.Message}");
-            }
-        }
-
-        private async Task TestNarration()
-        {
-            if (_narrationService == null)
-            {
-                System.Diagnostics.Debug.WriteLine(">>> Narration service is null!");
-                return;
-            }
-
-            try
-            {
-                System.Diagnostics.Debug.WriteLine(">>> Testing Narration Service...");
-                var testPoi = new POI
-                {
-                    Name = "Test POI",
-                    TtsText = "Chào mừng bạn đến với quán ăn test. Đây là thử nghiệm hệ thống thuyết minh tự động.",
-                    UseTts = true
-                };
-                await _narrationService.PlayNarrationAsync(testPoi);
-                System.Diagnostics.Debug.WriteLine(">>> Narration test completed");
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($">>> Narration test failed: {ex.Message}");
-            }
-        }
-
         private void LoadSettings()
         {
             _updateFrequency = Preferences.Get(KEY_UPDATE_FREQUENCY, 5);
@@ -267,6 +198,10 @@ namespace FoodStreetApp.ViewModels
             // Load language preference
             var languageCode = Preferences.Get(KEY_APP_LANGUAGE, "vi");
             _selectedLanguage = AvailableLanguages.FirstOrDefault(l => l.Code == languageCode) 
+                               ?? AvailableLanguages.First();
+
+            var appUiLanguageCode = Preferences.Get(KEY_APP_UI_LANGUAGE, "vi");
+            _selectedAppLanguage = AvailableLanguages.FirstOrDefault(l => l.Code == appUiLanguageCode) 
                                ?? AvailableLanguages.First();
         }
 

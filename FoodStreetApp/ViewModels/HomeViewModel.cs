@@ -60,7 +60,7 @@ namespace FoodStreetApp.ViewModels
                     Name = "Ốc Phát",
                     Image = "ocphat.jpg",
                     Rating = 4.8,
-                    Description = "Quán ốc bình dân, đa dạng các loại ốc tươi ngon, nêm nếm đậm đà.",
+                    OriginalDescription = "Quán ốc bình dân, đa dạng các loại ốc tươi ngon, nêm nếm đậm đà.",
                     Latitude = 10.7621,
                     Longitude = 106.7032
                 },
@@ -69,7 +69,7 @@ namespace FoodStreetApp.ViewModels
                     Name = "Ốc Hồng Nhung",
                     Image = "ochongnhung.jpg",
                     Rating = 4.5,
-                    Description = "Nổi tiếng với các món ốc xào me, nướng mỡ hành thơm lừng.",
+                    OriginalDescription = "Nổi tiếng với các món ốc xào me, nướng mỡ hành thơm lừng.",
                     Latitude = 10.7615,
                     Longitude = 106.7038
                 },
@@ -78,7 +78,7 @@ namespace FoodStreetApp.ViewModels
                     Name = "BONA Food and Beer",
                     Image = "bona.jpg",
                     Rating = 4.9,
-                    Description = "Kết hợp giữa đồ ăn ngon và bia tươi, cực kỳ sôi động về đêm.",
+                    OriginalDescription = "Kết hợp giữa đồ ăn ngon và bia tươi, cực kỳ sôi động về đêm.",
                     Latitude = 10.7598,
                     Longitude = 106.7055
                 }
@@ -91,7 +91,7 @@ namespace FoodStreetApp.ViewModels
                     Name = "Ốc Nhi 20k",
                     Image = "ocnhi20k.jpg",
                     Rating = 4.6,
-                    Description = "Đồng giá 20k, phù hợp học sinh sinh viên, ngon và rẻ.",
+                    OriginalDescription = "Đồng giá 20k, phù hợp học sinh sinh viên, ngon và rẻ.",
                     Latitude = 10.7610,
                     Longitude = 106.7042
                 },
@@ -100,7 +100,7 @@ namespace FoodStreetApp.ViewModels
                     Name = "Ốc Ty",
                     Image = "octy.jpg",
                     Rating = 4.7,
-                    Description = "Ốc tươi sống, phục vụ nhanh, không gian thoáng mát.",
+                    OriginalDescription = "Ốc tươi sống, phục vụ nhanh, không gian thoáng mát.",
                     Latitude = 10.7605,
                     Longitude = 106.7050
                 },
@@ -109,11 +109,14 @@ namespace FoodStreetApp.ViewModels
                     Name = "Lãng Quán",
                     Image = "langquan.jpg",
                     Rating = 4.4,
-                    Description = "Hải sản tươi sống, không gian gia đình ấm cúng.",
+                    OriginalDescription = "Hải sản tươi sống, không gian gia đình ấm cúng.",
                     Latitude = 10.7592,
                     Longitude = 106.7061
                 }
             };
+
+            RefreshTranslations();
+            LocalizationResourceManager.Instance.PropertyChanged += (s, e) => RefreshTranslations();
 
             GoToDetailCommand = new Command<FoodPlace>(async (place) =>
             {
@@ -162,7 +165,7 @@ namespace FoodStreetApp.ViewModels
                         Name = poi.Name,
                         Image = imageName,
                         Rating = poi.Rating, // DB Rating
-                        Description = poi.Description,
+                        OriginalDescription = poi.Description ?? string.Empty,
                         Latitude = poi.Latitude,
                         Longitude = poi.Longitude,
                         PoiData = poi
@@ -196,7 +199,9 @@ namespace FoodStreetApp.ViewModels
                 {
                     AllRestaurants.Add(item);
                 }
+
                 FilterRestaurants();
+                RefreshTranslations();
             }
             catch (Exception ex)
             {
@@ -221,6 +226,30 @@ namespace FoodStreetApp.ViewModels
             foreach (var item in filtered)
             {
                 SearchResults.Add(item);
+            }
+        }
+
+        private void RefreshTranslations()
+        {
+            foreach (var place in FeaturedStalls)
+            {
+                place.Description = LocalizationResourceManager.Instance[place.OriginalDescription];
+            }
+            foreach (var place in PopularSeafoodStalls)
+            {
+                place.Description = LocalizationResourceManager.Instance[place.OriginalDescription];
+            }
+            foreach (var place in AllRestaurants)
+            {
+                place.Description = LocalizationResourceManager.Instance[place.OriginalDescription];
+            }
+            foreach (var place in SearchResults)
+            {
+                place.Description = LocalizationResourceManager.Instance[place.OriginalDescription];
+            }
+            foreach (var place in _allRestaurantsFullList)
+            {
+                place.Description = LocalizationResourceManager.Instance[place.OriginalDescription];
             }
         }
 

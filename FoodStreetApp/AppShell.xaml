@@ -4,21 +4,22 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:views="clr-namespace:FoodStreetApp.Views"
+    xmlns:loc="clr-namespace:FoodStreetApp.Services"
     Title="Food Street Guide">
 
     <TabBar>
         <ShellContent
-            Title="Home"
+            Title="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[Home]}"
             ContentTemplate="{DataTemplate views:HomePage}"
             Route="HomePage" />
 
         <ShellContent
-            Title="Map"
+            Title="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[Map]}"
             ContentTemplate="{DataTemplate views:MapPage}"
             Route="MapPage" />
 
         <ShellContent
-            Title="Settings"
+            Title="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[Settings]}"
             ContentTemplate="{DataTemplate views:SettingsPage}"
             Route="SettingsPage" />
     </TabBar>

@@ -21,7 +21,7 @@ namespace FoodStreetApp.ViewModels
             set
             {
                 _place = value;
-                PlayStatus = "Play";
+                PlayStatus = LocalizationResourceManager.Instance["Play"];
                 OnPropertyChanged();
             }
         }
@@ -46,9 +46,9 @@ namespace FoodStreetApp.ViewModels
             {
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
-                    if (PlayStatus == "Stop")
+                    if (PlayStatus == LocalizationResourceManager.Instance["Stop"])
                     {
-                        PlayStatus = "Replay";
+                        PlayStatus = LocalizationResourceManager.Instance["Replay"];
                     }
                 });
             };
@@ -69,25 +69,38 @@ namespace FoodStreetApp.ViewModels
             {
                 if (Place == null) return;
 
-                var poi = Place.PoiData ?? new POI 
-                { 
-                    Name = Place.Name, 
-                    Description = Place.Description, 
-                    UseTts = true, 
-                    TtsText = Place.Description
-                };
+                var playText = LocalizationResourceManager.Instance["Play"];
+                var stopText = LocalizationResourceManager.Instance["Stop"];
+                var replayText = LocalizationResourceManager.Instance["Replay"];
 
-                if (PlayStatus == "Play" || PlayStatus == "Replay")
+                if (PlayStatus == playText || PlayStatus == replayText)
                 {
-                    PlayStatus = "Stop";
+                    PlayStatus = stopText;
+
+                    var poi = Place.PoiData ?? new POI 
+                    { 
+                        Name = Place.Name, 
+                        Description = Place.Description, 
+                        UseTts = true, 
+                        TtsText = Place.Description 
+                    };
+
                     _ = _narrationService.PlayNarrationAsync(poi, isManual: true);
                 }
-                else if (PlayStatus == "Stop")
+                else if (PlayStatus == stopText)
                 {
                     _ = _narrationService.StopNarrationAsync();
-                    PlayStatus = "Play";
+                    PlayStatus = playText;
                 }
             });
+
+            // Update translation if language changes while on this page
+            LocalizationResourceManager.Instance.PropertyChanged += (s, e) =>
+            {
+                if (PlayStatus == "Play" || PlayStatus == "Phát" || PlayStatus == "재생" || PlayStatus == "再生" || PlayStatus == "播放") PlayStatus = LocalizationResourceManager.Instance["Play"];
+                if (PlayStatus == "Stop" || PlayStatus == "Dừng" || PlayStatus == "정지" || PlayStatus == "停止" || PlayStatus == "停止") PlayStatus = LocalizationResourceManager.Instance["Stop"];
+                if (PlayStatus == "Replay" || PlayStatus == "Phát lại" || PlayStatus == "다시 재생" || PlayStatus == "リプレイ" || PlayStatus == "重播") PlayStatus = LocalizationResourceManager.Instance["Replay"];
+            };
         }
 
         protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)

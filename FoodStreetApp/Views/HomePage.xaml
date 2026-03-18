@@ -3,8 +3,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:models="clr-namespace:FoodStreetApp.Models"
              xmlns:viewmodels="clr-namespace:FoodStreetApp.ViewModels"
+             xmlns:loc="clr-namespace:FoodStreetApp.Services"
              x:Class="FoodStreetApp.Views.HomePage"
-             Title="Home"
+             Title="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[Home]}"
              Shell.NavBarIsVisible="False">
 
     <ScrollView>
@@ -20,11 +21,11 @@
                          HeightRequest="100" />
 
                 <VerticalStackLayout VerticalOptions="End" Padding="20">
-                    <Label Text="Discover Vinh Khanh Food Street" 
+                    <Label Text="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[Discover Vinh Khanh Food Street]}" 
                            TextColor="White" 
                            FontSize="24" 
                            FontAttributes="Bold" />
-                    <Label Text="Famous seafood street in District 4" 
+                    <Label Text="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[Famous seafood street in District 4]}" 
                            TextColor="White" 
                            FontSize="16" />
                 </VerticalStackLayout>
@@ -35,12 +36,12 @@
 
                     <!-- Search Bar -->
                     <Border StrokeShape="RoundRectangle 12" StrokeThickness="1" Stroke="#E0E0E0" BackgroundColor="{AppThemeBinding Light=White, Dark=#1E1E1E}" Padding="10,0" ZIndex="1">
-                        <SearchBar Placeholder="Search restaurants..." Text="{Binding SearchText}" BackgroundColor="Transparent" />
+                        <SearchBar Placeholder="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[Search restaurants...]}" Text="{Binding SearchText}" BackgroundColor="Transparent" />
                     </Border>
 
                 <!-- Featured Section (Horizontal Scroll) -->
                 <VerticalStackLayout Spacing="10">
-                    <Label Text="🔥 Featured on Vinh Khanh" 
+                    <Label Text="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[🔥 Featured on Vinh Khanh]}" 
                            FontSize="20" 
                            FontAttributes="Bold" />
 
@@ -78,7 +79,7 @@
 
                 <!-- Popular Spots Section (2 Column Grid) -->
                 <VerticalStackLayout Spacing="10">
-                    <Label Text="⭐ Popular Seafood" 
+                    <Label Text="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[⭐ Popular Seafood]}" 
                            FontSize="20" 
                            FontAttributes="Bold" />
 
@@ -107,7 +108,7 @@
                                             <Label Text="{Binding Rating, StringFormat='⭐ {0:F1}'}" FontSize="12" TextColor="#FF9800" FontAttributes="Bold" />
                                             <HorizontalStackLayout Spacing="4">
                                                 <Label Text="📍" FontSize="10" VerticalOptions="Center" />
-                                                <Label Text="Vinh Khanh Street" FontSize="10" TextColor="Gray" VerticalOptions="Center" LineBreakMode="TailTruncation" />
+                                                <Label Text="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[Vinh Khanh Street]}" FontSize="10" TextColor="Gray" VerticalOptions="Center" LineBreakMode="TailTruncation" />
                                             </HorizontalStackLayout>
                                         </VerticalStackLayout>
                                     </Grid>
@@ -119,7 +120,7 @@
 
                 <!-- Search & All Restaurants Section -->
                 <VerticalStackLayout Spacing="10" Margin="0, 15, 0, 10">
-                    <Label Text="🍽 All Restaurants" 
+                    <Label Text="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[🍽 All Restaurants]}" 
                            FontSize="20" 
                            FontAttributes="Bold" />
 
@@ -195,7 +196,7 @@
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
                         <CollectionView.EmptyView>
-                            <Label Text="No restaurants found" Padding="15" TextColor="Gray" HorizontalOptions="Center" />
+                            <Label Text="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[No restaurants found]}" Padding="15" TextColor="Gray" HorizontalOptions="Center" />
                         </CollectionView.EmptyView>
                     </CollectionView>
                 </Border>

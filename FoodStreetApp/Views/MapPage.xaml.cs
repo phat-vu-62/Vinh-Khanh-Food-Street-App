@@ -95,7 +95,7 @@ namespace FoodStreetApp.Views
                 var pin = new Pin
                 {
                     Label = poi.Name,
-                    Address = poi.Description,
+                    Address = FoodStreetApp.Services.LocalizationResourceManager.Instance[poi.Description],
                     Type = PinType.Place,
                     Location = new Location(poi.Latitude, poi.Longitude)
                 };
@@ -149,7 +149,7 @@ namespace FoodStreetApp.Views
 
                     if (_poiPins.TryGetValue(poi.Id, out var existingPin))
                     {
-                        existingPin.Address = poi.Description;
+                        existingPin.Address = FoodStreetApp.Services.LocalizationResourceManager.Instance[poi.Description];
 
                         bool pinExistsOnMap = map.Pins.Contains(existingPin);
                         if (isInside && !pinExistsOnMap)
@@ -205,7 +205,7 @@ namespace FoodStreetApp.Views
                 var pin = new Pin
                 {
                     Label = poi.Name,
-                    Address = poi.Description,
+                    Address = FoodStreetApp.Services.LocalizationResourceManager.Instance[poi.Description],
                     Type = PinType.Place,
                     Location = new Location(poi.Latitude, poi.Longitude)
                 };
@@ -273,7 +273,7 @@ namespace FoodStreetApp.Views
                             if (poi != null)
                             {
                                 MarkerTitleLabel.Text = poi.Name;
-                                MarkerDescLabel.Text = poi.Description;
+                                MarkerDescLabel.Text = FoodStreetApp.Services.LocalizationResourceManager.Instance[poi.Description];
                                 MarkerRatingLabel.Text = poi.Rating.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
                                 MarkerReviewCountLabel.Text = $"({poi.ReviewCount}+)";
                                 MarkerInfoCard.IsVisible = true;
@@ -281,7 +281,7 @@ namespace FoodStreetApp.Views
                                 _targetPin = new Pin
                                 {
                                     Label = poi.Name,
-                                    Address = poi.Description,
+                                    Address = FoodStreetApp.Services.LocalizationResourceManager.Instance[poi.Description],
                                     Type = PinType.Place,
                                     Location = new Location(poi.Latitude, poi.Longitude)
                                 };
@@ -373,7 +373,7 @@ namespace FoodStreetApp.Views
         {
             _shownPoiIds.Clear(); // Force full map redraw on next GPS tick
             _viewModel.ResetAllGeofences();
-            DisplayAlert("Reset", "All POI cooldowns have been reset", "OK");
+            DisplayAlert(FoodStreetApp.Services.LocalizationResourceManager.Instance["Reset"], FoodStreetApp.Services.LocalizationResourceManager.Instance["All POI cooldowns have been reset"], FoodStreetApp.Services.LocalizationResourceManager.Instance["OK"]);
         }
     }
 }

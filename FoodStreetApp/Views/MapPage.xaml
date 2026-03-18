@@ -3,6 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:maps="clr-namespace:Microsoft.Maui.Controls.Maps;assembly=Microsoft.Maui.Controls.Maps"
              xmlns:sensors="clr-namespace:Microsoft.Maui.Controls.Maps;assembly=Microsoft.Maui.Controls.Maps"
+             xmlns:loc="clr-namespace:FoodStreetApp.Services"
              x:Class="FoodStreetApp.Views.MapPage"
              Shell.NavBarIsVisible="False">
 
@@ -70,7 +71,7 @@
         </Frame>
 
         <Button Grid.Row="0"
-                Text="Reset"
+                Text="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[Reset]}"
                 Clicked="OnResetClicked"
                 BackgroundColor="{StaticResource Primary}"
                 TextColor="White"

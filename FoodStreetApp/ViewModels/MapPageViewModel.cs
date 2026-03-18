@@ -226,6 +226,7 @@ namespace FoodStreetApp.ViewModels
         private void UpdateLocationDisplay(Location location)
         {
             const double POI_TRIGGER_RADIUS = 18.0;
+            var loc = LocalizationResourceManager.Instance;
 
             CurrentLocationText = $"GPS: {location.Latitude:F6}, {location.Longitude:F6}";
 
@@ -239,19 +240,19 @@ namespace FoodStreetApp.ViewModels
                 {
                     IsInsideZone = true;
                     _lastTargetPoiName = poi.Name;
-                    StatusMessage = $"Inside {poi.Name} zone";
+                    StatusMessage = string.Format(loc["Inside {0} zone"], poi.Name);
                 }
                 else
                 {
                     IsInsideZone = false;
-                    StatusMessage = $"Nearest POI: {poi.Name} — {distance:F0}m";
+                    StatusMessage = string.Format(loc["Nearest POI: {0} — {1}m"], poi.Name, distance.ToString("F0"));
                 }
             }
             else
             {
                 IsInsideZone = false;
-                NearestPoiText = "No POIs nearby";
-                StatusMessage = "Exploring Vinh Khanh Street";
+                NearestPoiText = loc["No POIs nearby"];
+                StatusMessage = loc["Exploring Vinh Khanh Street"];
             }
         }
 
