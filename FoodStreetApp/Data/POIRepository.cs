@@ -17,8 +17,18 @@ namespace FoodStreetApp.Data
         {
             if (_database == null)
             {
+                //_database = new SQLiteAsyncConnection(_dbPath);
+                //await _database.CreateTableAsync<POI>();
+                // 🧨 XÓA DB MỖI LẦN APP CHẠY (DEV ONLY)
+                if (File.Exists(_dbPath))
+                {
+                    File.Delete(_dbPath);
+                }
+
                 _database = new SQLiteAsyncConnection(_dbPath);
                 await _database.CreateTableAsync<POI>();
+
+                await SeedDataAsync(); // seed lại data mới
             }
             return _database;
         }
