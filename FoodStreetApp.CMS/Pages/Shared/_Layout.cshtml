@@ -1,0 +1,75 @@
+@{
+    var currentPage = ViewContext.ActionDescriptor?.RouteValues["page"] ?? string.Empty;
+
+    string NavClass(string target)
+    {
+        var isActive = currentPage.Contains(target, StringComparison.OrdinalIgnoreCase);
+        return isActive ? "nav-link active" : "nav-link";
+    }
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - FoodStreet CMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet" />
+    <link href="~/css/admin.css" rel="stylesheet" />
+</head>
+<body>
+    <div class="admin-shell">
+        <aside class="sidebar">
+            <div class="sidebar-brand"><i class="bi bi-shop-window me-2"></i>FoodStreet CMS</div>
+            <nav class="nav flex-column">
+                <a class="@NavClass("/Index")" asp-page="/Index"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a>
+                <a class="@NavClass("/Admin/POI")" asp-page="/Admin/POI"><i class="bi bi-geo-alt me-2"></i>POI Management</a>
+                <a class="@NavClass("/Admin/Audio")" asp-page="/Admin/Audio"><i class="bi bi-mic me-2"></i>Audio Management</a>
+                <a class="@NavClass("/Admin/Tours")" asp-page="/Admin/Tours"><i class="bi bi-map me-2"></i>Tour Management</a>
+                <a class="@NavClass("/Admin/Translations")" asp-page="/Admin/Translations"><i class="bi bi-translate me-2"></i>Translation Management</a>
+            </nav>
+        </aside>
+
+        <main class="content">
+            <header class="topbar d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h5 mb-0 fw-semibold">@ViewData["Title"]</h1>
+                    <small class="text-secondary">FoodStreet administration console</small>
+                </div>
+                <div class="text-secondary small"><i class="bi bi-person-circle me-1"></i>Admin User</div>
+            </header>
+
+            <section class="container-fluid px-0 py-4">
+                @RenderBody()
+            </section>
+        </main>
+    </div>
+
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Delete</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    This action cannot be undone. Do you want to continue?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="pageLoadingOverlay" class="page-loading-overlay d-none">
+        <div class="spinner-border text-light" role="status"></div>
+        <div class="text-light mt-2">Loading...</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/admin.js"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,30 @@
+using FoodStreetApp.Shared.Entities;
+
+namespace FoodStreetApp.CMS.Interfaces;
+
+public interface IAdminDataService
+{
+    IReadOnlyCollection<POI> GetPois();
+    POI? GetPoiById(int id);
+    POI AddPoi(POI poi);
+    bool UpdatePoi(POI poi);
+    bool DeletePoi(int id);
+
+    IReadOnlyCollection<Audio> GetAudios();
+    Audio? GetAudioById(int id);
+    Audio AddAudio(Audio audio);
+    bool UpdateAudio(Audio audio);
+    bool DeleteAudio(int id);
+
+    IReadOnlyCollection<Tour> GetTours();
+    Tour? GetTourById(int id);
+    Tour AddTour(Tour tour);
+    bool UpdateTour(Tour tour);
+    bool DeleteTour(int id);
+
+    IReadOnlyCollection<Translation> GetTranslations();
+    Translation? GetTranslationById(int id);
+    Translation AddTranslation(Translation translation);
+    bool UpdateTranslation(Translation translation);
+    bool DeleteTranslation(int id);
+}

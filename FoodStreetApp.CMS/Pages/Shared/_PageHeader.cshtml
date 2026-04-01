@@ -1,0 +1,16 @@
+@model FoodStreetApp.CMS.Models.PageHeaderModel
+
+<div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2 mb-3">
+    <div>
+        <h2 class="h4 mb-1">@Model.Title</h2>
+        @if (!string.IsNullOrWhiteSpace(Model.Subtitle))
+        {
+            <div class="text-secondary">@Model.Subtitle</div>
+        }
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.ActionText) && !string.IsNullOrWhiteSpace(Model.ActionLink))
+    {
+        <a class="btn btn-primary" href="@Model.ActionLink">@Model.ActionText</a>
+    }
+</div>
