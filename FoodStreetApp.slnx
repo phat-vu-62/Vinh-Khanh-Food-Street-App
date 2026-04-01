@@ -1,3 +1,6 @@
 <Solution>
-  <Project Path="FoodStreetApp/FoodStreetApp.csproj" />
+  <Project Path='FoodStreetApp/FoodStreetApp.csproj' />
+  <Project Path='FoodStreetApp.Api/FoodStreetApp.Api.csproj' />
+  <Project Path='FoodStreetApp.CMS/FoodStreetApp.CMS.csproj' />
+  <Project Path='FoodStreetApp.Shared/FoodStreetApp.Shared.csproj' />
 </Solution>

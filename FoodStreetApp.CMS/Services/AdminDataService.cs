@@ -67,7 +67,7 @@ public class AdminDataService : IAdminDataService
             EntityId = poi1.Id,
             FieldName = "Description",
             Value = "Fresh snails at the start of Vinh Khanh Street",
-            Language = Shared.Enums.Language.En
+            Language = FoodStreetApp.Shared.Enums.Language.En
         });
     }
 
