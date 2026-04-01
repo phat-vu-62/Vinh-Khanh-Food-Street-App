@@ -30,6 +30,13 @@ if (app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
+app.MapGet("/", () => Results.Ok(new
+{
+    service = "FoodStreetApp.Api",
+    status = "running",
+    endpoints = new[] { "/api/POI", "/api/Tour", "/api/Audio" }
+}));
+
 app.MapControllers();
 
 app.Run();
