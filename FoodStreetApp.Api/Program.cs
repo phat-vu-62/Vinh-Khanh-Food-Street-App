@@ -25,7 +25,7 @@ builder.Services.AddSingleton<IGeofenceService, GeofenceService>();
 builder.Services.AddSingleton<INarrationEngine, NarrationEngine>();
 
 var app = builder.Build();
-
+app.MapGet("/", () => "FoodStreetApp API is running 🚀");
 if (app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
