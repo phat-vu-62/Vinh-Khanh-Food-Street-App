@@ -1,0 +1,52 @@
+@page "/"
+@inject IAdminDataService AdminData
+
+<h1>FoodStreet CMS (Blazor)</h1>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card"><div class="card-body"><strong>POI:</strong> @Pois.Count</div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card"><div class="card-body"><strong>Audio:</strong> @Audios.Count</div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card"><div class="card-body"><strong>Tours:</strong> @Tours.Count</div></div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card"><div class="card-body"><strong>Translations:</strong> @Translations.Count</div></div>
+    </div>
+</div>
+
+<h4>POI</h4>
+<table class="table table-sm table-striped">
+    <thead>
+        <tr><th>Id</th><th>Name</th><th>Description</th><th>Active</th></tr>
+    </thead>
+    <tbody>
+        @foreach (var poi in Pois)
+        {
+            <tr>
+                <td>@poi.Id</td>
+                <td>@poi.Name</td>
+                <td>@poi.Description</td>
+                <td>@poi.IsActive</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private IReadOnlyCollection<POI> Pois = [];
+    private IReadOnlyCollection<Audio> Audios = [];
+    private IReadOnlyCollection<Tour> Tours = [];
+    private IReadOnlyCollection<Translation> Translations = [];
+
+    protected override void OnInitialized()
+    {
+        Pois = AdminData.GetPois();
+        Audios = AdminData.GetAudios();
+        Tours = AdminData.GetTours();
+        Translations = AdminData.GetTranslations();
+    }
+}

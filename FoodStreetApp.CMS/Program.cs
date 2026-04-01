@@ -10,6 +10,7 @@ if (!string.IsNullOrWhiteSpace(port))
 }
 
 builder.Services.AddRazorPages();
+builder.Services.AddServerSideBlazor();
 builder.Services.AddSingleton<IAdminDataService, AdminDataService>();
 
 var app = builder.Build();
@@ -17,7 +18,6 @@ var app = builder.Build();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    app.UseHsts();
 }
 
 if (app.Environment.IsDevelopment())
@@ -27,6 +27,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 app.UseRouting();
-app.MapRazorPages();
+
+app.MapBlazorHub();
+app.MapFallbackToPage("/_Host");
 
 app.Run();
