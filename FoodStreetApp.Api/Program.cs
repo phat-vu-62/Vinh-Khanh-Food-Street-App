@@ -21,6 +21,8 @@ builder.Services.AddScoped<IPOIService, POIService>();
 builder.Services.AddScoped<ITourService, TourService>();
 builder.Services.AddScoped<IAudioService, AudioService>();
 
+builder.Services.AddHttpClient<IGeminiTranslationService, GeminiTranslationService>();
+
 builder.Services.AddSingleton<IGeofenceService, GeofenceService>();
 builder.Services.AddSingleton<INarrationEngine, NarrationEngine>();
 
