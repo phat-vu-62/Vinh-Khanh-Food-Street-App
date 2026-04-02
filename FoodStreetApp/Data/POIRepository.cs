@@ -1,5 +1,6 @@
 using SQLite;
 using FoodStreetApp.Models;
+using System.Net.Http.Json;
 
 namespace FoodStreetApp.Data
 {
@@ -17,18 +18,8 @@ namespace FoodStreetApp.Data
         {
             if (_database == null)
             {
-                //_database = new SQLiteAsyncConnection(_dbPath);
-                //await _database.CreateTableAsync<POI>();
-                // 🧨 XÓA DB MỖI LẦN APP CHẠY (DEV ONLY)
-                if (File.Exists(_dbPath))
-                {
-                    File.Delete(_dbPath);
-                }
-
                 _database = new SQLiteAsyncConnection(_dbPath);
                 await _database.CreateTableAsync<POI>();
-
-                await SeedDataAsync(); // seed lại data mới
             }
             return _database;
         }
@@ -107,6 +98,53 @@ namespace FoodStreetApp.Data
         {
             var db = await GetDatabaseAsync();
             return await db.DeleteAsync<POI>(id);
+        }
+
+        public async Task<int> SyncFromWebAsync(string? syncUrl = null)
+        {
+            const string defaultUrl = "https://vinh-khanh-food-street-app.onrender.com/api/sync/pois";
+            var targetUrl = string.IsNullOrWhiteSpace(syncUrl) ? defaultUrl : syncUrl;
+
+            using var httpClient = new HttpClient
+            {
+                Timeout = TimeSpan.FromSeconds(20)
+            };
+
+            var remotePois = await httpClient.GetFromJsonAsync<List<RemotePoiDto>>(targetUrl);
+            if (remotePois is null || remotePois.Count == 0)
+            {
+                return 0;
+            }
+
+            var db = await GetDatabaseAsync();
+            await db.DeleteAllAsync<POI>();
+
+            var localPois = remotePois.Select(p => new POI
+            {
+                Id = p.Id,
+                Name = p.Name ?? string.Empty,
+                Latitude = p.Latitude,
+                Longitude = p.Longitude,
+                Radius = p.Radius <= 0 ? 15 : p.Radius,
+                ApproachRadius = p.ApproachRadius <= 0 ? 200 : p.ApproachRadius,
+                Priority = p.Priority <= 0 ? p.Id : p.Priority,
+                Rating = p.Rating <= 0 ? 4.5 : p.Rating,
+                ReviewCount = p.ReviewCount < 0 ? 0 : p.ReviewCount,
+                Description = p.Description ?? string.Empty,
+                AudioFile = p.AudioFile ?? string.Empty,
+                TtsText = p.TtsText ?? p.Description ?? p.Name ?? string.Empty,
+                TtsTextEn = p.TtsTextEn ?? string.Empty,
+                TtsTextKo = p.TtsTextKo ?? string.Empty,
+                TtsTextZh = p.TtsTextZh ?? string.Empty,
+                TtsTextJa = p.TtsTextJa ?? string.Empty,
+                UseTts = p.UseTts,
+                CooldownSeconds = p.CooldownSeconds <= 0 ? 60 : p.CooldownSeconds,
+                IsActive = p.IsActive,
+                CreatedAt = DateTime.UtcNow
+            }).ToList();
+
+            await db.InsertAllAsync(localPois);
+            return localPois.Count;
         }
 
         public async Task SeedDataAsync()
@@ -411,6 +449,29 @@ namespace FoodStreetApp.Data
             }
 
             System.Diagnostics.Debug.WriteLine($"Seeded {samplePOIs.Count} POIs to database (v{CurrentSeedVersion})");
+        }
+
+        private class RemotePoiDto
+        {
+            public int Id { get; set; }
+            public string? Name { get; set; }
+            public double Latitude { get; set; }
+            public double Longitude { get; set; }
+            public double Radius { get; set; }
+            public double ApproachRadius { get; set; }
+            public int Priority { get; set; }
+            public double Rating { get; set; }
+            public int ReviewCount { get; set; }
+            public string? Description { get; set; }
+            public string? AudioFile { get; set; }
+            public string? TtsText { get; set; }
+            public string? TtsTextEn { get; set; }
+            public string? TtsTextKo { get; set; }
+            public string? TtsTextZh { get; set; }
+            public string? TtsTextJa { get; set; }
+            public bool UseTts { get; set; }
+            public int CooldownSeconds { get; set; }
+            public bool IsActive { get; set; }
         }
     }
 }

@@ -16,8 +16,26 @@ namespace FoodStreetApp.Services
         public async Task InitializeAsync()
         {
             await _repository.InitializeAsync();
+
+            try
+            {
+                var synced = await _repository.SyncFromWebAsync();
+                System.Diagnostics.Debug.WriteLine($"POI sync from web completed: {synced} records");
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"POI sync skipped: {ex.Message}");
+            }
+
             _cachedPOIs = await _repository.GetActivePOIsAsync();
             System.Diagnostics.Debug.WriteLine($"POIService initialized with {_cachedPOIs.Count} active POIs");
+        }
+
+        public async Task<int> SyncFromWebAsync(string? syncUrl = null)
+        {
+            var synced = await _repository.SyncFromWebAsync(syncUrl);
+            _cachedPOIs = await _repository.GetActivePOIsAsync();
+            return synced;
         }
 
         public async Task<List<POI>> GetAllPOIsAsync()

@@ -12,5 +12,6 @@ namespace FoodStreetApp.Data
         Task<int> DeletePOIAsync(int id);
         Task<int> UpdatePOIAsync(POI poi);
         Task SeedDataAsync();
+        Task<int> SyncFromWebAsync(string? syncUrl = null);
     }
 }

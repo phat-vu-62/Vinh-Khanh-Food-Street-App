@@ -52,6 +52,59 @@ if (!app.Environment.IsDevelopment())
 app.UseStaticFiles();
 app.UseRouting();
 
+app.MapGet("/api/sync/pois", (IAdminDataService service) =>
+{
+    var audios = service.GetAudios()
+        .Where(x => x.IsActive)
+        .GroupBy(x => x.PoiId)
+        .ToDictionary(g => g.Key, g => g.First().Url);
+
+    var translations = service.GetTranslations()
+        .Where(t => string.Equals(t.EntityName, "POI", StringComparison.OrdinalIgnoreCase))
+        .ToList();
+
+    var result = service.GetPois()
+        .OrderByDescending(p => p.Id)
+        .Select(p =>
+        {
+            var viTts = translations
+                .LastOrDefault(t => t.EntityId == p.Id && t.Language == FoodStreetApp.Shared.Enums.Language.Vi && t.FieldName == "TtsText")
+                ?.Value ?? p.Description ?? p.Name;
+
+            var enTts = translations
+                .LastOrDefault(t => t.EntityId == p.Id && t.Language == FoodStreetApp.Shared.Enums.Language.En && t.FieldName == "TtsText")
+                ?.Value ?? p.Description ?? p.Name;
+
+            audios.TryGetValue(p.Id, out var audioUrl);
+
+            return new
+            {
+                p.Id,
+                p.Name,
+                p.Latitude,
+                p.Longitude,
+                Radius = (double)p.RadiusMeters,
+                ApproachRadius = 200d,
+                Priority = p.Id,
+                Rating = 4.5d,
+                ReviewCount = 100,
+                Description = p.Description ?? string.Empty,
+                AudioFile = audioUrl ?? p.AudioUrl ?? string.Empty,
+                TtsText = viTts,
+                TtsTextEn = enTts,
+                TtsTextKo = string.Empty,
+                TtsTextZh = string.Empty,
+                TtsTextJa = string.Empty,
+                UseTts = true,
+                CooldownSeconds = 60,
+                p.IsActive
+            };
+        })
+        .ToList();
+
+    return Results.Ok(result);
+});
+
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
