@@ -28,6 +28,9 @@ public interface IAdminDataService
     bool UpdateTranslation(Translation translation);
     bool DeleteTranslation(int id);
 
+    IReadOnlyCollection<UserHistory> GetUsageHistories();
+    UserHistory AddUsageHistory(UserHistory history);
+
     /// <summary>
     /// Translates a POI using Gemini API and persists the translations.
     /// </summary>

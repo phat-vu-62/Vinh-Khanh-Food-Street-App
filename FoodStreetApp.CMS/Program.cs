@@ -11,9 +11,6 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 var connectionString = builder.Configuration.GetConnectionString("Postgres");
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
-var apiBaseUrl = Environment.GetEnvironmentVariable("API_BASE_URL")
-    ?? builder.Configuration["Api:BaseUrl"]
-    ?? "https://vinh-khanh-food-street-app.onrender.com/";
 
 if (!string.IsNullOrWhiteSpace(databaseUrl))
 {
@@ -39,18 +36,10 @@ builder.Services.AddDbContext<CmsDbContext>(options => options.UseNpgsql(connect
 
 // Register Gemini translation service
 builder.Services.AddHttpClient<IGeminiTranslationService, GeminiTranslationService>();
-builder.Services.AddHttpClient<IAutoTranslationService, AutoTranslationService>();
 
-// Register APIs and Admin Services
-builder.Services.AddControllers();
+// Register Admin Services
 builder.Services.AddScoped<IAdminDataService, AdminDataService>();
 builder.Services.AddScoped<ToastService>();
-
-// Keep an HttpClient for the external API (used by sync endpoints)
-builder.Services.AddHttpClient("API", client =>
-{
-    client.BaseAddress = new Uri(apiBaseUrl);
-});
 
 var app = builder.Build();
 
@@ -216,6 +205,13 @@ app.MapPut("/api/Tour/{id:int}", (int id, FoodStreetApp.Shared.Entities.Tour tou
 app.MapDelete("/api/Tour/{id:int}", (int id, IAdminDataService service) =>
     service.DeleteTour(id) ? Results.NoContent() : Results.NotFound());
 
+app.MapGet("/api/UsageHistory", (IAdminDataService service) => Results.Ok(service.GetUsageHistories()));
+app.MapPost("/api/UsageHistory", (FoodStreetApp.Shared.Entities.UserHistory history, IAdminDataService service) =>
+{
+    var created = service.AddUsageHistory(history);
+    return Results.Created($"/api/UsageHistory/{created.Id}", created);
+});
+
 app.MapGet("/api/sync/poi-actions", (string? sinceUtc, IAdminDataService service, CmsDbContext dbContext) =>
 {
     DateTime since = DateTime.MinValue;
@@ -273,7 +269,6 @@ app.MapGet("/api/sync/pois", (IAdminDataService service) =>
     return Results.Ok(result);
 });
 
-app.MapControllers();
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 

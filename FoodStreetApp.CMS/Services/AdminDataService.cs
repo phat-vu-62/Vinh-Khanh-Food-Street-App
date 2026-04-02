@@ -118,6 +118,18 @@ public class AdminDataService : IAdminDataService
         return true;
     }
 
+    public IReadOnlyCollection<UserHistory> GetUsageHistories() => _dbContext.UserHistories
+        .AsNoTracking()
+        .OrderByDescending(x => x.VisitedAtUtc)
+        .ToList();
+
+    public UserHistory AddUsageHistory(UserHistory history)
+    {
+        _dbContext.UserHistories.Add(history);
+        _dbContext.SaveChanges();
+        return history;
+    }
+
     public bool DeleteAudio(int id)
     {
         var item = _dbContext.Audios.FirstOrDefault(x => x.Id == id);

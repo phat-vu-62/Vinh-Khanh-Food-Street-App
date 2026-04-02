@@ -1,0 +1,132 @@
+@page "/usage-history"
+@inject IAdminDataService DataService
+@inject ToastService Toasts
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h4 mb-0">Usage History</h1>
+        <small class="text-muted">POI viewed and audio played activity logs</small>
+    </div>
+    <button class="btn btn-outline-primary" @onclick="LoadAsync">Refresh</button>
+</div>
+
+<section class="module-panel">
+    <LoadingState IsLoading="_isLoading" Message="Loading usage history..." />
+
+    @if (!_isLoading && _history.Count == 0)
+    {
+        <div class="empty-state">No usage history yet.</div>
+    }
+    else if (!_isLoading)
+    {
+        <div class="table-responsive">
+            <table class="table admin-table">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>POI Name</th>
+                        <th>Action Type</th>
+                        <th>Timestamp</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in _history.OrderByDescending(x => x.VisitedAtUtc))
+                    {
+                        <tr>
+                            <td>@(string.IsNullOrWhiteSpace(item.UserId) ? "Guest" : item.UserId)</td>
+                            <td>@FindPoiName(item.PoiId)</td>
+                            <td>
+                                <span class="badge @(GetActionBadge(item.Action))">@GetActionLabel(item.Action)</span>
+                            </td>
+                            <td>@item.VisitedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+@code {
+    private readonly List<UserHistory> _history = [];
+    private readonly List<POI> _pois = [];
+    private bool _isLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _isLoading = true;
+            _history.Clear();
+            _pois.Clear();
+
+            _pois.AddRange(DataService.GetPois());
+            _history.AddRange(DataService.GetUsageHistories());
+
+            if (_history.Count == 0)
+            {
+                SeedMockHistory();
+                _history.Clear();
+                _history.AddRange(DataService.GetUsageHistories());
+            }
+        }
+        catch
+        {
+            Toasts.Error("Failed to load usage history.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+
+        await Task.CompletedTask;
+    }
+
+    private void SeedMockHistory()
+    {
+        if (_pois.Count == 0)
+        {
+            return;
+        }
+
+        var firstPoiId = _pois[0].Id;
+        var now = DateTime.UtcNow;
+
+        DataService.AddUsageHistory(new UserHistory
+        {
+            UserId = "guest-001",
+            PoiId = firstPoiId,
+            Action = "POI viewed",
+            VisitedAtUtc = now.AddMinutes(-10)
+        });
+
+        DataService.AddUsageHistory(new UserHistory
+        {
+            UserId = "guest-001",
+            PoiId = firstPoiId,
+            Action = "Audio played",
+            VisitedAtUtc = now.AddMinutes(-7)
+        });
+
+        Toasts.Info("Initialized mock usage history.");
+    }
+
+    private string FindPoiName(int poiId) => _pois.FirstOrDefault(x => x.Id == poiId)?.Name ?? $"POI #{poiId}";
+
+    private static string GetActionLabel(string? action) => string.IsNullOrWhiteSpace(action) ? "Unknown" : action;
+
+    private static string GetActionBadge(string? action)
+    {
+        return action?.ToLowerInvariant() switch
+        {
+            "poi viewed" => "text-bg-primary",
+            "audio played" => "text-bg-success",
+            _ => "text-bg-secondary"
+        };
+    }
+}

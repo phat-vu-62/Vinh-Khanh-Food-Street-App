@@ -1,7 +1,6 @@
 @page "/poi"
 @inject IAdminDataService DataService
 @inject ToastService Toasts
-@inject IHttpClientFactory HttpClientFactory
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
@@ -43,24 +42,11 @@
                             <td class="text-muted">@poi.Description</td>
                             <td>@poi.Latitude.ToString("0.00000"), @poi.Longitude.ToString("0.00000")</td>
                             <td>
-                                @if (!string.IsNullOrWhiteSpace(poi.NameEn))
+                                @if (GetTranslationCount(poi) > 0)
                                 {
-                                    <span class="badge text-bg-info me-1">EN</span>
+                                    <span class="badge text-bg-primary">@GetTranslationCount(poi) languages</span>
                                 }
-                                @if (!string.IsNullOrWhiteSpace(poi.NameZh))
-                                {
-                                    <span class="badge text-bg-warning me-1">ZH</span>
-                                }
-                                @if (!string.IsNullOrWhiteSpace(poi.NameKo))
-                                {
-                                    <span class="badge text-bg-success me-1">KO</span>
-                                }
-                                @if (!string.IsNullOrWhiteSpace(poi.NameJa))
-                                {
-                                    <span class="badge text-bg-danger me-1">JA</span>
-                                }
-                                @if (string.IsNullOrWhiteSpace(poi.NameEn) && string.IsNullOrWhiteSpace(poi.NameZh)
-                                     && string.IsNullOrWhiteSpace(poi.NameKo) && string.IsNullOrWhiteSpace(poi.NameJa))
+                                else
                                 {
                                     <span class="text-muted small">—</span>
                                 }
@@ -71,6 +57,9 @@
                                 </div>
                             </td>
                             <td class="text-end">
+                                <button class="btn btn-sm btn-outline-primary me-2" @onclick="() => TranslatePoiAsync(poi)" disabled="@_isTranslating">
+                                    🌐 Translate
+                                </button>
                                 <button class="btn btn-sm btn-outline-secondary me-2" @onclick="() => StartEdit(poi)">Edit</button>
                                 <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(poi)">Delete</button>
                             </td>
@@ -436,6 +425,38 @@
         _confirmDeleteVisible = false;
         _deleteId = null;
         return Task.CompletedTask;
+    }
+
+    private async Task TranslatePoiAsync(POI poi)
+    {
+        try
+        {
+            _isTranslating = true;
+            var translated = await DataService.TranslatePoiAsync(poi.Id);
+            if (translated is null)
+            {
+                Toasts.Error("POI not found or translation failed.");
+                return;
+            }
+
+            Toasts.Success("POI translated.");
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            Toasts.Error($"Translation failed: {ex.Message}");
+        }
+        finally
+        {
+            _isTranslating = false;
+        }
+    }
+
+    private static int GetTranslationCount(POI poi)
+    {
+        var translated = new[] { poi.NameVi, poi.NameEn, poi.NameZh, poi.NameKo, poi.NameJa }
+            .Count(x => !string.IsNullOrWhiteSpace(x));
+        return Math.Max(0, translated - 1);
     }
 
     private void CloseEditor() => _isEditorOpen = false;

@@ -1,9 +1,0 @@
-@model FoodStreetApp.CMS.Models.CrudActionsModel
-
-<div class="d-flex gap-2">
-    <a class="btn btn-sm btn-outline-primary" href="@Model.EditUrl">Edit</a>
-    <form method="post" asp-page-handler="Delete" class="d-inline">
-        <input type="hidden" name="id" value="@Model.Id" />
-        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-    </form>
-</div>

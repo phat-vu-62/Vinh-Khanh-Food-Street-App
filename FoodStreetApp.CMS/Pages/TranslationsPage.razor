@@ -1,0 +1,212 @@
+@page "/translations"
+@inject IAdminDataService DataService
+@inject ToastService Toasts
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h4 mb-0">Translation Management</h1>
+        <small class="text-muted">Review and edit POI translations by language</small>
+    </div>
+    <div class="d-flex gap-2">
+        <InputSelect class="form-select" style="min-width: 120px;" @bind-Value="_selectedLanguage">
+            @foreach (var language in _languages)
+            {
+                <option value="@language">@language</option>
+            }
+        </InputSelect>
+        <button class="btn btn-primary" @onclick="TranslateAllAsync" disabled="@_isTranslatingAll">
+            @if (_isTranslatingAll)
+            {
+                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                <span>Translating...</span>
+            }
+            else
+            {
+                <span>Translate All POIs</span>
+            }
+        </button>
+    </div>
+</div>
+
+<section class="module-panel">
+    <LoadingState IsLoading="_isLoading" Message="Loading translations..." />
+
+    @if (!_isLoading && _pois.Count == 0)
+    {
+        <div class="empty-state">No POIs found.</div>
+    }
+    else if (!_isLoading)
+    {
+        <div class="table-responsive">
+            <table class="table admin-table">
+                <thead>
+                    <tr>
+                        <th>POI</th>
+                        <th>Original Text</th>
+                        <th>Translated Text (@_selectedLanguage)</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var poi in _pois.OrderBy(x => x.Name))
+                    {
+                        <tr>
+                            <td>
+                                <strong>@poi.Name</strong>
+                                <div class="small text-muted">Name</div>
+                            </td>
+                            <td>@poi.Name</td>
+                            <td>
+                                <InputText class="form-control" Value="@GetNameTranslation(poi, _selectedLanguage)" ValueChanged="@(value => SetNameTranslation(poi, _selectedLanguage, value))" />
+                            </td>
+                            <td class="text-end" rowspan="2">
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => SavePoiAsync(poi)">Save</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <strong>@poi.Name</strong>
+                                <div class="small text-muted">Description</div>
+                            </td>
+                            <td class="text-muted">@poi.Description</td>
+                            <td>
+                                <InputText class="form-control" Value="@GetDescriptionTranslation(poi, _selectedLanguage)" ValueChanged="@(value => SetDescriptionTranslation(poi, _selectedLanguage, value))" />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+@code {
+    private readonly List<POI> _pois = [];
+    private readonly string[] _languages = ["vi", "en", "zh", "ko", "ja"];
+    private string _selectedLanguage = "en";
+    private bool _isLoading;
+    private bool _isTranslatingAll;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private Task LoadAsync()
+    {
+        try
+        {
+            _isLoading = true;
+            _pois.Clear();
+            _pois.AddRange(DataService.GetPois());
+        }
+        catch
+        {
+            Toasts.Error("Failed to load translations.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private Task SavePoiAsync(POI poi)
+    {
+        try
+        {
+            DataService.UpdatePoi(poi);
+            Toasts.Success("Translation saved.");
+        }
+        catch
+        {
+            Toasts.Error("Failed to save translation.");
+        }
+
+        return Task.CompletedTask;
+    }
+
+    private async Task TranslateAllAsync()
+    {
+        try
+        {
+            _isTranslatingAll = true;
+            var translated = await DataService.TranslateAllPoisAsync();
+            Toasts.Success($"✔ Translated {translated} POIs");
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            Toasts.Error($"❌ Translate all failed: {ex.Message}");
+        }
+        finally
+        {
+            _isTranslatingAll = false;
+        }
+    }
+
+    private static string? GetNameTranslation(POI poi, string language) => language switch
+    {
+        "vi" => poi.NameVi,
+        "en" => poi.NameEn,
+        "zh" => poi.NameZh,
+        "ko" => poi.NameKo,
+        "ja" => poi.NameJa,
+        _ => poi.NameEn
+    };
+
+    private static string? GetDescriptionTranslation(POI poi, string language) => language switch
+    {
+        "vi" => poi.DescriptionVi,
+        "en" => poi.DescriptionEn,
+        "zh" => poi.DescriptionZh,
+        "ko" => poi.DescriptionKo,
+        "ja" => poi.DescriptionJa,
+        _ => poi.DescriptionEn
+    };
+
+    private static void SetNameTranslation(POI poi, string language, string? value)
+    {
+        switch (language)
+        {
+            case "vi":
+                poi.NameVi = value;
+                break;
+            case "en":
+                poi.NameEn = value;
+                break;
+            case "zh":
+                poi.NameZh = value;
+                break;
+            case "ko":
+                poi.NameKo = value;
+                break;
+            case "ja":
+                poi.NameJa = value;
+                break;
+        }
+    }
+
+    private static void SetDescriptionTranslation(POI poi, string language, string? value)
+    {
+        switch (language)
+        {
+            case "vi":
+                poi.DescriptionVi = value;
+                break;
+            case "en":
+                poi.DescriptionEn = value;
+                break;
+            case "zh":
+                poi.DescriptionZh = value;
+                break;
+            case "ko":
+                poi.DescriptionKo = value;
+                break;
+            case "ja":
+                poi.DescriptionJa = value;
+                break;
+        }
+    }
+}

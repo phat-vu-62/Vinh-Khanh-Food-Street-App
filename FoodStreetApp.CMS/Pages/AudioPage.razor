@@ -90,8 +90,34 @@
                                 <label class="form-label">Duration (seconds)</label>
                                 <InputNumber class="form-control" @bind-Value="_form.DurationSeconds" />
                             </div>
+                            <div class="col-md-12">
+                                <div class="card border-0 bg-light">
+                                    <div class="card-body py-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <label class="form-label mb-0">Generate TTS</label>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" @onclick="GenerateTtsUrl">
+                                                Generate TTS URL
+                                            </button>
+                                        </div>
+                                        <div class="row g-2">
+                                            <div class="col-md-3">
+                                                <InputSelect class="form-select" @bind-Value="_ttsLanguage">
+                                                    <option value="vi">vi</option>
+                                                    <option value="en">en</option>
+                                                    <option value="zh-CN">zh</option>
+                                                    <option value="ko">ko</option>
+                                                    <option value="ja">ja</option>
+                                                </InputSelect>
+                                            </div>
+                                            <div class="col-md-9">
+                                                <InputTextArea class="form-control" @bind-Value="_ttsText" rows="2" placeholder="Enter text to synthesize" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="col-12">
-                                <label class="form-label">Upload file (preview only)</label>
+                                <label class="form-label">Upload audio file</label>
                                 <InputFile class="form-control" OnChange="OnAudioSelected" accept="audio/*" />
                                 @if (!string.IsNullOrWhiteSpace(_uploadedPreviewUrl))
                                 {
@@ -100,6 +126,13 @@
                                         <source src="@_uploadedPreviewUrl" />
                                     </audio>
                                 }
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Status</label>
+                                <div class="form-check form-switch mt-2">
+                                    <InputCheckbox class="form-check-input" @bind-Value="_form.IsActive" />
+                                    <label class="form-check-label">Active</label>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -120,6 +153,8 @@
     private bool _editorOpen;
     private bool _isEditing;
     private string? _uploadedPreviewUrl;
+    private string _ttsText = string.Empty;
+    private string _ttsLanguage = "vi";
     private AudioFormViewModel _form = new();
 
     protected override async Task OnInitializedAsync()
@@ -154,6 +189,8 @@
         _isEditing = false;
         _form = new AudioFormViewModel { PoiId = _pois.FirstOrDefault()?.Id ?? 0, DurationSeconds = 30, IsActive = true };
         _uploadedPreviewUrl = null;
+        _ttsText = string.Empty;
+        _ttsLanguage = "vi";
         _editorOpen = true;
     }
 
@@ -170,6 +207,8 @@
             IsActive = audio.IsActive
         };
         _uploadedPreviewUrl = null;
+        _ttsText = string.Empty;
+        _ttsLanguage = "vi";
         _editorOpen = true;
     }
 
@@ -233,6 +272,29 @@
         await stream.CopyToAsync(ms);
         var bytes = ms.ToArray();
         _uploadedPreviewUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(bytes)}";
+        _form.Url = _uploadedPreviewUrl;
+        if (string.IsNullOrWhiteSpace(_form.Title))
+        {
+            _form.Title = Path.GetFileNameWithoutExtension(file.Name);
+        }
+        Toasts.Success("Audio file uploaded to form.");
+    }
+
+    private void GenerateTtsUrl()
+    {
+        if (string.IsNullOrWhiteSpace(_ttsText))
+        {
+            Toasts.Error("Enter text before generating TTS.");
+            return;
+        }
+
+        _form.Url = $"https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl={_ttsLanguage}&q={Uri.EscapeDataString(_ttsText)}";
+        _form.DurationSeconds = Math.Max(5, _ttsText.Length / 8);
+        if (string.IsNullOrWhiteSpace(_form.Title))
+        {
+            _form.Title = $"TTS {_ttsLanguage.ToUpperInvariant()}";
+        }
+        Toasts.Success("TTS URL generated.");
     }
 
     private string FindPoiName(int poiId) => _pois.FirstOrDefault(x => x.Id == poiId)?.Name ?? $"POI #{poiId}";
