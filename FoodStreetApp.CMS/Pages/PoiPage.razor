@@ -1,0 +1,261 @@
+@page "/poi"
+@inject CmsApiService Api
+@inject ToastService Toasts
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h4 mb-0">POI Management</h1>
+        <small class="text-muted">Create, edit, activate and remove POIs</small>
+    </div>
+    <button class="btn btn-primary" @onclick="StartCreate">+ New POI</button>
+</div>
+
+<div class="module-panel">
+    <LoadingState IsLoading="_isLoading" Message="Loading POIs..." />
+
+    @if (!_isLoading && _pois.Count == 0)
+    {
+        <div class="empty-state">
+            <p class="mb-2">No POIs found.</p>
+            <button class="btn btn-primary btn-sm" @onclick="StartCreate">Create first POI</button>
+        </div>
+    }
+    else if (!_isLoading)
+    {
+        <div class="table-responsive">
+            <table class="table admin-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>Coordinates</th>
+                        <th>Active</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var poi in _pois.OrderByDescending(x => x.Id))
+                    {
+                        <tr>
+                            <td>@poi.Name</td>
+                            <td class="text-muted">@poi.Description</td>
+                            <td>@poi.Latitude.ToString("0.00000"), @poi.Longitude.ToString("0.00000")</td>
+                            <td>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" checked="@poi.IsActive" @onchange="(args) => ToggleActiveAsync(poi, args)" />
+                                </div>
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary me-2" @onclick="() => StartEdit(poi)">Edit</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(poi)">Delete</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@if (_isEditorOpen)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,.5)">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content form-card">
+                <EditForm Model="_form" OnValidSubmit="SaveAsync">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@(_isEditing ? "Edit POI" : "Create POI")</h5>
+                        <button type="button" class="btn-close" @onclick="CloseEditor"></button>
+                    </div>
+                    <div class="modal-body">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Name</label>
+                                <InputText class="form-control" @bind-Value="_form.Name" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Audio URL</label>
+                                <InputText class="form-control" @bind-Value="_form.AudioUrl" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Description</label>
+                                <InputText class="form-control" @bind-Value="_form.Description" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Latitude</label>
+                                <InputNumber class="form-control" @bind-Value="_form.Latitude" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Longitude</label>
+                                <InputNumber class="form-control" @bind-Value="_form.Longitude" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseEditor">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+<ConfirmModal Visible="_confirmDeleteVisible"
+              Title="Delete POI"
+              Message="This action cannot be undone."
+              OnConfirm="DeleteConfirmedAsync"
+              OnCancel="CancelDelete" />
+
+@code {
+    private readonly List<POI> _pois = [];
+    private bool _isLoading;
+    private bool _isEditorOpen;
+    private bool _isEditing;
+    private bool _confirmDeleteVisible;
+    private int? _deleteId;
+    private PoiFormViewModel _form = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _isLoading = true;
+            _pois.Clear();
+            _pois.AddRange(await Api.GetPoisAsync());
+        }
+        catch
+        {
+            Toasts.Error("Failed to load POI list.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void StartCreate()
+    {
+        _isEditing = false;
+        _form = new PoiFormViewModel { IsActive = true, RadiusMeters = 15 };
+        _isEditorOpen = true;
+    }
+
+    private void StartEdit(POI poi)
+    {
+        _isEditing = true;
+        _form = new PoiFormViewModel
+        {
+            Id = poi.Id,
+            Name = poi.Name,
+            Description = poi.Description,
+            Latitude = poi.Latitude,
+            Longitude = poi.Longitude,
+            AudioUrl = poi.AudioUrl,
+            IsActive = poi.IsActive,
+            RadiusMeters = poi.RadiusMeters,
+            Type = poi.Type
+        };
+        _isEditorOpen = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            var poi = new POI
+            {
+                Id = _form.Id,
+                Name = _form.Name,
+                Description = _form.Description,
+                Latitude = _form.Latitude,
+                Longitude = _form.Longitude,
+                AudioUrl = _form.AudioUrl,
+                IsActive = _form.IsActive,
+                RadiusMeters = _form.RadiusMeters,
+                Type = _form.Type
+            };
+
+            if (_isEditing)
+            {
+                await Api.UpdatePoiAsync(poi);
+                Toasts.Success("POI updated.");
+            }
+            else
+            {
+                await Api.CreatePoiAsync(poi);
+                Toasts.Success("POI created.");
+            }
+
+            _isEditorOpen = false;
+            await LoadAsync();
+        }
+        catch
+        {
+            Toasts.Error("Save POI failed.");
+        }
+    }
+
+    private async Task ToggleActiveAsync(POI poi, ChangeEventArgs args)
+    {
+        var value = args.Value is bool b && b;
+        try
+        {
+            poi.IsActive = value;
+            await Api.UpdatePoiAsync(poi);
+            Toasts.Success("POI status updated.");
+        }
+        catch
+        {
+            Toasts.Error("Cannot update POI status.");
+        }
+    }
+
+    private void AskDelete(POI poi)
+    {
+        _deleteId = poi.Id;
+        _confirmDeleteVisible = true;
+    }
+
+    private async Task DeleteConfirmedAsync()
+    {
+        if (_deleteId is null)
+        {
+            _confirmDeleteVisible = false;
+            return;
+        }
+
+        try
+        {
+            await Api.DeletePoiAsync(_deleteId.Value);
+            Toasts.Success("POI deleted.");
+            await LoadAsync();
+        }
+        catch
+        {
+            Toasts.Error("Delete POI failed.");
+        }
+        finally
+        {
+            _confirmDeleteVisible = false;
+            _deleteId = null;
+        }
+    }
+
+    private Task CancelDelete()
+    {
+        _confirmDeleteVisible = false;
+        _deleteId = null;
+        return Task.CompletedTask;
+    }
+
+    private void CloseEditor() => _isEditorOpen = false;
+
+}

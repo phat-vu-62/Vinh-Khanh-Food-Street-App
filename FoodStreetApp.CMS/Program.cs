@@ -11,6 +11,9 @@ builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 var connectionString = builder.Configuration.GetConnectionString("Postgres");
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+var apiBaseUrl = Environment.GetEnvironmentVariable("API_BASE_URL")
+    ?? builder.Configuration["Api:BaseUrl"]
+    ?? "https://vinh-khanh-food-street-app.onrender.com/";
 
 if (!string.IsNullOrWhiteSpace(databaseUrl))
 {
@@ -24,8 +27,7 @@ if (!string.IsNullOrWhiteSpace(databaseUrl))
         Database = databaseUri.AbsolutePath.TrimStart('/'),
         Username = userInfo[0],
         Password = userInfo.Length > 1 ? userInfo[1] : string.Empty,
-        SslMode = SslMode.Require,
-        TrustServerCertificate = true
+        SslMode = SslMode.Require
     };
 
     connectionString = npgsqlBuilder.ConnectionString;
@@ -35,6 +37,12 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddDbContext<CmsDbContext>(options => options.UseNpgsql(connectionString));
 builder.Services.AddScoped<IAdminDataService, AdminDataService>();
+builder.Services.AddScoped<ToastService>();
+builder.Services.AddHttpClient("API", client =>
+{
+    client.BaseAddress = new Uri(apiBaseUrl);
+});
+builder.Services.AddScoped<CmsApiService>();
 
 var app = builder.Build();
 

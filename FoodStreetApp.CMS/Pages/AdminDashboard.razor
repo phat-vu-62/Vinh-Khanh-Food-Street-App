@@ -1,52 +1,118 @@
 @page "/"
-@inject IAdminDataService AdminData
+@inject CmsApiService Api
+@inject ToastService Toasts
 
-<h1>FoodStreet CMS (Blazor)</h1>
-
-<div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-        <div class="card"><div class="card-body"><strong>POI:</strong> @Pois.Count</div></div>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h4 mb-0">Dashboard</h1>
+        <small class="text-muted">Overview of live FoodStreet content</small>
     </div>
-    <div class="col-6 col-md-3">
-        <div class="card"><div class="card-body"><strong>Audio:</strong> @Audios.Count</div></div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="card"><div class="card-body"><strong>Tours:</strong> @Tours.Count</div></div>
-    </div>
-    <div class="col-6 col-md-3">
-        <div class="card"><div class="card-body"><strong>Translations:</strong> @Translations.Count</div></div>
-    </div>
+    <button class="btn btn-outline-primary" @onclick="LoadAsync">Refresh</button>
 </div>
 
-<h4>POI</h4>
-<table class="table table-sm table-striped">
-    <thead>
-        <tr><th>Id</th><th>Name</th><th>Description</th><th>Active</th></tr>
-    </thead>
-    <tbody>
-        @foreach (var poi in Pois)
+<LoadingState IsLoading="_isLoading" Message="Loading dashboard data..." />
+
+@if (!_isLoading)
+{
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="stats-title">POIs</div>
+                    <div class="stats-value">@Pois.Count</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="stats-title">Audios</div>
+                    <div class="stats-value">@Audios.Count</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="stats-title">Tours</div>
+                    <div class="stats-value">@Tours.Count</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card stats-card">
+                <div class="card-body">
+                    <div class="stats-title">Active POIs</div>
+                    <div class="stats-value">@Pois.Count(x => x.IsActive)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="module-panel">
+        <h2 class="h6 mb-3">Recent POIs</h2>
+        @if (Pois.Count == 0)
         {
-            <tr>
-                <td>@poi.Id</td>
-                <td>@poi.Name</td>
-                <td>@poi.Description</td>
-                <td>@poi.IsActive</td>
-            </tr>
+            <div class="empty-state">No POIs available yet.</div>
         }
-    </tbody>
-</table>
+        else
+        {
+            <div class="table-responsive">
+                <table class="table admin-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Location</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var poi in Pois.Take(8))
+                        {
+                            <tr>
+                                <td>@poi.Name</td>
+                                <td>@poi.Latitude.ToString("0.00000"), @poi.Longitude.ToString("0.00000")</td>
+                                <td>
+                                    <span class="badge @(poi.IsActive ? "text-bg-success" : "text-bg-secondary")">
+                                        @(poi.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+}
 
 @code {
     private IReadOnlyCollection<POI> Pois = [];
     private IReadOnlyCollection<Audio> Audios = [];
     private IReadOnlyCollection<Tour> Tours = [];
-    private IReadOnlyCollection<Translation> Translations = [];
+    private bool _isLoading;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        Pois = AdminData.GetPois();
-        Audios = AdminData.GetAudios();
-        Tours = AdminData.GetTours();
-        Translations = AdminData.GetTranslations();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _isLoading = true;
+            Pois = await Api.GetPoisAsync();
+            Audios = await Api.GetAudiosAsync();
+            Tours = await Api.GetToursAsync();
+        }
+        catch
+        {
+            Toasts.Error("Cannot load dashboard data from API.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
     }
 }

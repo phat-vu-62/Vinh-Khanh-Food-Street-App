@@ -1,0 +1,236 @@
+@page "/audio"
+@inject CmsApiService Api
+@inject ToastService Toasts
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h4 mb-0">Audio Management</h1>
+        <small class="text-muted">Assign audio track to POIs and preview playback</small>
+    </div>
+    <button class="btn btn-primary" @onclick="StartCreate">+ New Audio</button>
+</div>
+
+<section class="module-panel">
+    <LoadingState IsLoading="_isLoading" Message="Loading audio library..." />
+
+    @if (!_isLoading && _audios.Count == 0)
+    {
+        <div class="empty-state">No audio records found.</div>
+    }
+    else if (!_isLoading)
+    {
+        <div class="table-responsive">
+            <table class="table admin-table">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>POI</th>
+                        <th>Duration</th>
+                        <th>Preview</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var audio in _audios.OrderByDescending(x => x.Id))
+                    {
+                        <tr>
+                            <td>@audio.Title</td>
+                            <td>@FindPoiName(audio.PoiId)</td>
+                            <td>@audio.DurationSeconds s</td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(audio.Url))
+                                {
+                                    <audio controls preload="none" style="height: 2rem; width: 220px;">
+                                        <source src="@audio.Url" />
+                                    </audio>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary me-2" @onclick="() => StartEdit(audio)">Edit</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(audio.Id)">Delete</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+@if (_editorOpen)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,.5)">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content form-card">
+                <EditForm Model="_form" OnValidSubmit="SaveAsync">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@(_isEditing ? "Edit Audio" : "Create Audio")</h5>
+                        <button type="button" class="btn-close" @onclick="CloseEditor"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Title</label>
+                                <InputText class="form-control" @bind-Value="_form.Title" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">POI</label>
+                                <InputSelect class="form-select" @bind-Value="_form.PoiId">
+                                    @foreach (var poi in _pois.OrderBy(x => x.Name))
+                                    {
+                                        <option value="@poi.Id">@poi.Name</option>
+                                    }
+                                </InputSelect>
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">Audio URL</label>
+                                <InputText class="form-control" @bind-Value="_form.Url" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Duration (seconds)</label>
+                                <InputNumber class="form-control" @bind-Value="_form.DurationSeconds" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Upload file (preview only)</label>
+                                <InputFile class="form-control" OnChange="OnAudioSelected" accept="audio/*" />
+                                @if (!string.IsNullOrWhiteSpace(_uploadedPreviewUrl))
+                                {
+                                    <small class="text-muted d-block mt-2">Preview selected file:</small>
+                                    <audio controls class="mt-1" style="width: 260px;">
+                                        <source src="@_uploadedPreviewUrl" />
+                                    </audio>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseEditor">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private readonly List<Audio> _audios = [];
+    private readonly List<POI> _pois = [];
+    private bool _isLoading;
+    private bool _editorOpen;
+    private bool _isEditing;
+    private string? _uploadedPreviewUrl;
+    private AudioFormViewModel _form = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _isLoading = true;
+            _audios.Clear();
+            _pois.Clear();
+            _audios.AddRange(await Api.GetAudiosAsync());
+            _pois.AddRange(await Api.GetPoisAsync());
+        }
+        catch
+        {
+            Toasts.Error("Failed to load audio data.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void StartCreate()
+    {
+        _isEditing = false;
+        _form = new AudioFormViewModel { PoiId = _pois.FirstOrDefault()?.Id ?? 0, DurationSeconds = 30, IsActive = true };
+        _uploadedPreviewUrl = null;
+        _editorOpen = true;
+    }
+
+    private void StartEdit(Audio audio)
+    {
+        _isEditing = true;
+        _form = new AudioFormViewModel
+        {
+            Id = audio.Id,
+            PoiId = audio.PoiId,
+            Title = audio.Title,
+            Url = audio.Url,
+            DurationSeconds = audio.DurationSeconds,
+            IsActive = audio.IsActive
+        };
+        _uploadedPreviewUrl = null;
+        _editorOpen = true;
+    }
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            var payload = new Audio
+            {
+                Id = _form.Id,
+                PoiId = _form.PoiId,
+                Title = _form.Title,
+                Url = _form.Url,
+                DurationSeconds = _form.DurationSeconds,
+                IsActive = _form.IsActive
+            };
+
+            if (_isEditing)
+            {
+                await Api.UpdateAudioAsync(payload);
+                Toasts.Success("Audio updated.");
+            }
+            else
+            {
+                await Api.CreateAudioAsync(payload);
+                Toasts.Success("Audio created.");
+            }
+
+            _editorOpen = false;
+            await LoadAsync();
+        }
+        catch
+        {
+            Toasts.Error("Save audio failed.");
+        }
+    }
+
+    private async Task DeleteAsync(int id)
+    {
+        try
+        {
+            await Api.DeleteAudioAsync(id);
+            Toasts.Success("Audio deleted.");
+            await LoadAsync();
+        }
+        catch
+        {
+            Toasts.Error("Delete audio failed.");
+        }
+    }
+
+    private async Task OnAudioSelected(InputFileChangeEventArgs eventArgs)
+    {
+        var file = eventArgs.File;
+        await using var stream = file.OpenReadStream(10 * 1024 * 1024);
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms);
+        var bytes = ms.ToArray();
+        _uploadedPreviewUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(bytes)}";
+    }
+
+    private string FindPoiName(int poiId) => _pois.FirstOrDefault(x => x.Id == poiId)?.Name ?? $"POI #{poiId}";
+
+    private void CloseEditor() => _editorOpen = false;
+
+}

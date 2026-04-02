@@ -1,0 +1,32 @@
+@page "/settings"
+@inject IConfiguration Configuration
+
+<section class="module-panel">
+    <h1 class="h4 mb-2">Settings</h1>
+    <p class="text-muted mb-4">Deployment configuration overview.</p>
+
+    <div class="row g-3">
+        <div class="col-md-6">
+            <div class="card stats-card h-100">
+                <div class="card-body">
+                    <div class="stats-title">API Base URL</div>
+                    <div class="small text-break">@ApiBaseUrl</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card stats-card h-100">
+                <div class="card-body">
+                    <div class="stats-title">Environment</div>
+                    <div class="small">@Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    private string ApiBaseUrl => Environment.GetEnvironmentVariable("API_BASE_URL")
+                                 ?? Configuration["Api:BaseUrl"]
+                                 ?? "Not configured";
+}

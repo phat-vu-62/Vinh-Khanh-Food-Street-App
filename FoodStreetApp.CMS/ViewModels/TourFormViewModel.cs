@@ -1,0 +1,10 @@
+namespace FoodStreetApp.CMS.ViewModels;
+
+public class TourFormViewModel
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public bool IsActive { get; set; } = true;
+    public List<int> PoiIds { get; set; } = [];
+}

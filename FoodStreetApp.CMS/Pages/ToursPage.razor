@@ -1,0 +1,252 @@
+@page "/tours"
+@inject CmsApiService Api
+@inject ToastService Toasts
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="h4 mb-0">Tours Management</h1>
+        <small class="text-muted">Build tours, add POIs, reorder POI sequence</small>
+    </div>
+    <button class="btn btn-primary" @onclick="StartCreate">+ New Tour</button>
+</div>
+
+<section class="module-panel">
+    <LoadingState IsLoading="_isLoading" Message="Loading tours..." />
+
+    @if (!_isLoading && _tours.Count == 0)
+    {
+        <div class="empty-state">No tours yet.</div>
+    }
+    else if (!_isLoading)
+    {
+        <div class="table-responsive">
+            <table class="table admin-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Description</th>
+                        <th>POIs</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var tour in _tours.OrderByDescending(x => x.Id))
+                    {
+                        <tr>
+                            <td>@tour.Name</td>
+                            <td class="text-muted">@tour.Description</td>
+                            <td>@string.Join(" → ", tour.PoiIds.Select(FindPoiName))</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary me-2" @onclick="() => StartEdit(tour)">Edit</button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(tour.Id)">Delete</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+@if (_editorOpen)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,.5)">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content form-card">
+                <EditForm Model="_form" OnValidSubmit="SaveAsync">
+                    <div class="modal-header">
+                        <h5 class="modal-title">@(_isEditing ? "Edit Tour" : "Create Tour")</h5>
+                        <button type="button" class="btn-close" @onclick="CloseEditor"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Name</label>
+                                <InputText class="form-control" @bind-Value="_form.Name" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Description</label>
+                                <InputText class="form-control" @bind-Value="_form.Description" />
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Available POIs</label>
+                                <select class="form-select" @bind="_selectedPoiId">
+                                    @foreach (var poi in _pois.OrderBy(x => x.Name))
+                                    {
+                                        <option value="@poi.Id">@poi.Name</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="button" class="btn btn-outline-primary w-100" @onclick="AddPoiToTour">Add</button>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label">Tour POIs (ordered)</label>
+                                <ul class="list-group">
+                                    @if (_form.PoiIds.Count == 0)
+                                    {
+                                        <li class="list-group-item text-muted">No POI selected</li>
+                                    }
+                                    @for (var i = 0; i < _form.PoiIds.Count; i++)
+                                    {
+                                        var poiId = _form.PoiIds[i];
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <span>@FindPoiName(poiId)</span>
+                                            <div class="btn-group btn-group-sm">
+                                                <button type="button" class="btn btn-outline-secondary" disabled="@(i == 0)" @onclick="() => MovePoi(i, -1)">↑</button>
+                                                <button type="button" class="btn btn-outline-secondary" disabled="@(i == _form.PoiIds.Count - 1)" @onclick="() => MovePoi(i, 1)">↓</button>
+                                                <button type="button" class="btn btn-outline-danger" @onclick="() => RemovePoi(i)">×</button>
+                                            </div>
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseEditor">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </EditForm>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private readonly List<Tour> _tours = [];
+    private readonly List<POI> _pois = [];
+    private bool _isLoading;
+    private bool _editorOpen;
+    private bool _isEditing;
+    private int _selectedPoiId;
+    private TourFormViewModel _form = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _isLoading = true;
+            _tours.Clear();
+            _pois.Clear();
+            _tours.AddRange(await Api.GetToursAsync());
+            _pois.AddRange(await Api.GetPoisAsync());
+            _selectedPoiId = _pois.FirstOrDefault()?.Id ?? 0;
+        }
+        catch
+        {
+            Toasts.Error("Cannot load tours.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void StartCreate()
+    {
+        _isEditing = false;
+        _form = new TourFormViewModel { IsActive = true };
+        _editorOpen = true;
+    }
+
+    private void StartEdit(Tour tour)
+    {
+        _isEditing = true;
+        _form = new TourFormViewModel
+        {
+            Id = tour.Id,
+            Name = tour.Name,
+            Description = tour.Description,
+            IsActive = tour.IsActive,
+            PoiIds = tour.PoiIds.ToList()
+        };
+        _editorOpen = true;
+    }
+
+    private void AddPoiToTour()
+    {
+        if (_selectedPoiId == 0 || _form.PoiIds.Contains(_selectedPoiId))
+        {
+            return;
+        }
+
+        _form.PoiIds.Add(_selectedPoiId);
+    }
+
+    private void RemovePoi(int index)
+    {
+        if (index >= 0 && index < _form.PoiIds.Count)
+        {
+            _form.PoiIds.RemoveAt(index);
+        }
+    }
+
+    private void MovePoi(int index, int delta)
+    {
+        var newIndex = index + delta;
+        if (index < 0 || newIndex < 0 || index >= _form.PoiIds.Count || newIndex >= _form.PoiIds.Count)
+        {
+            return;
+        }
+
+        (_form.PoiIds[index], _form.PoiIds[newIndex]) = (_form.PoiIds[newIndex], _form.PoiIds[index]);
+    }
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            var payload = new Tour
+            {
+                Id = _form.Id,
+                Name = _form.Name,
+                Description = _form.Description,
+                IsActive = _form.IsActive,
+                PoiIds = _form.PoiIds.ToList()
+            };
+
+            if (_isEditing)
+            {
+                await Api.UpdateTourAsync(payload);
+                Toasts.Success("Tour updated.");
+            }
+            else
+            {
+                await Api.CreateTourAsync(payload);
+                Toasts.Success("Tour created.");
+            }
+
+            _editorOpen = false;
+            await LoadAsync();
+        }
+        catch
+        {
+            Toasts.Error("Save tour failed.");
+        }
+    }
+
+    private async Task DeleteAsync(int id)
+    {
+        try
+        {
+            await Api.DeleteTourAsync(id);
+            Toasts.Success("Tour deleted.");
+            await LoadAsync();
+        }
+        catch
+        {
+            Toasts.Error("Delete tour failed.");
+        }
+    }
+
+    private string FindPoiName(int poiId) => _pois.FirstOrDefault(x => x.Id == poiId)?.Name ?? $"POI #{poiId}";
+
+    private void CloseEditor() => _editorOpen = false;
+
+}
