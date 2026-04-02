@@ -27,6 +27,7 @@ namespace FoodStreetApp.Data
         // Increment this whenever seed data changes so all devices get the updated POIs on next launch.
         private const string SeedVersionKey = "poi_seed_version";
         private const int CurrentSeedVersion = 10; // v10: updated ratings and other UI requests
+        private const string LastSyncUtcKey = "poi_last_sync_utc";
 
         public async Task InitializeAsync()
         {
@@ -104,11 +105,59 @@ namespace FoodStreetApp.Data
         {
             const string defaultUrl = "https://vinh-khanh-food-street-app.onrender.com/api/sync/pois";
             var targetUrl = string.IsNullOrWhiteSpace(syncUrl) ? defaultUrl : syncUrl;
+            var actionsUrl = targetUrl.Replace("/api/sync/pois", "/api/sync/poi-actions", StringComparison.OrdinalIgnoreCase);
 
             using var httpClient = new HttpClient
             {
                 Timeout = TimeSpan.FromSeconds(20)
             };
+
+            var db = await GetDatabaseAsync();
+            var lastSyncUtc = Preferences.Get(LastSyncUtcKey, string.Empty);
+
+            if (!string.IsNullOrWhiteSpace(lastSyncUtc))
+            {
+                try
+                {
+                    var actionRequestUrl = $"{actionsUrl}?sinceUtc={Uri.EscapeDataString(lastSyncUtc)}";
+                    var actions = await httpClient.GetFromJsonAsync<List<RemotePoiActionDto>>(actionRequestUrl);
+                    if (actions is not null)
+                    {
+                        var affected = 0;
+                        foreach (var action in actions.OrderBy(x => x.OccurredAtUtc))
+                        {
+                            if (string.Equals(action.Action, "Deleted", StringComparison.OrdinalIgnoreCase))
+                            {
+                                affected += await db.DeleteAsync<POI>(action.PoiId);
+                                continue;
+                            }
+
+                            if (action.Poi is null)
+                            {
+                                continue;
+                            }
+
+                            var localPoi = MapRemotePoi(action.Poi);
+                            var existing = await db.Table<POI>().Where(x => x.Id == localPoi.Id).FirstOrDefaultAsync();
+                            if (existing is null)
+                            {
+                                affected += await db.InsertAsync(localPoi);
+                            }
+                            else
+                            {
+                                affected += await db.UpdateAsync(localPoi);
+                            }
+                        }
+
+                        Preferences.Set(LastSyncUtcKey, DateTime.UtcNow.ToString("O"));
+                        return affected;
+                    }
+                }
+                catch
+                {
+                    // Fallback to full sync when action endpoint is unavailable.
+                }
+            }
 
             var remotePois = await httpClient.GetFromJsonAsync<List<RemotePoiDto>>(targetUrl);
             if (remotePois is null || remotePois.Count == 0)
@@ -116,10 +165,18 @@ namespace FoodStreetApp.Data
                 return 0;
             }
 
-            var db = await GetDatabaseAsync();
             await db.DeleteAllAsync<POI>();
 
-            var localPois = remotePois.Select(p => new POI
+            var localPois = remotePois.Select(MapRemotePoi).ToList();
+
+            await db.InsertAllAsync(localPois);
+            Preferences.Set(LastSyncUtcKey, DateTime.UtcNow.ToString("O"));
+            return localPois.Count;
+        }
+
+        private static POI MapRemotePoi(RemotePoiDto p)
+        {
+            return new POI
             {
                 Id = p.Id,
                 Name = p.Name ?? string.Empty,
@@ -141,10 +198,7 @@ namespace FoodStreetApp.Data
                 CooldownSeconds = p.CooldownSeconds <= 0 ? 60 : p.CooldownSeconds,
                 IsActive = p.IsActive,
                 CreatedAt = DateTime.UtcNow
-            }).ToList();
-
-            await db.InsertAllAsync(localPois);
-            return localPois.Count;
+            };
         }
 
         public async Task SeedDataAsync()
@@ -472,6 +526,14 @@ namespace FoodStreetApp.Data
             public bool UseTts { get; set; }
             public int CooldownSeconds { get; set; }
             public bool IsActive { get; set; }
+        }
+
+        private class RemotePoiActionDto
+        {
+            public int PoiId { get; set; }
+            public string Action { get; set; } = string.Empty;
+            public DateTime OccurredAtUtc { get; set; }
+            public RemotePoiDto? Poi { get; set; }
         }
     }
 }

@@ -26,8 +26,35 @@ namespace FoodStreetApp.ViewModels
         private const string KEY_APP_UI_LANGUAGE = "app_ui_language";
 
         private readonly INarrationService? _narrationService;
+        private readonly IPOIService? _poiService;
 
         public event PropertyChangedEventHandler? PropertyChanged;
+
+        public ICommand RefreshPoiCommand { get; }
+
+        private bool _isRefreshingPoi;
+        public bool IsRefreshingPoi
+        {
+            get => _isRefreshingPoi;
+            set
+            {
+                if (_isRefreshingPoi == value) return;
+                _isRefreshingPoi = value;
+                OnPropertyChanged();
+            }
+        }
+
+        private string _poiSyncMessage = string.Empty;
+        public string PoiSyncMessage
+        {
+            get => _poiSyncMessage;
+            set
+            {
+                if (_poiSyncMessage == value) return;
+                _poiSyncMessage = value;
+                OnPropertyChanged();
+            }
+        }
 
         public ObservableCollection<LanguageOption> AvailableLanguages { get; }
 
@@ -169,9 +196,10 @@ namespace FoodStreetApp.ViewModels
             }
         }
 
-        public SettingsViewModel(INarrationService narrationService)
+        public SettingsViewModel(INarrationService narrationService, IPOIService poiService)
         {
             _narrationService = narrationService;
+            _poiService = poiService;
 
             // Initialize language options
             AvailableLanguages = new ObservableCollection<LanguageOption>
@@ -184,6 +212,33 @@ namespace FoodStreetApp.ViewModels
             };
 
             LoadSettings();
+            RefreshPoiCommand = new Command(async () => await RefreshPoiAsync(), () => !IsRefreshingPoi);
+            PoiSyncMessage = "Chưa đồng bộ dữ liệu.";
+        }
+
+        private async Task RefreshPoiAsync()
+        {
+            if (_poiService is null || IsRefreshingPoi)
+            {
+                return;
+            }
+
+            try
+            {
+                IsRefreshingPoi = true;
+                PoiSyncMessage = "Đang đồng bộ dữ liệu từ CMS...";
+                var synced = await _poiService.SyncFromWebAsync();
+                PoiSyncMessage = $"Đồng bộ thành công: {synced} POI ({DateTime.Now:HH:mm:ss}).";
+            }
+            catch (Exception ex)
+            {
+                PoiSyncMessage = $"Đồng bộ thất bại: {ex.Message}";
+            }
+            finally
+            {
+                IsRefreshingPoi = false;
+                (RefreshPoiCommand as Command)?.ChangeCanExecute();
+            }
         }
 
         private void LoadSettings()

@@ -17,6 +17,7 @@ public class CmsDbContext : DbContext
     public DbSet<Tour> Tours => Set<Tour>();
     public DbSet<Translation> Translations => Set<Translation>();
     public DbSet<UserHistory> UserHistories => Set<UserHistory>();
+    public DbSet<PoiSyncAction> PoiSyncActions => Set<PoiSyncAction>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -33,5 +34,15 @@ public class CmsDbContext : DbContext
             .Property(t => t.PoiIds)
             .HasConversion(poiIdsConverter)
             .Metadata.SetValueComparer(poiIdsComparer);
+
+        modelBuilder.Entity<PoiSyncAction>()
+            .Property(x => x.Action)
+            .HasMaxLength(20);
+
+        modelBuilder.Entity<PoiSyncAction>()
+            .HasIndex(x => x.OccurredAtUtc);
+
+        modelBuilder.Entity<PoiSyncAction>()
+            .HasIndex(x => x.PoiId);
     }
 }

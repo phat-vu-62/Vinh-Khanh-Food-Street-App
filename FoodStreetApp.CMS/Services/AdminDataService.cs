@@ -22,6 +22,7 @@ public class AdminDataService : IAdminDataService
     {
         _dbContext.Pois.Add(poi);
         _dbContext.SaveChanges();
+        TrackPoiAction(poi.Id, "Added");
         return poi;
     }
 
@@ -42,6 +43,7 @@ public class AdminDataService : IAdminDataService
         item.Type = poi.Type;
         item.RadiusMeters = poi.RadiusMeters;
         _dbContext.SaveChanges();
+        TrackPoiAction(item.Id, "Updated");
         return true;
     }
 
@@ -53,9 +55,22 @@ public class AdminDataService : IAdminDataService
             return false;
         }
 
+        var deletedId = item.Id;
         _dbContext.Pois.Remove(item);
         _dbContext.SaveChanges();
+        TrackPoiAction(deletedId, "Deleted");
         return true;
+    }
+
+    private void TrackPoiAction(int poiId, string action)
+    {
+        _dbContext.PoiSyncActions.Add(new PoiSyncAction
+        {
+            PoiId = poiId,
+            Action = action,
+            OccurredAtUtc = DateTime.UtcNow
+        });
+        _dbContext.SaveChanges();
     }
 
     public IReadOnlyCollection<Audio> GetAudios() => _dbContext.Audios.OrderBy(x => x.Id).ToList();
