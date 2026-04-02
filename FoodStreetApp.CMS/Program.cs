@@ -60,6 +60,63 @@ if (!app.Environment.IsDevelopment())
 app.UseStaticFiles();
 app.UseRouting();
 
+app.MapGet("/api/POI", (IAdminDataService service) => Results.Ok(service.GetPois()));
+app.MapGet("/api/POI/{id:int}", (int id, IAdminDataService service) =>
+{
+    var item = service.GetPoiById(id);
+    return item is null ? Results.NotFound() : Results.Ok(item);
+});
+app.MapPost("/api/POI", (FoodStreetApp.Shared.Entities.POI poi, IAdminDataService service) =>
+{
+    var created = service.AddPoi(poi);
+    return Results.Created($"/api/POI/{created.Id}", created);
+});
+app.MapPut("/api/POI/{id:int}", (int id, FoodStreetApp.Shared.Entities.POI poi, IAdminDataService service) =>
+{
+    poi.Id = id;
+    return service.UpdatePoi(poi) ? Results.NoContent() : Results.NotFound();
+});
+app.MapDelete("/api/POI/{id:int}", (int id, IAdminDataService service) =>
+    service.DeletePoi(id) ? Results.NoContent() : Results.NotFound());
+
+app.MapGet("/api/Audio", (IAdminDataService service) => Results.Ok(service.GetAudios()));
+app.MapGet("/api/Audio/{id:int}", (int id, IAdminDataService service) =>
+{
+    var item = service.GetAudioById(id);
+    return item is null ? Results.NotFound() : Results.Ok(item);
+});
+app.MapPost("/api/Audio", (FoodStreetApp.Shared.Entities.Audio audio, IAdminDataService service) =>
+{
+    var created = service.AddAudio(audio);
+    return Results.Created($"/api/Audio/{created.Id}", created);
+});
+app.MapPut("/api/Audio/{id:int}", (int id, FoodStreetApp.Shared.Entities.Audio audio, IAdminDataService service) =>
+{
+    audio.Id = id;
+    return service.UpdateAudio(audio) ? Results.NoContent() : Results.NotFound();
+});
+app.MapDelete("/api/Audio/{id:int}", (int id, IAdminDataService service) =>
+    service.DeleteAudio(id) ? Results.NoContent() : Results.NotFound());
+
+app.MapGet("/api/Tour", (IAdminDataService service) => Results.Ok(service.GetTours()));
+app.MapGet("/api/Tour/{id:int}", (int id, IAdminDataService service) =>
+{
+    var item = service.GetTourById(id);
+    return item is null ? Results.NotFound() : Results.Ok(item);
+});
+app.MapPost("/api/Tour", (FoodStreetApp.Shared.Entities.Tour tour, IAdminDataService service) =>
+{
+    var created = service.AddTour(tour);
+    return Results.Created($"/api/Tour/{created.Id}", created);
+});
+app.MapPut("/api/Tour/{id:int}", (int id, FoodStreetApp.Shared.Entities.Tour tour, IAdminDataService service) =>
+{
+    tour.Id = id;
+    return service.UpdateTour(tour) ? Results.NoContent() : Results.NotFound();
+});
+app.MapDelete("/api/Tour/{id:int}", (int id, IAdminDataService service) =>
+    service.DeleteTour(id) ? Results.NoContent() : Results.NotFound());
+
 app.MapGet("/api/sync/pois", (IAdminDataService service) =>
 {
     var audios = service.GetAudios()
