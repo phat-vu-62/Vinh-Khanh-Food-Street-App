@@ -7,7 +7,20 @@
         <h1 class="h4 mb-0">Dashboard</h1>
         <small class="text-muted">Overview of live FoodStreet content</small>
     </div>
-    <button class="btn btn-outline-primary" @onclick="LoadAsync">Refresh</button>
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary d-flex align-items-center gap-2" @onclick="TranslateAllPois" disabled="@_isTranslating">
+            @if (_isTranslating)
+            {
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span>Translating...</span>
+            }
+            else
+            {
+                <span>🌐 Translate All POIs</span>
+            }
+        </button>
+        <button class="btn btn-outline-primary" @onclick="LoadAsync" disabled="@_isTranslating">Refresh</button>
+    </div>
 </div>
 
 <LoadingState IsLoading="_isLoading" Message="Loading dashboard data..." />
@@ -91,6 +104,7 @@
     private IReadOnlyCollection<Audio> Audios = [];
     private IReadOnlyCollection<Tour> Tours = [];
     private bool _isLoading;
+    private bool _isTranslating;
 
     protected override async Task OnInitializedAsync()
     {
@@ -116,5 +130,26 @@
         }
 
         return Task.CompletedTask;
+    }
+
+    private async Task TranslateAllPois()
+    {
+        if (_isTranslating) return;
+
+        try
+        {
+            _isTranslating = true;
+            int count = await DataService.TranslateAllPoisAsync();
+            Toasts.Success($"✔ Translated {count} POIs successfully");
+            await LoadAsync();
+        }
+        catch (Exception ex)
+        {
+            Toasts.Error($"Failed to translate POIs: {ex.Message}");
+        }
+        finally
+        {
+            _isTranslating = false;
+        }
     }
 }

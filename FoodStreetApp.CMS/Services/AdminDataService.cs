@@ -230,4 +230,39 @@ public class AdminDataService : IAdminDataService
         _logger.LogInformation("POI {Id} translated and saved.", poi.Id);
         return poi;
     }
+
+    /// <summary>
+    /// Batch translates all POIs utilizing Gemini API locally and returns the number of objects modified.
+    /// Skips any POI that already has English translation data.
+    /// </summary>
+    public async Task<int> TranslateAllPoisAsync()
+    {
+        var pois = _dbContext.Pois.ToList();
+        int translatedCount = 0;
+
+        foreach (var poi in pois)
+        {
+            if (string.IsNullOrWhiteSpace(poi.NameEn) || string.IsNullOrWhiteSpace(poi.DescriptionEn))
+            {
+                try
+                {
+                    await _translationService.TranslatePoiAsync(poi);
+                    _dbContext.SaveChanges();
+                    TrackPoiAction(poi.Id, "Updated");
+                    
+                    translatedCount++;
+                    _logger.LogInformation("Batch translation successful for POI {Id}.", poi.Id);
+                    
+                    // Add delay to prevent hitting Gemini rate limits
+                    await Task.Delay(300);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to batch translate POI {Id}.", poi.Id);
+                }
+            }
+        }
+
+        return translatedCount;
+    }
 }

@@ -164,6 +164,20 @@ app.MapPost("/api/POI/{id:int}/translate", async (int id, IAdminDataService serv
     }
 });
 
+// Batch Translate all POIs endpoint
+app.MapPost("/api/POI/translate-all", async (IAdminDataService service) =>
+{
+    try
+    {
+        int translatedCount = await service.TranslateAllPoisAsync();
+        return Results.Ok(new { success = true, translatedCount });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message, statusCode: 500);
+    }
+});
+
 app.MapGet("/api/Audio", (IAdminDataService service) => Results.Ok(service.GetAudios()));
 app.MapGet("/api/Audio/{id:int}", (int id, IAdminDataService service) =>
 {

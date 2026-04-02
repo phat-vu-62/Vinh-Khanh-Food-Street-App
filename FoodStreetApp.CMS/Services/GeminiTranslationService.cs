@@ -113,17 +113,17 @@ public class GeminiTranslationService : IGeminiTranslationService
 
                 if (translation != null)
                 {
-                    poi.NameVi = translation.NameVi ?? poi.Name;
-                    poi.NameEn = translation.NameEn ?? string.Empty;
-                    poi.NameZh = translation.NameZh ?? string.Empty;
-                    poi.NameKo = translation.NameKo ?? string.Empty;
-                    poi.NameJa = translation.NameJa ?? string.Empty;
+                    poi.NameVi = !string.IsNullOrWhiteSpace(poi.NameVi) ? poi.NameVi : translation.NameVi ?? poi.Name;
+                    poi.NameEn = !string.IsNullOrWhiteSpace(poi.NameEn) ? poi.NameEn : translation.NameEn ?? string.Empty;
+                    poi.NameZh = !string.IsNullOrWhiteSpace(poi.NameZh) ? poi.NameZh : translation.NameZh ?? string.Empty;
+                    poi.NameKo = !string.IsNullOrWhiteSpace(poi.NameKo) ? poi.NameKo : translation.NameKo ?? string.Empty;
+                    poi.NameJa = !string.IsNullOrWhiteSpace(poi.NameJa) ? poi.NameJa : translation.NameJa ?? string.Empty;
 
-                    poi.DescriptionVi = translation.DescriptionVi ?? poi.Description;
-                    poi.DescriptionEn = translation.DescriptionEn;
-                    poi.DescriptionZh = translation.DescriptionZh;
-                    poi.DescriptionKo = translation.DescriptionKo;
-                    poi.DescriptionJa = translation.DescriptionJa;
+                    poi.DescriptionVi = !string.IsNullOrWhiteSpace(poi.DescriptionVi) ? poi.DescriptionVi : translation.DescriptionVi ?? poi.Description;
+                    poi.DescriptionEn = !string.IsNullOrWhiteSpace(poi.DescriptionEn) ? poi.DescriptionEn : translation.DescriptionEn;
+                    poi.DescriptionZh = !string.IsNullOrWhiteSpace(poi.DescriptionZh) ? poi.DescriptionZh : translation.DescriptionZh;
+                    poi.DescriptionKo = !string.IsNullOrWhiteSpace(poi.DescriptionKo) ? poi.DescriptionKo : translation.DescriptionKo;
+                    poi.DescriptionJa = !string.IsNullOrWhiteSpace(poi.DescriptionJa) ? poi.DescriptionJa : translation.DescriptionJa;
 
                     _logger.LogInformation("Successfully translated POI '{Name}' into 5 languages.", poi.Name);
                 }

@@ -32,4 +32,9 @@ public interface IAdminDataService
     /// Translates a POI using Gemini API and persists the translations.
     /// </summary>
     Task<POI?> TranslatePoiAsync(int id);
+    
+    /// <summary>
+    /// Translates all POIs that are missing English translation and returns the total successfully translated count.
+    /// </summary>
+    Task<int> TranslateAllPoisAsync();
 }
