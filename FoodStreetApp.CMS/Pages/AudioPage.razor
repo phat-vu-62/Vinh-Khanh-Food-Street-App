@@ -1,5 +1,5 @@
 @page "/audio"
-@inject CmsApiService Api
+@inject IAdminDataService DataService
 @inject ToastService Toasts
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -127,15 +127,15 @@
         await LoadAsync();
     }
 
-    private async Task LoadAsync()
+    private Task LoadAsync()
     {
         try
         {
             _isLoading = true;
             _audios.Clear();
             _pois.Clear();
-            _audios.AddRange(await Api.GetAudiosAsync());
-            _pois.AddRange(await Api.GetPoisAsync());
+            _audios.AddRange(DataService.GetAudios());
+            _pois.AddRange(DataService.GetPois());
         }
         catch
         {
@@ -145,6 +145,8 @@
         {
             _isLoading = false;
         }
+
+        return Task.CompletedTask;
     }
 
     private void StartCreate()
@@ -171,7 +173,7 @@
         _editorOpen = true;
     }
 
-    private async Task SaveAsync()
+    private Task SaveAsync()
     {
         try
         {
@@ -187,36 +189,40 @@
 
             if (_isEditing)
             {
-                await Api.UpdateAudioAsync(payload);
+                DataService.UpdateAudio(payload);
                 Toasts.Success("Audio updated.");
             }
             else
             {
-                await Api.CreateAudioAsync(payload);
+                DataService.AddAudio(payload);
                 Toasts.Success("Audio created.");
             }
 
             _editorOpen = false;
-            await LoadAsync();
+            LoadAsync();
         }
         catch
         {
             Toasts.Error("Save audio failed.");
         }
+
+        return Task.CompletedTask;
     }
 
-    private async Task DeleteAsync(int id)
+    private Task DeleteAsync(int id)
     {
         try
         {
-            await Api.DeleteAudioAsync(id);
+            DataService.DeleteAudio(id);
             Toasts.Success("Audio deleted.");
-            await LoadAsync();
+            LoadAsync();
         }
         catch
         {
             Toasts.Error("Delete audio failed.");
         }
+
+        return Task.CompletedTask;
     }
 
     private async Task OnAudioSelected(InputFileChangeEventArgs eventArgs)

@@ -1,6 +1,7 @@
 @page "/poi"
-@inject CmsApiService Api
+@inject IAdminDataService DataService
 @inject ToastService Toasts
+@inject IHttpClientFactory HttpClientFactory
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
@@ -29,6 +30,7 @@
                         <th>Name</th>
                         <th>Description</th>
                         <th>Coordinates</th>
+                        <th>Translations</th>
                         <th>Active</th>
                         <th class="text-end">Actions</th>
                     </tr>
@@ -40,6 +42,29 @@
                             <td>@poi.Name</td>
                             <td class="text-muted">@poi.Description</td>
                             <td>@poi.Latitude.ToString("0.00000"), @poi.Longitude.ToString("0.00000")</td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(poi.NameEn))
+                                {
+                                    <span class="badge text-bg-info me-1">EN</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(poi.NameZh))
+                                {
+                                    <span class="badge text-bg-warning me-1">ZH</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(poi.NameKo))
+                                {
+                                    <span class="badge text-bg-success me-1">KO</span>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(poi.NameJa))
+                                {
+                                    <span class="badge text-bg-danger me-1">JA</span>
+                                }
+                                @if (string.IsNullOrWhiteSpace(poi.NameEn) && string.IsNullOrWhiteSpace(poi.NameZh)
+                                     && string.IsNullOrWhiteSpace(poi.NameKo) && string.IsNullOrWhiteSpace(poi.NameJa))
+                                {
+                                    <span class="text-muted small">—</span>
+                                }
+                            </td>
                             <td>
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" checked="@poi.IsActive" @onchange="(args) => ToggleActiveAsync(poi, args)" />
@@ -60,7 +85,7 @@
 @if (_isEditorOpen)
 {
     <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,.5)">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content form-card">
                 <EditForm Model="_form" OnValidSubmit="SaveAsync">
                     <div class="modal-header">
@@ -92,6 +117,83 @@
                                 <InputNumber class="form-control" @bind-Value="_form.Longitude" />
                             </div>
                         </div>
+
+                        @* ── Translation Section ── *@
+                        @if (_isEditing)
+                        {
+                            <hr class="my-4" />
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-translate"></i> Translations
+                                </h6>
+                                <button type="button"
+                                        class="btn btn-outline-primary btn-sm"
+                                        disabled="@_isTranslating"
+                                        @onclick="TranslateAsync">
+                                    @if (_isTranslating)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                        <span>Translating…</span>
+                                    }
+                                    else
+                                    {
+                                        <span>🌐 Translate</span>
+                                    }
+                                </button>
+                            </div>
+
+                            <div class="row g-3">
+                                @* Vietnamese *@
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted">🇻🇳 Name (Vi)</label>
+                                    <input class="form-control form-control-sm" readonly value="@_form.NameVi" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted">🇻🇳 Description (Vi)</label>
+                                    <input class="form-control form-control-sm" readonly value="@_form.DescriptionVi" />
+                                </div>
+
+                                @* English *@
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted">🇺🇸 Name (En)</label>
+                                    <input class="form-control form-control-sm" readonly value="@_form.NameEn" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted">🇺🇸 Description (En)</label>
+                                    <input class="form-control form-control-sm" readonly value="@_form.DescriptionEn" />
+                                </div>
+
+                                @* Chinese *@
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted">🇨🇳 Name (Zh)</label>
+                                    <input class="form-control form-control-sm" readonly value="@_form.NameZh" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted">🇨🇳 Description (Zh)</label>
+                                    <input class="form-control form-control-sm" readonly value="@_form.DescriptionZh" />
+                                </div>
+
+                                @* Korean *@
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted">🇰🇷 Name (Ko)</label>
+                                    <input class="form-control form-control-sm" readonly value="@_form.NameKo" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted">🇰🇷 Description (Ko)</label>
+                                    <input class="form-control form-control-sm" readonly value="@_form.DescriptionKo" />
+                                </div>
+
+                                @* Japanese *@
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted">🇯🇵 Name (Ja)</label>
+                                    <input class="form-control form-control-sm" readonly value="@_form.NameJa" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted">🇯🇵 Description (Ja)</label>
+                                    <input class="form-control form-control-sm" readonly value="@_form.DescriptionJa" />
+                                </div>
+                            </div>
+                        }
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary" @onclick="CloseEditor">Cancel</button>
@@ -114,6 +216,7 @@
     private bool _isLoading;
     private bool _isEditorOpen;
     private bool _isEditing;
+    private bool _isTranslating;
     private bool _confirmDeleteVisible;
     private int? _deleteId;
     private PoiFormViewModel _form = new();
@@ -123,13 +226,13 @@
         await LoadAsync();
     }
 
-    private async Task LoadAsync()
+    private Task LoadAsync()
     {
         try
         {
             _isLoading = true;
             _pois.Clear();
-            _pois.AddRange(await Api.GetPoisAsync());
+            _pois.AddRange(DataService.GetPois());
         }
         catch
         {
@@ -139,6 +242,8 @@
         {
             _isLoading = false;
         }
+
+        return Task.CompletedTask;
     }
 
     private void StartCreate()
@@ -161,12 +266,23 @@
             AudioUrl = poi.AudioUrl,
             IsActive = poi.IsActive,
             RadiusMeters = poi.RadiusMeters,
-            Type = poi.Type
+            Type = poi.Type,
+            // Translation fields
+            NameVi = poi.NameVi,
+            NameEn = poi.NameEn,
+            NameZh = poi.NameZh,
+            NameKo = poi.NameKo,
+            NameJa = poi.NameJa,
+            DescriptionVi = poi.DescriptionVi,
+            DescriptionEn = poi.DescriptionEn,
+            DescriptionZh = poi.DescriptionZh,
+            DescriptionKo = poi.DescriptionKo,
+            DescriptionJa = poi.DescriptionJa
         };
         _isEditorOpen = true;
     }
 
-    private async Task SaveAsync()
+    private Task SaveAsync()
     {
         try
         {
@@ -180,42 +296,106 @@
                 AudioUrl = _form.AudioUrl,
                 IsActive = _form.IsActive,
                 RadiusMeters = _form.RadiusMeters,
-                Type = _form.Type
+                Type = _form.Type,
+                // Preserve translation fields
+                NameVi = _form.NameVi,
+                NameEn = _form.NameEn,
+                NameZh = _form.NameZh,
+                NameKo = _form.NameKo,
+                NameJa = _form.NameJa,
+                DescriptionVi = _form.DescriptionVi,
+                DescriptionEn = _form.DescriptionEn,
+                DescriptionZh = _form.DescriptionZh,
+                DescriptionKo = _form.DescriptionKo,
+                DescriptionJa = _form.DescriptionJa
             };
 
             if (_isEditing)
             {
-                await Api.UpdatePoiAsync(poi);
+                DataService.UpdatePoi(poi);
                 Toasts.Success("POI updated.");
             }
             else
             {
-                await Api.CreatePoiAsync(poi);
+                DataService.AddPoi(poi);
                 Toasts.Success("POI created.");
             }
 
             _isEditorOpen = false;
-            await LoadAsync();
+            LoadAsync();
         }
         catch
         {
             Toasts.Error("Save POI failed.");
         }
+
+        return Task.CompletedTask;
     }
 
-    private async Task ToggleActiveAsync(POI poi, ChangeEventArgs args)
+    private async Task TranslateAsync()
+    {
+        if (_form.Id <= 0)
+        {
+            Toasts.Error("Please save the POI first before translating.");
+            return;
+        }
+
+        try
+        {
+            _isTranslating = true;
+            StateHasChanged();
+
+            var translated = await DataService.TranslatePoiAsync(_form.Id);
+            if (translated != null)
+            {
+                _form.NameVi = translated.NameVi;
+                _form.NameEn = translated.NameEn;
+                _form.NameZh = translated.NameZh;
+                _form.NameKo = translated.NameKo;
+                _form.NameJa = translated.NameJa;
+                _form.DescriptionVi = translated.DescriptionVi;
+                _form.DescriptionEn = translated.DescriptionEn;
+                _form.DescriptionZh = translated.DescriptionZh;
+                _form.DescriptionKo = translated.DescriptionKo;
+                _form.DescriptionJa = translated.DescriptionJa;
+
+                // Also refresh the list to show badges
+                _pois.Clear();
+                _pois.AddRange(DataService.GetPois());
+
+                Toasts.Success("Translation completed successfully!");
+            }
+            else
+            {
+                Toasts.Error("POI not found or translation failed.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Toasts.Error($"Translation failed: {ex.Message}");
+        }
+        finally
+        {
+            _isTranslating = false;
+            StateHasChanged();
+        }
+    }
+
+    private Task ToggleActiveAsync(POI poi, ChangeEventArgs args)
     {
         var value = args.Value is bool b && b;
         try
         {
             poi.IsActive = value;
-            await Api.UpdatePoiAsync(poi);
+            DataService.UpdatePoi(poi);
             Toasts.Success("POI status updated.");
         }
         catch
         {
             Toasts.Error("Cannot update POI status.");
         }
+
+        return Task.CompletedTask;
     }
 
     private void AskDelete(POI poi)
@@ -224,19 +404,19 @@
         _confirmDeleteVisible = true;
     }
 
-    private async Task DeleteConfirmedAsync()
+    private Task DeleteConfirmedAsync()
     {
         if (_deleteId is null)
         {
             _confirmDeleteVisible = false;
-            return;
+            return Task.CompletedTask;
         }
 
         try
         {
-            await Api.DeletePoiAsync(_deleteId.Value);
+            DataService.DeletePoi(_deleteId.Value);
             Toasts.Success("POI deleted.");
-            await LoadAsync();
+            LoadAsync();
         }
         catch
         {
@@ -247,6 +427,8 @@
             _confirmDeleteVisible = false;
             _deleteId = null;
         }
+
+        return Task.CompletedTask;
     }
 
     private Task CancelDelete()

@@ -27,4 +27,9 @@ public interface IAdminDataService
     Translation AddTranslation(Translation translation);
     bool UpdateTranslation(Translation translation);
     bool DeleteTranslation(int id);
+
+    /// <summary>
+    /// Translates a POI using Gemini API and persists the translations.
+    /// </summary>
+    Task<POI?> TranslatePoiAsync(int id);
 }

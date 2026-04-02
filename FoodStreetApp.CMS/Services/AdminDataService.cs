@@ -8,10 +8,14 @@ namespace FoodStreetApp.CMS.Services;
 public class AdminDataService : IAdminDataService
 {
     private readonly CmsDbContext _dbContext;
+    private readonly IGeminiTranslationService _translationService;
+    private readonly ILogger<AdminDataService> _logger;
 
-    public AdminDataService(CmsDbContext dbContext)
+    public AdminDataService(CmsDbContext dbContext, IGeminiTranslationService translationService, ILogger<AdminDataService> logger)
     {
         _dbContext = dbContext;
+        _translationService = translationService;
+        _logger = logger;
     }
 
     public IReadOnlyCollection<POI> GetPois() => _dbContext.Pois.OrderBy(x => x.Id).ToList();
@@ -42,6 +46,19 @@ public class AdminDataService : IAdminDataService
         item.IsActive = poi.IsActive;
         item.Type = poi.Type;
         item.RadiusMeters = poi.RadiusMeters;
+
+        // Persist translation fields
+        item.NameVi = poi.NameVi;
+        item.NameEn = poi.NameEn;
+        item.NameZh = poi.NameZh;
+        item.NameKo = poi.NameKo;
+        item.NameJa = poi.NameJa;
+        item.DescriptionVi = poi.DescriptionVi;
+        item.DescriptionEn = poi.DescriptionEn;
+        item.DescriptionZh = poi.DescriptionZh;
+        item.DescriptionKo = poi.DescriptionKo;
+        item.DescriptionJa = poi.DescriptionJa;
+
         _dbContext.SaveChanges();
         TrackPoiAction(item.Id, "Updated");
         return true;
@@ -193,5 +210,24 @@ public class AdminDataService : IAdminDataService
         _dbContext.Translations.Remove(item);
         _dbContext.SaveChanges();
         return true;
+    }
+
+    /// <summary>
+    /// Translates a POI using the Gemini API and persists the translation fields.
+    /// </summary>
+    public async Task<POI?> TranslatePoiAsync(int id)
+    {
+        var poi = _dbContext.Pois.FirstOrDefault(x => x.Id == id);
+        if (poi is null)
+        {
+            return null;
+        }
+
+        await _translationService.TranslatePoiAsync(poi);
+        _dbContext.SaveChanges();
+        TrackPoiAction(poi.Id, "Updated");
+
+        _logger.LogInformation("POI {Id} translated and saved.", poi.Id);
+        return poi;
     }
 }

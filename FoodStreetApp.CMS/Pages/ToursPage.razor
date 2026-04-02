@@ -1,5 +1,5 @@
 @page "/tours"
-@inject CmsApiService Api
+@inject IAdminDataService DataService
 @inject ToastService Toasts
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -127,15 +127,15 @@
         await LoadAsync();
     }
 
-    private async Task LoadAsync()
+    private Task LoadAsync()
     {
         try
         {
             _isLoading = true;
             _tours.Clear();
             _pois.Clear();
-            _tours.AddRange(await Api.GetToursAsync());
-            _pois.AddRange(await Api.GetPoisAsync());
+            _tours.AddRange(DataService.GetTours());
+            _pois.AddRange(DataService.GetPois());
             _selectedPoiId = _pois.FirstOrDefault()?.Id ?? 0;
         }
         catch
@@ -146,6 +146,8 @@
         {
             _isLoading = false;
         }
+
+        return Task.CompletedTask;
     }
 
     private void StartCreate()
@@ -198,7 +200,7 @@
         (_form.PoiIds[index], _form.PoiIds[newIndex]) = (_form.PoiIds[newIndex], _form.PoiIds[index]);
     }
 
-    private async Task SaveAsync()
+    private Task SaveAsync()
     {
         try
         {
@@ -213,36 +215,40 @@
 
             if (_isEditing)
             {
-                await Api.UpdateTourAsync(payload);
+                DataService.UpdateTour(payload);
                 Toasts.Success("Tour updated.");
             }
             else
             {
-                await Api.CreateTourAsync(payload);
+                DataService.AddTour(payload);
                 Toasts.Success("Tour created.");
             }
 
             _editorOpen = false;
-            await LoadAsync();
+            LoadAsync();
         }
         catch
         {
             Toasts.Error("Save tour failed.");
         }
+
+        return Task.CompletedTask;
     }
 
-    private async Task DeleteAsync(int id)
+    private Task DeleteAsync(int id)
     {
         try
         {
-            await Api.DeleteTourAsync(id);
+            DataService.DeleteTour(id);
             Toasts.Success("Tour deleted.");
-            await LoadAsync();
+            LoadAsync();
         }
         catch
         {
             Toasts.Error("Delete tour failed.");
         }
+
+        return Task.CompletedTask;
     }
 
     private string FindPoiName(int poiId) => _pois.FirstOrDefault(x => x.Id == poiId)?.Name ?? $"POI #{poiId}";

@@ -1,5 +1,5 @@
 @page "/"
-@inject CmsApiService Api
+@inject IAdminDataService DataService
 @inject ToastService Toasts
 
 <div class="d-flex justify-content-between align-items-center mb-3">
@@ -97,22 +97,24 @@
         await LoadAsync();
     }
 
-    private async Task LoadAsync()
+    private Task LoadAsync()
     {
         try
         {
             _isLoading = true;
-            Pois = await Api.GetPoisAsync();
-            Audios = await Api.GetAudiosAsync();
-            Tours = await Api.GetToursAsync();
+            Pois = DataService.GetPois();
+            Audios = DataService.GetAudios();
+            Tours = DataService.GetTours();
         }
         catch
         {
-            Toasts.Error("Cannot load dashboard data from API.");
+            Toasts.Error("Cannot load dashboard data.");
         }
         finally
         {
             _isLoading = false;
         }
+
+        return Task.CompletedTask;
     }
 }

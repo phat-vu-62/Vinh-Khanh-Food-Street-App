@@ -36,13 +36,19 @@ if (!string.IsNullOrWhiteSpace(databaseUrl))
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddDbContext<CmsDbContext>(options => options.UseNpgsql(connectionString));
+
+// Register Gemini translation service
+builder.Services.AddHttpClient<IGeminiTranslationService, GeminiTranslationService>();
+
+// Register admin data service (depends on IGeminiTranslationService)
 builder.Services.AddScoped<IAdminDataService, AdminDataService>();
 builder.Services.AddScoped<ToastService>();
+
+// Keep an HttpClient for the external API (used by sync endpoints)
 builder.Services.AddHttpClient("API", client =>
 {
     client.BaseAddress = new Uri(apiBaseUrl);
 });
-builder.Services.AddScoped<CmsApiService>();
 
 var app = builder.Build();
 
@@ -58,6 +64,25 @@ using (var scope = app.Services.CreateScope())
     );");
     dbContext.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS \"IX_PoiSyncActions_OccurredAtUtc\" ON \"PoiSyncActions\" (\"OccurredAtUtc\");");
     dbContext.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS \"IX_PoiSyncActions_PoiId\" ON \"PoiSyncActions\" (\"PoiId\");");
+
+    // Ensure translation columns exist on the Pois table
+    var translationColumns = new[]
+    {
+        "NameVi", "NameEn", "NameZh", "NameKo", "NameJa",
+        "DescriptionVi", "DescriptionEn", "DescriptionZh", "DescriptionKo", "DescriptionJa"
+    };
+    foreach (var col in translationColumns)
+    {
+        try
+        {
+            var sql = "ALTER TABLE \"Pois\" ADD COLUMN IF NOT EXISTS \"" + col + "\" text;";
+            dbContext.Database.ExecuteSqlRaw(sql);
+        }
+        catch
+        {
+            // Column already exists or DB doesn't support IF NOT EXISTS — safe to ignore
+        }
+    }
 }
 
 if (!app.Environment.IsDevelopment())
@@ -122,6 +147,20 @@ app.MapPut("/api/POI/{id:int}", (int id, FoodStreetApp.Shared.Entities.POI poi, 
 });
 app.MapDelete("/api/POI/{id:int}", (int id, IAdminDataService service) =>
     service.DeletePoi(id) ? Results.NoContent() : Results.NotFound());
+
+// Translation endpoint
+app.MapPost("/api/POI/{id:int}/translate", async (int id, IAdminDataService service) =>
+{
+    try
+    {
+        var translated = await service.TranslatePoiAsync(id);
+        return translated is null ? Results.NotFound() : Results.Ok(translated);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message, statusCode: 500);
+    }
+});
 
 app.MapGet("/api/Audio", (IAdminDataService service) => Results.Ok(service.GetAudios()));
 app.MapGet("/api/Audio/{id:int}", (int id, IAdminDataService service) =>
