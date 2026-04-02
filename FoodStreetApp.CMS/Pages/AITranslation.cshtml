@@ -1,0 +1,160 @@
+@page "/aitranslation"
+@model FoodStreetApp.CMS.Pages.AITranslationModel
+@{
+    ViewData["Title"] = "Dịch thuật tự động bằng AI";
+}
+
+<div class="container-fluid mt-4">
+    <div class="row mb-3">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <h2>@ViewData["Title"]</h2>
+            <div class="d-flex gap-3 align-items-center">
+                <label for="targetLanguage" class="form-label mb-0 fw-bold">Ngôn ngữ đích:</label>
+                <select id="targetLanguage" class="form-select w-auto">
+                    <option value="en">Tiếng Anh (English)</option>
+                    <option value="ja">Tiếng Nhật (Japanese)</option>
+                    <option value="ko">Tiếng Hàn (Korean)</option>
+                    <option value="zh">Tiếng Trung (Chinese)</option>
+                </select>
+                <button type="button" id="btnTranslate" class="btn btn-primary d-flex align-items-center gap-2">
+                    <i class="bi bi-translate"></i>
+                    <span>Dịch tự động</span>
+                    <div id="loadingSpinner" class="spinner-border spinner-border-sm text-light d-none" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error container -->
+    <div id="errorAlert" class="alert alert-danger d-none" role="alert">
+        <strong>Lỗi!</strong> <span id="errorMessage"></span>
+    </div>
+
+    <div class="row gx-4">
+        <!-- Cột Bản Gốc -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-header bg-light border-0 py-3">
+                    <h5 class="mb-0 text-secondary"><i class="bi bi-file-earmark-text me-2"></i>Bản gốc (Tiếng Việt)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="originalShopName" class="form-label fw-semibold">Tên quán (Shop Name)</label>
+                        <input type="text" class="form-control" id="originalShopName" placeholder="Nhập tên quán...">
+                    </div>
+                    <div class="mb-3">
+                        <label for="originalDescription" class="form-label fw-semibold">Mô tả chi tiết (Description)</label>
+                        <textarea class="form-control" id="originalDescription" rows="5" placeholder="Nhập mô tả chi tiết..."></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="originalTtsScript" class="form-label fw-semibold">Kịch bản TTS (TTS Script)</label>
+                        <textarea class="form-control" id="originalTtsScript" rows="4" placeholder="Nhập nội dung kịch bản cho âm thanh TTS..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cột Bản Dịch -->
+        <div class="col-md-6 mb-4">
+            <div class="card h-100 shadow-sm border-0 border-start border-primary border-4">
+                <div class="card-header bg-light border-0 py-3">
+                    <h5 class="mb-0 text-primary"><i class="bi bi-magic me-2"></i>Bản dịch (AI Generated)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="translatedShopName" class="form-label fw-semibold">Tên quán (Translated)</label>
+                        <input type="text" class="form-control bg-light" id="translatedShopName" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label for="translatedDescription" class="form-label fw-semibold">Mô tả (Translated)</label>
+                        <textarea class="form-control bg-light" id="translatedDescription" rows="5" readonly></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="translatedTtsScript" class="form-label fw-semibold">Kịch bản TTS (Translated)</label>
+                        <textarea class="form-control bg-light" id="translatedTtsScript" rows="4" readonly></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnTranslate = document.getElementById('btnTranslate');
+            const originalShopName = document.getElementById('originalShopName');
+            const originalDescription = document.getElementById('originalDescription');
+            const originalTtsScript = document.getElementById('originalTtsScript');
+            
+            const translatedShopName = document.getElementById('translatedShopName');
+            const translatedDescription = document.getElementById('translatedDescription');
+            const translatedTtsScript = document.getElementById('translatedTtsScript');
+            const targetLanguage = document.getElementById('targetLanguage');
+            
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const btnText = btnTranslate.querySelector('span');
+            const errorAlert = document.getElementById('errorAlert');
+            const errorMessage = document.getElementById('errorMessage');
+
+            btnTranslate.addEventListener('click', async function() {
+                // Clear previous state and errors
+                errorAlert.classList.add('d-none');
+                
+                const requestPayload = {
+                    originalShopName: originalShopName.value.trim(),
+                    originalDescription: originalDescription.value.trim(),
+                    originalTtsScript: originalTtsScript.value.trim(),
+                    targetLanguage: targetLanguage.value
+                };
+
+                // Validate at least one field has text
+                if (!requestPayload.originalShopName && !requestPayload.originalDescription && !requestPayload.originalTtsScript) {
+                    showError('Vui lòng nhập ít nhất một trường dữ liệu (Tên quán, Mô tả, hoặc Kịch bản TTS) để dịch.');
+                    return;
+                }
+
+                // UI loading state update
+                btnTranslate.disabled = true;
+                loadingSpinner.classList.remove('d-none');
+                btnText.textContent = 'Đang dịch...';
+                
+                try {
+                    const response = await fetch('/api/translationapi/translate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestPayload)
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.message || `Lỗi gọi dịch vụ dịch thuật (Mã: ${response.status})`);
+                    }
+
+                    const result = await response.json();
+                    
+                    // Populate translated data
+                    translatedShopName.value = result.translatedShopName || '';
+                    translatedDescription.value = result.translatedDescription || '';
+                    translatedTtsScript.value = result.translatedTtsScript || '';
+                    
+                } catch (error) {
+                    showError(error.message);
+                } finally {
+                    btnTranslate.disabled = false;
+                    loadingSpinner.classList.add('d-none');
+                    btnText.textContent = 'Dịch tự động';
+                }
+            });
+
+            function showError(message) {
+                errorMessage.textContent = message;
+                errorAlert.classList.remove('d-none');
+            }
+        });
+    </script>
+}

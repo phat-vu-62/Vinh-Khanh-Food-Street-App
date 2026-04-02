@@ -39,8 +39,10 @@ builder.Services.AddDbContext<CmsDbContext>(options => options.UseNpgsql(connect
 
 // Register Gemini translation service
 builder.Services.AddHttpClient<IGeminiTranslationService, GeminiTranslationService>();
+builder.Services.AddHttpClient<IAutoTranslationService, AutoTranslationService>();
 
-// Register admin data service (depends on IGeminiTranslationService)
+// Register APIs and Admin Services
+builder.Services.AddControllers();
 builder.Services.AddScoped<IAdminDataService, AdminDataService>();
 builder.Services.AddScoped<ToastService>();
 
@@ -257,6 +259,7 @@ app.MapGet("/api/sync/pois", (IAdminDataService service) =>
     return Results.Ok(result);
 });
 
+app.MapControllers();
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
