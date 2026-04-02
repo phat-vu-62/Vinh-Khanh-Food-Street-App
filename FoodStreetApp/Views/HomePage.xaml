@@ -8,8 +8,10 @@
              Title="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[Home]}"
              Shell.NavBarIsVisible="False">
 
-    <ScrollView>
-        <VerticalStackLayout Spacing="0">
+    <RefreshView IsRefreshing="{Binding IsRefreshing, Mode=TwoWay}"
+                 Command="{Binding RefreshCommand}">
+        <ScrollView>
+            <VerticalStackLayout Spacing="0">
             <!-- Hero Header Section -->
             <Grid HeightRequest="250">
                 <Image Source="vinhkhanh.jpg" Aspect="AspectFill" />
@@ -155,6 +157,12 @@
                                 </Border>
                             </DataTemplate>
                         </CollectionView.ItemTemplate>
+                        <CollectionView.EmptyView>
+                            <VerticalStackLayout Padding="12" Spacing="4" HorizontalOptions="Center">
+                                <Label Text="Không có dữ liệu POI." HorizontalOptions="Center" TextColor="Gray" />
+                                <Label Text="Vuốt xuống để làm mới." HorizontalOptions="Center" TextColor="Gray" FontSize="12" />
+                            </VerticalStackLayout>
+                        </CollectionView.EmptyView>
                     </CollectionView>
                 </VerticalStackLayout>
                 </VerticalStackLayout>
@@ -201,6 +209,7 @@
                     </CollectionView>
                 </Border>
             </Grid>
-        </VerticalStackLayout>
-    </ScrollView>
+            </VerticalStackLayout>
+        </ScrollView>
+    </RefreshView>
 </ContentPage>

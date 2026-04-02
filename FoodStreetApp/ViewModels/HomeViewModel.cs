@@ -11,6 +11,8 @@ namespace FoodStreetApp.ViewModels
     {
         private readonly IPOIService _poiService;
         private string _searchText = string.Empty;
+        private const string RenderSyncUrl = "https://vinh-khanh-food-street-app.onrender.com/api/sync/pois";
+        private readonly SemaphoreSlim _refreshLock = new(1, 1);
 
         public ObservableCollection<FoodPlace> FeaturedStalls { get; }
         public ObservableCollection<FoodPlace> PopularSeafoodStalls { get; }
@@ -35,6 +37,20 @@ namespace FoodStreetApp.ViewModels
 
         public ICommand GoToDetailCommand { get; }
         public ICommand LoadDataCommand { get; }
+        public ICommand RefreshCommand { get; }
+
+        private bool _isRefreshing;
+        public bool IsRefreshing
+        {
+            get => _isRefreshing;
+            set
+            {
+                if (_isRefreshing == value) return;
+                _isRefreshing = value;
+                OnPropertyChanged();
+                (RefreshCommand as Command)?.ChangeCanExecute();
+            }
+        }
 
         public string SearchText
         {
@@ -131,6 +147,42 @@ namespace FoodStreetApp.ViewModels
             });
 
             LoadDataCommand = new Command(async () => await LoadAllRestaurantsAsync());
+            RefreshCommand = new Command(async () => await RefreshAsync(), () => !IsRefreshing);
+        }
+
+        private async Task RefreshAsync()
+        {
+            if (IsRefreshing) return;
+
+            if (!await _refreshLock.WaitAsync(0)) return;
+
+            try
+            {
+                IsRefreshing = true;
+
+                var syncTask = _poiService.SyncFromWebAsync(RenderSyncUrl);
+                var completed = await Task.WhenAny(syncTask, Task.Delay(TimeSpan.FromSeconds(12)));
+
+                if (completed == syncTask)
+                {
+                    await syncTask;
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("Refresh timeout. Using local cached data.");
+                }
+
+                await LoadAllRestaurantsAsync();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Refresh failed: {ex.Message}");
+            }
+            finally
+            {
+                IsRefreshing = false;
+                _refreshLock.Release();
+            }
         }
 
         private async Task LoadAllRestaurantsAsync()
