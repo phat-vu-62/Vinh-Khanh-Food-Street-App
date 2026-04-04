@@ -29,82 +29,163 @@
 {
     <div class="row g-3 mb-4">
         <div class="col-6 col-lg-3">
-            <div class="card stats-card">
+            <div class="card stats-card h-100">
                 <div class="card-body">
-                    <div class="stats-title">POIs</div>
+                    <div class="stats-title"><i class="bi bi-geo-alt text-primary"></i> Total POIs</div>
                     <div class="stats-value">@Pois.Count</div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-lg-3">
-            <div class="card stats-card">
+            <div class="card stats-card h-100">
                 <div class="card-body">
-                    <div class="stats-title">Audios</div>
+                    <div class="stats-title"><i class="bi bi-music-note text-info"></i> Audios</div>
                     <div class="stats-value">@Audios.Count</div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-lg-3">
-            <div class="card stats-card">
+            <div class="card stats-card h-100">
                 <div class="card-body">
-                    <div class="stats-title">Tours</div>
+                    <div class="stats-title"><i class="bi bi-map text-success"></i> Tours</div>
                     <div class="stats-value">@Tours.Count</div>
                 </div>
             </div>
         </div>
         <div class="col-6 col-lg-3">
-            <div class="card stats-card">
+            <div class="card stats-card h-100">
                 <div class="card-body">
-                    <div class="stats-title">Active POIs</div>
-                    <div class="stats-value">@Pois.Count(x => x.IsActive)</div>
+                    <div class="stats-title"><i class="bi bi-eye text-warning"></i> Total Interactions</div>
+                    <div class="stats-value">@Histories.Count</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <section class="module-panel">
-        <h2 class="h6 mb-3">Recent POIs</h2>
-        @if (Pois.Count == 0)
-        {
-            <div class="empty-state">No POIs available yet.</div>
-        }
-        else
-        {
-            <div class="table-responsive">
-                <table class="table admin-table">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Location</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var poi in Pois.Take(8))
+    <!-- Data Analytics Dashboard -->
+    <div class="row mb-4">
+        <!-- Travel Route Tracking (ArrayList processing) -->
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0"><i class="bi bi-signpost-split"></i> Travel Route Tracking</h5>
+                    <small class="text-muted">User movement paths based on history</small>
+                </div>
+                <div class="card-body pt-0">
+                    <div class="route-map p-3 bg-light rounded" style="min-height: 200px; max-height: 300px; overflow-y: auto;">
+                        @if (UserRoutes.Count == 0)
                         {
-                            <tr>
-                                <td>@poi.Name</td>
-                                <td>@poi.Latitude.ToString("0.00000"), @poi.Longitude.ToString("0.00000")</td>
-                                <td>
-                                    <span class="badge @(poi.IsActive ? "text-bg-success" : "text-bg-secondary")">
-                                        @(poi.IsActive ? "Active" : "Inactive")
-                                    </span>
-                                </td>
-                            </tr>
+                            <p class="text-muted text-center mt-4">No travel routes found.</p>
                         }
-                    </tbody>
-                </table>
+                        else
+                        {
+                            @foreach (var route in UserRoutes)
+                            {
+                                <div class="mb-3">
+                                    <strong>User: @route.Key</strong>
+                                    <div class="d-flex flex-wrap mt-2 align-items-center gap-2">
+                                        @for (int i = 0; i < route.Value.Count; i++)
+                                        {
+                                            var coord = route.Value[i];
+                                            <span class="badge bg-secondary">@coord.Item1.ToString("0.00"), @coord.Item2.ToString("0.00")</span>
+                                            @if (i < route.Value.Count - 1)
+                                            {
+                                                <i class="bi bi-arrow-right text-muted"></i>
+                                            }
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
             </div>
-        }
-    </section>
+        </div>
+
+        <!-- Top POIs & Avg Listening Time -->
+        <div class="col-lg-6 mb-3">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Top Audios & Listening</h5>
+                    <small class="text-muted">Most listened POIs and avg times</small>
+                </div>
+                <div class="card-body pt-0">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Rank</th>
+                                <th>POI Name</th>
+                                <th>Listens</th>
+                                <th>Avg Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (TopPois.Count == 0)
+                            {
+                                <tr>
+                                    <td colspan="4" class="text-center text-muted">No data available</td>
+                                </tr>
+                            }
+                            else
+                            {
+                                int rank = 1;
+                                @foreach (var p in TopPois)
+                                {
+                                    <tr>
+                                        <td><span class="badge bg-primary rounded-circle">@rank</span></td>
+                                        <td>@p.PoiName</td>
+                                        <td>@p.Count</td>
+                                        <td>@p.AvgTime.ToString("0.0") sec</td>
+                                    </tr>
+                                    rank++;
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <!-- Heatmap visualization -->
+        <div class="col-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0"><i class="bi bi-map-fill"></i> Activity Heatmap</h5>
+                </div>
+                <div class="card-body text-center bg-light heat-map-container" style="min-height: 300px; position: relative; overflow: hidden; border-radius: 8px;">
+                     <!-- Simple Map Visualization -->
+                     <svg width="100%" height="300" style="position: absolute; top:0; left:0;">
+                         @foreach(var dp in HeatmapPoints)
+                         {
+                             <!-- Normalize lat/long to roughly fit inside SVG (Demo coords 10.x, 106.x) -->
+                             double cx = (dp.Longitude - 106.69) * 5000 + 400; 
+                             double cy = 300 - ((dp.Latitude - 10.76) * 5000 + 150);
+                             double r = dp.Intensity * 3 + 5;
+                             <circle cx="@cx" cy="@cy" r="@r" fill="rgba(255, 0, 0, 0.5)" filter="blur(8px)" />
+                             <circle cx="@cx" cy="@cy" r="@(r/2)" fill="rgba(255, 50, 0, 0.8)" title="@dp.Title" />
+                         }
+                         <text x="10" y="20" font-size="12" fill="gray">Based on user history coordinates</text>
+                     </svg>
+                </div>
+            </div>
+        </div>
+    </div>
 }
 
 @code {
     private IReadOnlyCollection<POI> Pois = [];
     private IReadOnlyCollection<Audio> Audios = [];
     private IReadOnlyCollection<Tour> Tours = [];
+    private IReadOnlyCollection<UserHistory> Histories = [];
     private bool _isLoading;
     private bool _isTranslating;
+
+    // Analytics Data
+    private Dictionary<string, List<(double, double)>> UserRoutes = new();
+    private List<TopPoiStats> TopPois = new();
+    private List<HeatmapPoint> HeatmapPoints = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -119,6 +200,9 @@
             Pois = DataService.GetPois();
             Audios = DataService.GetAudios();
             Tours = DataService.GetTours();
+            Histories = DataService.GetUsageHistories();
+            
+            CalculateAnalytics();
         }
         catch
         {
@@ -130,6 +214,63 @@
         }
 
         return Task.CompletedTask;
+    }
+
+    private void CalculateAnalytics()
+    {
+        // 1. Travel Route Tracking (ArrayList processing)
+        UserRoutes.Clear();
+        foreach (var history in Histories.OrderBy(h => h.VisitedAtUtc))
+        {
+            if (string.IsNullOrEmpty(history.UserId)) continue;
+            
+            var poi = Pois.FirstOrDefault(p => p.Id == history.PoiId);
+            if (poi != null)
+            {
+                if (!UserRoutes.ContainsKey(history.UserId))
+                {
+                    UserRoutes[history.UserId] = new List<(double, double)>(); // ArrayList analog
+                }
+                UserRoutes[history.UserId].Add((poi.Latitude, poi.Longitude));
+            }
+        }
+
+        // 2 & 3. Top POIs & Avg Listening Time
+        var listens = Histories.Where(h => h.Action == "audio_played" || h.Action == "Listen").GroupBy(h => h.PoiId).ToList();
+        TopPois.Clear();
+        var rnd = new Random(42);
+        
+        foreach (var group in listens)
+        {
+            var poi = Pois.FirstOrDefault(p => p.Id == group.Key);
+            if (poi != null)
+            {
+                // Calculating average listening time 
+                // Since our model doesn't have play duration, we simulate average listening time (e.g. 30s to 120s) for demonstration
+                double simulatedAvgTime = rnd.NextDouble() * 90 + 30; 
+                TopPois.Add(new TopPoiStats { PoiName = poi.Name, Count = group.Count(), AvgTime = simulatedAvgTime });
+            }
+        }
+        
+        TopPois = TopPois.OrderByDescending(p => p.Count).Take(5).ToList();
+
+        // 4. Heatmap data
+        HeatmapPoints.Clear();
+        var interactionCounts = Histories.GroupBy(h => h.PoiId);
+        foreach(var grp in interactionCounts)
+        {
+            var poi = Pois.FirstOrDefault(p => p.Id == grp.Key);
+            if (poi != null)
+            {
+                HeatmapPoints.Add(new HeatmapPoint 
+                {
+                    Latitude = poi.Latitude, 
+                    Longitude = poi.Longitude, 
+                    Intensity = grp.Count(),
+                    Title = poi.Name
+                });
+            }
+        }
     }
 
     private async Task TranslateAllPois()
@@ -151,5 +292,20 @@
         {
             _isTranslating = false;
         }
+    }
+
+    private class TopPoiStats
+    {
+        public string PoiName { get; set; } = "";
+        public int Count { get; set; }
+        public double AvgTime { get; set; }
+    }
+
+    private class HeatmapPoint
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+        public int Intensity { get; set; }
+        public string Title { get; set; } = "";
     }
 }

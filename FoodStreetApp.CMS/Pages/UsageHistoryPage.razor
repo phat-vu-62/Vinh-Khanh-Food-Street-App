@@ -7,7 +7,11 @@
         <h1 class="h4 mb-0">Usage History</h1>
         <small class="text-muted">POI viewed and audio played activity logs</small>
     </div>
-    <button class="btn btn-outline-primary" @onclick="LoadAsync">Refresh</button>
+    <div class="d-flex gap-2">
+        <InputDate class="form-control" style="min-width: 150px;" @bind-Value="_selectedDate" @bind-Value:after="LoadAsync" TValue="DateTime?" placeholder="Filter by Date..." />
+        <button class="btn btn-outline-secondary" @onclick="ClearFilter" disabled="@(_selectedDate == null)">Clear</button>
+        <button class="btn btn-outline-primary" @onclick="LoadAsync">Refresh</button>
+    </div>
 </div>
 
 <section class="module-panel">
@@ -30,7 +34,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var item in _history.OrderByDescending(x => x.VisitedAtUtc))
+                    @foreach (var item in GetFilteredHistory())
                     {
                         <tr>
                             <td>@(string.IsNullOrWhiteSpace(item.UserId) ? "Guest" : item.UserId)</td>
@@ -51,6 +55,7 @@
     private readonly List<UserHistory> _history = [];
     private readonly List<POI> _pois = [];
     private bool _isLoading;
+    private DateTime? _selectedDate;
 
     protected override async Task OnInitializedAsync()
     {
@@ -114,6 +119,22 @@
         });
 
         Toasts.Info("Initialized mock usage history.");
+    }
+
+    private IEnumerable<UserHistory> GetFilteredHistory()
+    {
+        var query = _history.OrderByDescending(x => x.VisitedAtUtc).AsEnumerable();
+        if (_selectedDate.HasValue)
+        {
+            query = query.Where(x => x.VisitedAtUtc.ToLocalTime().Date == _selectedDate.Value.Date);
+        }
+        return query;
+    }
+
+    private Task ClearFilter()
+    {
+        _selectedDate = null;
+        return LoadAsync();
     }
 
     private string FindPoiName(int poiId) => _pois.FirstOrDefault(x => x.Id == poiId)?.Name ?? $"POI #{poiId}";

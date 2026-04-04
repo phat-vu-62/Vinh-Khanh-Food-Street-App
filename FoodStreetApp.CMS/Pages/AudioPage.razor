@@ -82,52 +82,69 @@
                                     }
                                 </InputSelect>
                             </div>
-                            <div class="col-md-8">
-                                <label class="form-label">Audio URL</label>
-                                <InputText class="form-control" @bind-Value="_form.Url" />
-                            </div>
                             <div class="col-md-4">
                                 <label class="form-label">Duration (seconds)</label>
                                 <InputNumber class="form-control" @bind-Value="_form.DurationSeconds" />
                             </div>
-                            <div class="col-md-12">
-                                <div class="card border-0 bg-light">
-                                    <div class="card-body py-3">
-                                        <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <label class="form-label mb-0">Generate TTS</label>
-                                            <button type="button" class="btn btn-sm btn-outline-primary" @onclick="GenerateTtsUrl">
-                                                Generate TTS URL
-                                            </button>
-                                        </div>
-                                        <div class="row g-2">
-                                            <div class="col-md-3">
-                                                <InputSelect class="form-select" @bind-Value="_ttsLanguage">
-                                                    <option value="vi">vi</option>
-                                                    <option value="en">en</option>
-                                                    <option value="zh-CN">zh</option>
-                                                    <option value="ko">ko</option>
-                                                    <option value="ja">ja</option>
-                                                </InputSelect>
+                            <div class="col-md-12 mb-3">
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="audioMode" id="modeUpload" autocomplete="off" checked="@(_audioMode == "Upload")" @onchange="@(() => _audioMode = "Upload")">
+                                    <label class="btn btn-outline-primary" for="modeUpload"><i class="bi bi-upload"></i> Upload File</label>
+
+                                    <input type="radio" class="btn-check" name="audioMode" id="modeTTS" autocomplete="off" checked="@(_audioMode == "TTS")" @onchange="@(() => _audioMode = "TTS")">
+                                    <label class="btn btn-outline-primary" for="modeTTS"><i class="bi bi-mic"></i> Text-to-Speech (TTS)</label>
+                                </div>
+                            </div>
+
+                            @if (_audioMode == "TTS")
+                            {
+                                <div class="col-md-12">
+                                    <div class="card border-0 bg-light">
+                                        <div class="card-body py-3">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <label class="form-label mb-0">Generate TTS</label>
+                                                <button type="button" class="btn btn-sm btn-primary" @onclick="GenerateTtsUrl">
+                                                    Generate Audio
+                                                </button>
                                             </div>
-                                            <div class="col-md-9">
-                                                <InputTextArea class="form-control" @bind-Value="_ttsText" rows="2" placeholder="Enter text to synthesize" />
+                                            <div class="row g-2">
+                                                <div class="col-md-3">
+                                                    <InputSelect class="form-select" @bind-Value="_ttsLanguage">
+                                                        <option value="vi">vi</option>
+                                                        <option value="en">en</option>
+                                                        <option value="zh-CN">zh</option>
+                                                        <option value="ko">ko</option>
+                                                        <option value="ja">ja</option>
+                                                    </InputSelect>
+                                                </div>
+                                                <div class="col-md-9">
+                                                    <InputTextArea class="form-control" @bind-Value="_ttsText" rows="2" placeholder="Enter text to synthesize" />
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Upload audio file</label>
-                                <InputFile class="form-control" OnChange="OnAudioSelected" accept="audio/*" />
-                                @if (!string.IsNullOrWhiteSpace(_uploadedPreviewUrl))
-                                {
-                                    <small class="text-muted d-block mt-2">Preview selected file:</small>
-                                    <audio controls class="mt-1" style="width: 260px;">
-                                        <source src="@_uploadedPreviewUrl" />
+                            }
+
+                            @if (_audioMode == "Upload")
+                            {
+                                <div class="col-12">
+                                    <label class="form-label">Upload audio file</label>
+                                    <InputFile class="form-control" OnChange="OnAudioSelected" accept="audio/*" />
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrWhiteSpace(_form.Url) || !string.IsNullOrWhiteSpace(_uploadedPreviewUrl))
+                            {
+                                <div class="col-12 mt-3 text-center">
+                                    <small class="text-muted d-block mb-1">Audio Preview</small>
+                                    <audio controls class="w-100" style="max-height: 40px;">
+                                        <source src="@(!string.IsNullOrWhiteSpace(_uploadedPreviewUrl) ? _uploadedPreviewUrl : _form.Url)" />
                                     </audio>
-                                }
-                            </div>
-                            <div class="col-md-4">
+                                </div>
+                            }
+
+                            <div class="col-md-4 mt-3">
                                 <label class="form-label">Status</label>
                                 <div class="form-check form-switch mt-2">
                                     <InputCheckbox class="form-check-input" @bind-Value="_form.IsActive" />
@@ -152,6 +169,7 @@
     private bool _isLoading;
     private bool _editorOpen;
     private bool _isEditing;
+    private string _audioMode = "Upload";
     private string? _uploadedPreviewUrl;
     private string _ttsText = string.Empty;
     private string _ttsLanguage = "vi";
@@ -191,6 +209,7 @@
         _uploadedPreviewUrl = null;
         _ttsText = string.Empty;
         _ttsLanguage = "vi";
+        _audioMode = "Upload";
         _editorOpen = true;
     }
 
@@ -209,6 +228,7 @@
         _uploadedPreviewUrl = null;
         _ttsText = string.Empty;
         _ttsLanguage = "vi";
+        _audioMode = string.IsNullOrEmpty(audio.Url) ? "Upload" : (audio.Url.Contains("translate.google.com") ? "TTS" : "Upload");
         _editorOpen = true;
     }
 

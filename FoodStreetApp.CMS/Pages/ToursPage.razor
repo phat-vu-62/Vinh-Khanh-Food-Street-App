@@ -81,21 +81,24 @@
                                 <button type="button" class="btn btn-outline-primary w-100" @onclick="AddPoiToTour">Add</button>
                             </div>
                             <div class="col-md-5">
-                                <label class="form-label">Tour POIs (ordered)</label>
-                                <ul class="list-group">
+                                <label class="form-label">Tour POIs (Drag to reorder)</label>
+                                <ul class="list-group list-group-flush border rounded" ondragover="event.preventDefault();">
                                     @if (_form.PoiIds.Count == 0)
                                     {
                                         <li class="list-group-item text-muted">No POI selected</li>
                                     }
                                     @for (var i = 0; i < _form.PoiIds.Count; i++)
                                     {
-                                        var poiId = _form.PoiIds[i];
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                            <span>@FindPoiName(poiId)</span>
+                                        var currentIndex = i;
+                                        var poiId = _form.PoiIds[currentIndex];
+                                        <li class="list-group-item d-flex justify-content-between align-items-center"
+                                            draggable="true" 
+                                            @ondragstart="@(() => DragStart(currentIndex))"
+                                            @ondrop="@(() => Drop(currentIndex))"
+                                            style="cursor: grab;">
+                                            <span><i class="bi bi-grip-vertical text-muted me-2"></i> @FindPoiName(poiId)</span>
                                             <div class="btn-group btn-group-sm">
-                                                <button type="button" class="btn btn-outline-secondary" disabled="@(i == 0)" @onclick="() => MovePoi(i, -1)">↑</button>
-                                                <button type="button" class="btn btn-outline-secondary" disabled="@(i == _form.PoiIds.Count - 1)" @onclick="() => MovePoi(i, 1)">↓</button>
-                                                <button type="button" class="btn btn-outline-danger" @onclick="() => RemovePoi(i)">×</button>
+                                                <button type="button" class="btn btn-outline-danger btn-sm" @onclick="() => RemovePoi(currentIndex)">×</button>
                                             </div>
                                         </li>
                                     }
@@ -121,6 +124,8 @@
     private bool _isEditing;
     private int _selectedPoiId;
     private TourFormViewModel _form = new();
+    
+    private int? _draggedIndex;
 
     protected override async Task OnInitializedAsync()
     {
@@ -187,6 +192,22 @@
         {
             _form.PoiIds.RemoveAt(index);
         }
+    }
+
+    private void DragStart(int index)
+    {
+        _draggedIndex = index;
+    }
+
+    private void Drop(int dropIndex)
+    {
+        if (_draggedIndex.HasValue && _draggedIndex.Value != dropIndex)
+        {
+            var item = _form.PoiIds[_draggedIndex.Value];
+            _form.PoiIds.RemoveAt(_draggedIndex.Value);
+            _form.PoiIds.Insert(dropIndex, item);
+        }
+        _draggedIndex = null;
     }
 
     private void MovePoi(int index, int delta)
