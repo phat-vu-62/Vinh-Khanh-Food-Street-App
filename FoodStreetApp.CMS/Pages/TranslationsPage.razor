@@ -4,8 +4,8 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h1 class="h4 mb-0">Quản lý bản dịch</h1>
-        <small class="text-muted">Xem và chỉnh sửa bản dịch của các điểm tham quan theo ngôn ngữ</small>
+        <h1 class="h4 mb-0">Translations</h1>
+        <small class="text-muted">Review and edit POI translations by language</small>
     </div>
     <div class="d-flex gap-2">
         <InputSelect class="form-select" style="min-width: 120px;" @bind-Value="_selectedLanguage">
@@ -45,10 +45,10 @@
             <table class="table admin-table">
                 <thead>
                     <tr>
-                        <th>Điểm tham quan</th>
-                        <th>Văn bản gốc</th>
-                        <th>Bản dịch (@_selectedLanguage)</th>
-                        <th class="text-end">Thao tác</th>
+                        <th>POI</th>
+                        <th>Original Text</th>
+                        <th>Translated Text (@_selectedLanguage)</th>
+                        <th class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -64,7 +64,7 @@
                                 <InputText class="form-control" Value="@GetNameTranslation(poi, _selectedLanguage)" ValueChanged="@(value => SetNameTranslation(poi, _selectedLanguage, value))" />
                             </td>
                             <td class="text-end" rowspan="2">
-                                <button class="btn btn-sm btn-outline-primary" @onclick="() => SavePoiAsync(poi)">Lưu</button>
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => SavePoiAsync(poi)">Lưu thay đổi</button>
                             </td>
                         </tr>
                         <tr>
@@ -106,7 +106,7 @@
         }
         catch
         {
-            Toasts.Error("Failed to load translations.");
+            Toasts.Error("Không thể tải Translations.");
         }
         finally
         {

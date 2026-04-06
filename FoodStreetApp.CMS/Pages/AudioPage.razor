@@ -4,10 +4,10 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h1 class="h4 mb-0">Quản lý âm thanh</h1>
-        <small class="text-muted">Gán tệp âm thanh cho các điểm tham quan và nghe thử</small>
+        <h1 class="h4 mb-0">Audio Management</h1>
+        <small class="text-muted">Gán tệp âm thanh cho các POI và nghe thử</small>
     </div>
-    <button class="btn btn-primary" @onclick="StartCreate">+ Thêm âm thanh mới</button>
+    <button class="btn btn-primary" @onclick="StartCreate">+ Thêm mới</button>
 </div>
 
 <section class="module-panel">
@@ -17,9 +17,9 @@
     {
         <div class="empty-state">
             <i class="bi bi-file-earmark-music empty-icon"></i>
-            <div class="empty-title">Không tìm thấy âm thanh nào</div>
-            <div class="empty-description">Tải lên tệp âm thanh hoặc tạo đoạn TTS để đi kèm với các điểm tham quan của bạn.</div>
-            <button class="btn btn-primary mt-2" @onclick="StartCreate"><i class="bi bi-plus-lg"></i> Thêm âm thanh đầu tiên</button>
+            <div class="empty-title">Không tìm thấy Audio nào</div>
+            <div class="empty-description">Tải lên tệp Audio hoặc tạo đoạn TTS để đi kèm với các POI của bạn.</div>
+            <button class="btn btn-primary mt-2" @onclick="StartCreate"><i class="bi bi-plus-lg"></i> Thêm mới</button>
         </div>
     }
     else if (!_isLoading)
@@ -27,21 +27,21 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="input-group" style="max-width:320px;">
                 <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                <input class="form-control" placeholder="Tìm kiếm âm thanh..." @bind="_searchTerm" @bind:event="oninput" @bind:after="() => { _currentPage = 1; }" />
+                <input class="form-control" placeholder="Tìm kiếm Audio..." @bind="_searchTerm" @bind:event="oninput" @bind:after="() => { _currentPage = 1; }" />
             </div>
-            <small class="text-muted">@GetFilteredAudios().Count() mục</small>
+            <small class="text-muted">@GetFilteredAudios().Count() bản ghi</small>
         </div>
 
         <div class="table-responsive">
             <table class="table admin-table">
                 <thead>
                     <tr>
-                        <th>Tiêu đề</th>
-                        <th>Điểm tham quan</th>
-                        <th>Thời lượng</th>
-                        <th>Trạng thái</th>
-                        <th>Nghe thử</th>
-                        <th class="text-end">Thao tác</th>
+                        <th>Title</th>
+                        <th>POI</th>
+                        <th>Duration</th>
+                        <th>Status</th>
+                        <th>Preview</th>
+                        <th class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -58,7 +58,7 @@
                                 }
                                 else
                                 {
-                                    <span class="badge bg-inactive">Ngừng</span>
+                                    <span class="badge bg-inactive">Tạm dừng</span>
                                 }
                             </td>
                             <td>
@@ -70,10 +70,10 @@
                                 }
                             </td>
                             <td class="text-end">
-                                <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => StartEdit(audio)" title="Edit">
+                                <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => StartEdit(audio)" title="Chỉnh sửa">
                                     <i class="bi bi-pencil"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(audio.Id)" title="Delete">
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(audio.Id)" title="Xóa">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </td>
@@ -107,17 +107,17 @@
             <div class="modal-content form-card">
                 <EditForm Model="_form" OnValidSubmit="SaveAsync">
                     <div class="modal-header">
-                        <h5 class="modal-title">@(_isEditing ? "Chỉnh sửa âm thanh" : "Tạo âm thanh mới")</h5>
+                        <h5 class="modal-title">@(_isEditing ? "Chỉnh sửa Audio" : "Thêm mới Audio")</h5>
                         <button type="button" class="btn-close" @onclick="CloseEditor"></button>
                     </div>
                     <div class="modal-body">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label">Tiêu đề</label>
+                                <label class="form-label">Title</label>
                                 <InputText class="form-control" @bind-Value="_form.Title" />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Điểm tham quan</label>
+                                <label class="form-label">POI</label>
                                 <InputSelect class="form-select" @bind-Value="_form.PoiId">
                                     @foreach (var poi in _pois.OrderBy(x => x.Name))
                                     {
@@ -126,7 +126,7 @@
                                 </InputSelect>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Thời lượng (giây)</label>
+                                <label class="form-label">Duration (s)</label>
                                 <InputNumber class="form-control" @bind-Value="_form.DurationSeconds" />
                             </div>
                             <div class="col-md-12 mb-3">
@@ -145,9 +145,9 @@
                                     <div class="card border-0 bg-light">
                                         <div class="card-body py-3">
                                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <label class="form-label mb-0">Tạo TTS</label>
+                                                <label class="form-label mb-0">Text-to-Speech (TTS)</label>
                                                 <button type="button" class="btn btn-sm btn-primary" @onclick="GenerateTtsUrl">
-                                                    Tạo âm thanh
+                                                    Thực hiện TTS
                                                 </button>
                                             </div>
                                             <div class="row g-2">
@@ -197,8 +197,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseEditor">Hủy</button>
-                        <button type="submit" class="btn btn-primary">Lưu</button>
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseEditor">Hủy bỏ</button>
+                        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
                     </div>
                 </EditForm>
             </div>

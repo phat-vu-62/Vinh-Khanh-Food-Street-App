@@ -4,7 +4,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h1 class="h4 mb-0">Bảng điều khiển</h1>
+        <h1 class="h4 mb-0">Dashboard</h1>
         <small class="text-muted">Tổng quan nội dung Vinh Khánh Food Street</small>
     </div>
 </div>
@@ -20,7 +20,7 @@
                     <i class="bi bi-geo-alt"></i>
                 </div>
                 <div class="stats-info">
-                    <div class="stats-title">Tổng điểm tham quan</div>
+                    <div class="stats-title">Total POIs</div>
                     <div class="stats-value">@Pois.Count</div>
                 </div>
             </div>
@@ -31,7 +31,7 @@
                     <i class="bi bi-file-earmark-music"></i>
                 </div>
                 <div class="stats-info">
-                    <div class="stats-title">Tổng âm thanh</div>
+                    <div class="stats-title">Total Audio</div>
                     <div class="stats-value">@Audios.Count</div>
                 </div>
             </div>
@@ -42,7 +42,7 @@
                     <i class="bi bi-map"></i>
                 </div>
                 <div class="stats-info">
-                    <div class="stats-title">Hành trình</div>
+                    <div class="stats-title">Active Tours</div>
                     <div class="stats-value">@Tours.Count</div>
                 </div>
             </div>
@@ -53,7 +53,7 @@
                     <i class="bi bi-bar-chart"></i>
                 </div>
                 <div class="stats-info">
-                    <div class="stats-title">Lượt tương tác</div>
+                    <div class="stats-title">Interactions</div>
                     <div class="stats-value">@Histories.Count</div>
                 </div>
             </div>
@@ -67,7 +67,7 @@
             <div class="card h-100 shadow-sm border-0">
                 <div class="card-header bg-white border-0 py-3">
                     <h5 class="mb-0"><i class="bi bi-signpost-split"></i> Theo dõi tuyến di chuyển</h5>
-                    <small class="text-muted">Lộ trình di chuyển dựa trên lịch sử người dùng</small>
+                    <small class="text-muted">Lộ trình dựa trên lịch sử người dùng</small>
                 </div>
                 <div class="card-body pt-0">
                     <div class="route-map p-3 bg-light rounded" style="min-height: 200px; max-height: 300px; overflow-y: auto;">
@@ -104,17 +104,17 @@
         <div class="col-lg-6 mb-3">
             <div class="card h-100 shadow-sm border-0">
                 <div class="card-header bg-white border-0 py-3">
-                    <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Âm thanh phổ biến</h5>
-                    <small class="text-muted">Điểm nghe nhiều nhất & thời gian trung bình</small>
+                    <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Top Audios</h5>
+                    <small class="text-muted">Các POI được nghe nhiều nhất</small>
                 </div>
                 <div class="card-body pt-0">
                     <table class="table table-hover align-middle">
                         <thead class="table-light">
                             <tr>
                                 <th>Hạng</th>
-                                <th>Tên điểm</th>
-                                <th>Lượt nghe</th>
-                                <th>TB thời gian</th>
+                                <th>POI Name</th>
+                                <th>Listens</th>
+                                <th>Avg Time</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -150,7 +150,7 @@
         <div class="col-12">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white border-0 py-3">
-                    <h5 class="mb-0"><i class="bi bi-map-fill"></i> Bản đồ nhiệt hoạt động</h5>
+                    <h5 class="mb-0"><i class="bi bi-map-fill"></i> Activity Heatmap</h5>
                 </div>
                 <div class="card-body text-center bg-light heat-map-container" style="min-height: 300px; position: relative; overflow: hidden; border-radius: 8px;">
                      <!-- Simple Map Visualization -->

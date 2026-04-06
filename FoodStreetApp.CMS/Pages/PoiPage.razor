@@ -4,10 +4,10 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h1 class="h4 mb-0">Quản lý điểm tham quan</h1>
-        <small class="text-muted">Tạo mới, chỉnh sửa, kính hoạt và xóa các điểm tham quan (POI)</small>
+        <h1 class="h4 mb-0">POI Management</h1>
+        <small class="text-muted">Tạo mới, chỉnh sửa và quản lý các POI</small>
     </div>
-    <button class="btn btn-primary" @onclick="StartCreate">+ Thêm điểm mới</button>
+    <button class="btn btn-primary" @onclick="StartCreate">+ Thêm mới</button>
 </div>
 
 <div class="module-panel">
@@ -27,7 +27,7 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="input-group" style="max-width:320px;">
                 <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                <input class="form-control" placeholder="Tìm kiếm điểm..." @bind="_searchTerm" @bind:event="oninput" @bind:after="() => { _currentPage = 1; }" />
+                <input class="form-control" placeholder="Tìm kiếm POI..." @bind="_searchTerm" @bind:event="oninput" @bind:after="() => { _currentPage = 1; }" />
             </div>
             <small class="text-muted">@GetFilteredPois().Count() mục</small>
         </div>
@@ -36,12 +36,12 @@
             <table class="table admin-table">
                 <thead>
                     <tr>
-                        <th>Tên điểm</th>
-                        <th>Mô tả</th>
-                        <th>Tọa độ</th>
-                        <th>Bản dịch</th>
-                        <th>Trạng thái</th>
-                        <th class="text-end">Thao tác</th>
+                        <th>POI Name</th>
+                        <th>Description</th>
+                        <th>Coordinates</th>
+                        <th>Translations</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -64,11 +64,11 @@
                             <td>
                                 @if (poi.IsActive)
                                 {
-                                    <span class="badge bg-active" @onclick="(args) => ToggleActiveAsync(poi, new ChangeEventArgs { Value = false })" style="cursor:pointer;">Đang bật</span>
+                                    <span class="badge bg-active" @onclick="(args) => ToggleActiveAsync(poi, new ChangeEventArgs { Value = false })" style="cursor:pointer;">Hoạt động</span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-inactive" @onclick="(args) => ToggleActiveAsync(poi, new ChangeEventArgs { Value = true })" style="cursor:pointer;">Đang tắt</span>
+                                    <span class="badge bg-inactive" @onclick="(args) => ToggleActiveAsync(poi, new ChangeEventArgs { Value = true })" style="cursor:pointer;">Tạm dừng</span>
                                 }
                             </td>
                             <td class="text-end">
@@ -114,11 +114,11 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content text-center p-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="modal-title m-0"><i class="bi bi-qr-code"></i> Mã QR của điểm tham quan</h5>
+                    <h5 class="modal-title m-0"><i class="bi bi-qr-code"></i> QR Code</h5>
                     <button type="button" class="btn-close" @onclick="() => _qrModalVisible = false"></button>
                 </div>
                 <h5>@_selectedPoiForQr?.Name</h5>
-                <p class="text-muted small">Quét mã để mở ứng dụng và phát âm thanh ngay lập tức (bỏ qua GPS)</p>
+                <p class="text-muted small">Quét mã để mở ứng dụng và phát âm thanh ngay lập tức (Bỏ qua GPS)</p>
                 <div class="bg-light d-inline-block p-4 rounded mb-3 border">
                      <!-- Dummy QR Image using a public API. In prod, use local generator like QRCoder -->
                      <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=@($"foodstreet://poi?id={_selectedPoiForQr?.Id}&play=true&skipGps=true")" alt="QR Code" width="200" height="200" />
@@ -138,7 +138,7 @@
             <div class="modal-content form-card">
                 <EditForm Model="_form" OnValidSubmit="SaveAsync">
                     <div class="modal-header">
-                        <h5 class="modal-title">@(_isEditing ? "Chỉnh sửa điểm tham quan" : "Tạo điểm tham quan mới")</h5>
+                        <h5 class="modal-title">@(_isEditing ? "Chỉnh sửa POI" : "Thêm mới POI")</h5>
                         <button type="button" class="btn-close" @onclick="CloseEditor"></button>
                     </div>
                     <div class="modal-body" style="max-height: 75vh; overflow-y: auto;">
@@ -158,8 +158,8 @@
                                 <InputText class="form-control" @bind-Value="_form.Description" />
                             </div>
                             <div class="col-12">
-                                <label class="form-label">Nội dung văn bản (TTS)</label>
-                                <InputTextArea class="form-control" rows="3" @bind-Value="_form.TextContent" placeholder="Nội dung dùng để đọc tự động (TTS) nếu không có Audio URL" />
+                                <label class="form-label">Nội dung TTS</label>
+                                <InputTextArea class="form-control" rows="3" @bind-Value="_form.TextContent" placeholder="Nội dung dùng cho Text-to-Speech nếu không có Audio URL" />
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Vĩ độ (Latitude)</label>
@@ -177,7 +177,7 @@
                             <hr class="my-4" />
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h6 class="mb-0">
-                                    <i class="bi bi-translate"></i> Quản lý bản dịch
+                                    <i class="bi bi-translate"></i> Translations
                                 </h6>
                                 <button type="button"
                                         class="btn btn-outline-primary btn-sm"
@@ -274,8 +274,8 @@
                         }
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseEditor">Hủy</button>
-                        <button type="submit" class="btn btn-primary">Lưu</button>
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseEditor">Hủy bỏ</button>
+                        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
                     </div>
                 </EditForm>
             </div>
@@ -284,7 +284,7 @@
 }
 
 <ConfirmModal Visible="_confirmDeleteVisible"
-              Title="Xóa điểm tham quan"
+              Title="Xóa POI"
               Message="Hành động này không thể hoàn tác. Bạn có chắc chắn muốn xóa?"
               OnConfirm="DeleteConfirmedAsync"
               OnCancel="CancelDelete" />
@@ -495,7 +495,7 @@
         }
         catch (Exception ex)
         {
-            Toasts.Error($"Translation failed: {ex.Message}");
+            Toasts.Error("Hệ thống tự động tạm gián đoạn. Vui lòng nhập liệu thủ công.");
         }
         finally
         {

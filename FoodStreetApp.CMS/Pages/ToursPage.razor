@@ -4,10 +4,10 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h1 class="h4 mb-0">Quản lý hành trình</h1>
-        <small class="text-muted">Xây dựng các chuyến tham quan, thêm địa điểm và sắp xếp trình tự</small>
+        <h1 class="h4 mb-0">Tours Management</h1>
+        <small class="text-muted">Xây dựng Tours, thêm POI và sắp xếp trình tự</small>
     </div>
-    <button class="btn btn-primary" @onclick="StartCreate">+ Thêm hành trình mới</button>
+    <button class="btn btn-primary" @onclick="StartCreate">+ Thêm mới</button>
 </div>
 
 <section class="module-panel">
@@ -17,9 +17,9 @@
     {
         <div class="empty-state">
             <i class="bi bi-map empty-icon"></i>
-            <div class="empty-title">Chưa có hành trình nào</div>
-            <div class="empty-description">Tạo hành trình bằng cách kết hợp nhiều điểm tham quan thành một tuyến đường đi bộ.</div>
-            <button class="btn btn-primary mt-2" @onclick="StartCreate"><i class="bi bi-plus-lg"></i> Tạo hành trình đầu tiên</button>
+            <div class="empty-title">Chưa có Tours nào</div>
+            <div class="empty-description">Tạo Tours bằng cách kết hợp nhiều POI thành một tuyến đường đi bộ.</div>
+            <button class="btn btn-primary mt-2" @onclick="StartCreate"><i class="bi bi-plus-lg"></i> Thêm mới</button>
         </div>
     }
     else if (!_isLoading)
@@ -28,10 +28,10 @@
             <table class="table admin-table">
                 <thead>
                     <tr>
-                        <th>Tên hành trình</th>
-                        <th>Mô tả</th>
-                        <th>Các điểm tham quan</th>
-                        <th class="text-end">Thao tác</th>
+                        <th>Tour Name</th>
+                        <th>Description</th>
+                        <th>POI Sequence</th>
+                        <th class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -47,10 +47,10 @@
                                 }
                             </td>
                             <td class="text-end">
-                                <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => StartEdit(tour)" title="Edit">
+                                <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => StartEdit(tour)" title="Chỉnh sửa">
                                     <i class="bi bi-pencil"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(tour.Id)" title="Delete">
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(tour.Id)" title="Xóa">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </td>
@@ -69,21 +69,21 @@
             <div class="modal-content form-card">
                 <EditForm Model="_form" OnValidSubmit="SaveAsync">
                     <div class="modal-header">
-                        <h5 class="modal-title">@(_isEditing ? "Chỉnh sửa hành trình" : "Tạo hành trình mới")</h5>
+                        <h5 class="modal-title">@(_isEditing ? "Chỉnh sửa Tour" : "Thêm mới Tour")</h5>
                         <button type="button" class="btn-close" @onclick="CloseEditor"></button>
                     </div>
                     <div class="modal-body">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label">Tên hành trình</label>
+                                <label class="form-label">Tour Name</label>
                                 <InputText class="form-control" @bind-Value="_form.Name" />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Mô tả</label>
+                                <label class="form-label">Description</label>
                                 <InputText class="form-control" @bind-Value="_form.Description" />
                             </div>
                             <div class="col-md-5">
-                                <label class="form-label">Các điểm có sẵn</label>
+                                <label class="form-label">Các POI có sẵn</label>
                                 <select class="form-select" @bind="_selectedPoiId">
                                     @foreach (var poi in _pois.OrderBy(x => x.Name))
                                     {
@@ -95,11 +95,11 @@
                                 <button type="button" class="btn btn-outline-primary w-100" @onclick="AddPoiToTour">Thêm</button>
                             </div>
                             <div class="col-md-5">
-                                <label class="form-label">Danh sách điểm (Kéo để sắp xếp)</label>
+                                <label class="form-label">POI Sequence (Kéo để sắp xếp)</label>
                                 <ul class="list-group list-group-flush border rounded" ondragover="event.preventDefault();">
                                     @if (_form.PoiIds.Count == 0)
                                     {
-                                        <li class="list-group-item text-muted">Chưa chọn điểm nào</li>
+                                        <li class="list-group-item text-muted">Chưa chọn POI nào</li>
                                     }
                                     @for (var i = 0; i < _form.PoiIds.Count; i++)
                                     {
@@ -121,8 +121,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseEditor">Hủy</button>
-                        <button type="submit" class="btn btn-primary">Lưu</button>
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseEditor">Hủy bỏ</button>
+                        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
                     </div>
                 </EditForm>
             </div>

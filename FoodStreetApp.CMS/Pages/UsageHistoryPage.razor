@@ -4,8 +4,8 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h1 class="h4 mb-0">Lịch sử sử dụng</h1>
-        <small class="text-muted">Nhật ký hoạt động xem điểm tham quan và nghe âm thanh</small>
+        <h1 class="h4 mb-0">Usage History</h1>
+        <small class="text-muted">Nhật ký hoạt động xem POI và phát Audio</small>
     </div>
     <div class="d-flex gap-2">
         <InputDate class="form-control" style="min-width: 150px;" @bind-Value="_selectedDate" @bind-Value:after="() => { _currentPage = 1; LoadAsync(); }" TValue="DateTime?" placeholder="Lọc theo ngày..." />
@@ -30,7 +30,7 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="input-group" style="max-width:320px;">
                 <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                <input class="form-control" placeholder="Tìm kiếm theo người dùng, điểm hoặc hành động..." @bind="_searchTerm" @bind:event="oninput" @bind:after="() => { _currentPage = 1; }" />
+                <input class="form-control" placeholder="Tìm kiếm theo User, POI hoặc Action..." @bind="_searchTerm" @bind:event="oninput" @bind:after="() => { _currentPage = 1; }" />
             </div>
             <small class="text-muted">@GetFilteredHistory().Count() bản ghi</small>
         </div>
@@ -39,11 +39,11 @@
             <table class="table admin-table">
                 <thead>
                     <tr>
-                        <th>Người dùng</th>
-                        <th>Điểm tham quan</th>
-                        <th>Hành động</th>
-                        <th>Thời lượng</th>
-                        <th>Thời gian</th>
+                        <th>User</th>
+                        <th>POI Name</th>
+                        <th>Action Type</th>
+                        <th>Duration</th>
+                        <th>Timestamp</th>
                     </tr>
                 </thead>
                 <tbody>
