@@ -99,9 +99,16 @@ public class GeminiTranslationService : IGeminiTranslationService
                 }
             };
 
-            var requestUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
+            var apiUrl = $"https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={apiKey}";
+            var response = await _httpClient.PostAsJsonAsync(apiUrl, requestBody);
 
-            var response = await _httpClient.PostAsJsonAsync(requestUrl, requestBody);
+            // If v1 fails with 404, try v1beta
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            {
+                _logger.LogInformation("V1 endpoint returned 404 for model {model}, trying v1beta...", model);
+                var v1betaUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
+                response = await _httpClient.PostAsJsonAsync(v1betaUrl, requestBody);
+            }
 
             if (!response.IsSuccessStatusCode)
             {
@@ -121,7 +128,7 @@ public class GeminiTranslationService : IGeminiTranslationService
                     }
                 }
 
-                _toastService.Error($"Dịch thất bại (Lỗi {response.StatusCode}). Vui lòng nhập liệu thủ công.");
+                _toastService.Error($"Dịch thất bại (Lỗi {response.StatusCode} - Model: {model}). Vui lòng nhập liệu thủ công.");
                 return false;
             }
 
