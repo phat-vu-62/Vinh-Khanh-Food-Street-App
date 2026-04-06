@@ -64,4 +64,15 @@ public class TranslationResult
     public string? DescriptionKo { get; set; }
     [JsonPropertyName("descriptionJa")]
     public string? DescriptionJa { get; set; }
+
+    [JsonPropertyName("textContentVi")]
+    public string? TextContentVi { get; set; }
+    [JsonPropertyName("textContentEn")]
+    public string? TextContentEn { get; set; }
+    [JsonPropertyName("textContentZh")]
+    public string? TextContentZh { get; set; }
+    [JsonPropertyName("textContentKo")]
+    public string? TextContentKo { get; set; }
+    [JsonPropertyName("textContentJa")]
+    public string? TextContentJa { get; set; }
 }

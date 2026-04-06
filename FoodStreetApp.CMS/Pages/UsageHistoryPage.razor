@@ -8,7 +8,7 @@
         <small class="text-muted">POI viewed and audio played activity logs</small>
     </div>
     <div class="d-flex gap-2">
-        <InputDate class="form-control" style="min-width: 150px;" @bind-Value="_selectedDate" @bind-Value:after="LoadAsync" TValue="DateTime?" placeholder="Filter by Date..." />
+        <InputDate class="form-control" style="min-width: 150px;" @bind-Value="_selectedDate" @bind-Value:after="() => { _currentPage = 1; LoadAsync(); }" TValue="DateTime?" placeholder="Filter by Date..." />
         <button class="btn btn-outline-secondary" @onclick="ClearFilter" disabled="@(_selectedDate == null)">Clear</button>
         <button class="btn btn-outline-primary" @onclick="LoadAsync">Refresh</button>
     </div>
@@ -19,10 +19,22 @@
 
     @if (!_isLoading && _history.Count == 0)
     {
-        <div class="empty-state">No usage history yet.</div>
+        <div class="empty-state">
+            <i class="bi bi-clock-history empty-icon"></i>
+            <div class="empty-title">No usage history yet</div>
+            <div class="empty-description">Activity logs will appear here once users start interacting with POIs through the mobile app.</div>
+        </div>
     }
     else if (!_isLoading)
     {
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="input-group" style="max-width:320px;">
+                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                <input class="form-control" placeholder="Search by user, POI or action..." @bind="_searchTerm" @bind:event="oninput" @bind:after="() => { _currentPage = 1; }" />
+            </div>
+            <small class="text-muted">@GetFilteredHistory().Count() records</small>
+        </div>
+
         <div class="table-responsive">
             <table class="table admin-table">
                 <thead>
@@ -30,17 +42,33 @@
                         <th>User</th>
                         <th>POI Name</th>
                         <th>Action Type</th>
+                        <th>Duration</th>
                         <th>Timestamp</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var item in GetFilteredHistory())
+                    @foreach (var item in GetPagedHistory())
                     {
                         <tr>
-                            <td>@(string.IsNullOrWhiteSpace(item.UserId) ? "Guest" : item.UserId)</td>
-                            <td>@FindPoiName(item.PoiId)</td>
+                            <td>
+                                <span class="d-inline-flex align-items-center gap-1">
+                                    <i class="bi bi-person-circle text-muted"></i>
+                                    @(string.IsNullOrWhiteSpace(item.UserId) ? "Guest" : (item.UserId.Length > 8 ? item.UserId[..8] + "…" : item.UserId))
+                                </span>
+                            </td>
+                            <td class="fw-semibold">@FindPoiName(item.PoiId)</td>
                             <td>
                                 <span class="badge @(GetActionBadge(item.Action))">@GetActionLabel(item.Action)</span>
+                            </td>
+                            <td>
+                                @if (item.DurationSeconds.HasValue && item.DurationSeconds > 0)
+                                {
+                                    <span>@item.DurationSeconds s</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
                             </td>
                             <td>@item.VisitedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</td>
                         </tr>
@@ -48,6 +76,21 @@
                 </tbody>
             </table>
         </div>
+
+        @if (GetTotalHistoryPages() > 1)
+        {
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <small class="text-muted">Page @_currentPage of @GetTotalHistoryPages()</small>
+                <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-secondary" disabled="@(_currentPage <= 1)" @onclick="() => _currentPage--">
+                        <i class="bi bi-chevron-left"></i> Prev
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" disabled="@(_currentPage >= GetTotalHistoryPages())" @onclick="() => _currentPage++">
+                        Next <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        }
     }
 </section>
 
@@ -56,6 +99,9 @@
     private readonly List<POI> _pois = [];
     private bool _isLoading;
     private DateTime? _selectedDate;
+    private string _searchTerm = string.Empty;
+    private int _currentPage = 1;
+    private int _pageSize = 15;
 
     protected override async Task OnInitializedAsync()
     {
@@ -73,16 +119,16 @@
             _pois.AddRange(DataService.GetPois());
             _history.AddRange(DataService.GetUsageHistories());
 
-            if (_history.Count == 0)
+            if (_history.Count == 0 && _pois.Count > 0)
             {
                 SeedMockHistory();
                 _history.Clear();
                 _history.AddRange(DataService.GetUsageHistories());
             }
         }
-        catch
+        catch (Exception ex)
         {
-            Toasts.Error("Failed to load usage history.");
+            Toasts.Error($"Failed to load usage history: {ex.Message}");
         }
         finally
         {
@@ -94,10 +140,7 @@
 
     private void SeedMockHistory()
     {
-        if (_pois.Count == 0)
-        {
-            return;
-        }
+        if (_pois.Count == 0) return;
 
         var firstPoiId = _pois[0].Id;
         var now = DateTime.UtcNow;
@@ -128,12 +171,26 @@
         {
             query = query.Where(x => x.VisitedAtUtc.ToLocalTime().Date == _selectedDate.Value.Date);
         }
+        if (!string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            var term = _searchTerm.Trim();
+            query = query.Where(x =>
+                (x.UserId ?? "").Contains(term, StringComparison.OrdinalIgnoreCase)
+                || FindPoiName(x.PoiId).Contains(term, StringComparison.OrdinalIgnoreCase)
+                || (x.Action ?? "").Contains(term, StringComparison.OrdinalIgnoreCase));
+        }
         return query;
     }
+
+    private IEnumerable<UserHistory> GetPagedHistory() => GetFilteredHistory().Skip((_currentPage - 1) * _pageSize).Take(_pageSize);
+
+    private int GetTotalHistoryPages() => (int)Math.Ceiling((double)GetFilteredHistory().Count() / _pageSize);
 
     private Task ClearFilter()
     {
         _selectedDate = null;
+        _searchTerm = string.Empty;
+        _currentPage = 1;
         return LoadAsync();
     }
 
@@ -145,8 +202,10 @@
     {
         return action?.ToLowerInvariant() switch
         {
-            "poi viewed" => "text-bg-primary",
-            "audio played" => "text-bg-success",
+            "poi viewed" or "poi_viewed" => "text-bg-primary",
+            "audio played" or "audio_played" => "text-bg-success",
+            "route_entry" => "text-bg-info",
+            "listen" => "text-bg-success",
             _ => "text-bg-secondary"
         };
     }

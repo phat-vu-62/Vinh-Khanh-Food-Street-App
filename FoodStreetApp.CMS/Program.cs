@@ -86,13 +86,17 @@ app.UseRouting();
 
 object CreateSyncPoiPayload(FoodStreetApp.Shared.Entities.POI p, Dictionary<int, string> audios, IReadOnlyCollection<FoodStreetApp.Shared.Entities.Translation> translations)
 {
-    var viTts = translations
+    var viTts = p.TextContentVi ?? p.TextContent ?? translations
         .LastOrDefault(t => t.EntityId == p.Id && t.Language == FoodStreetApp.Shared.Enums.Language.Vi && t.FieldName == "TtsText")
         ?.Value ?? p.Description ?? p.Name;
 
-    var enTts = translations
+    var enTts = p.TextContentEn ?? translations
         .LastOrDefault(t => t.EntityId == p.Id && t.Language == FoodStreetApp.Shared.Enums.Language.En && t.FieldName == "TtsText")
-        ?.Value ?? p.Description ?? p.Name;
+        ?.Value ?? p.DescriptionEn ?? string.Empty;
+
+    var zhTts = p.TextContentZh ?? p.DescriptionZh ?? string.Empty;
+    var koTts = p.TextContentKo ?? p.DescriptionKo ?? string.Empty;
+    var jaTts = p.TextContentJa ?? p.DescriptionJa ?? string.Empty;
 
     audios.TryGetValue(p.Id, out var audioUrl);
 
@@ -111,9 +115,9 @@ object CreateSyncPoiPayload(FoodStreetApp.Shared.Entities.POI p, Dictionary<int,
         AudioFile = audioUrl ?? p.AudioUrl ?? string.Empty,
         TtsText = viTts,
         TtsTextEn = enTts,
-        TtsTextKo = string.Empty,
-        TtsTextZh = string.Empty,
-        TtsTextJa = string.Empty,
+        TtsTextKo = koTts,
+        TtsTextZh = zhTts,
+        TtsTextJa = jaTts,
         UseTts = true,
         CooldownSeconds = 60,
         p.IsActive

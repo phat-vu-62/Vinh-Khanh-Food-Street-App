@@ -16,12 +16,22 @@
     @if (!_isLoading && _pois.Count == 0)
     {
         <div class="empty-state">
-            <p class="mb-2">No POIs found.</p>
-            <button class="btn btn-primary btn-sm" @onclick="StartCreate">Create first POI</button>
+            <i class="bi bi-geo-alt empty-icon"></i>
+            <div class="empty-title">No POIs found</div>
+            <div class="empty-description">There are currently no Points of Interest configured. Create your first POI to start building the map.</div>
+            <button class="btn btn-primary mt-2" @onclick="StartCreate"><i class="bi bi-plus-lg"></i> Create first POI</button>
         </div>
     }
     else if (!_isLoading)
     {
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="input-group" style="max-width:320px;">
+                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                <input class="form-control" placeholder="Search POIs..." @bind="_searchTerm" @bind:event="oninput" @bind:after="() => { _currentPage = 1; }" />
+            </div>
+            <small class="text-muted">@GetFilteredPois().Count() items</small>
+        </div>
+
         <div class="table-responsive">
             <table class="table admin-table">
                 <thead>
@@ -35,12 +45,12 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var poi in _pois.OrderByDescending(x => x.Id))
+                    @foreach (var poi in GetPagedPois())
                     {
                         <tr>
-                            <td>@poi.Name</td>
-                            <td class="text-muted">@poi.Description</td>
-                            <td>@poi.Latitude.ToString("0.00000"), @poi.Longitude.ToString("0.00000")</td>
+                            <td class="fw-semibold">@poi.Name</td>
+                            <td class="text-muted" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@poi.Description</td>
+                            <td><code>@poi.Latitude.ToString("0.00000"), @poi.Longitude.ToString("0.00000")</code></td>
                             <td>
                                 @if (GetTranslationCount(poi) > 0)
                                 {
@@ -52,25 +62,49 @@
                                 }
                             </td>
                             <td>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" checked="@poi.IsActive" @onchange="(args) => ToggleActiveAsync(poi, args)" />
-                                </div>
+                                @if (poi.IsActive)
+                                {
+                                    <span class="badge bg-active" @onclick="(args) => ToggleActiveAsync(poi, new ChangeEventArgs { Value = false })" style="cursor:pointer;">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-inactive" @onclick="(args) => ToggleActiveAsync(poi, new ChangeEventArgs { Value = true })" style="cursor:pointer;">Inactive</span>
+                                }
                             </td>
                             <td class="text-end">
-                                <button class="btn btn-sm btn-outline-info me-2" @onclick="() => ShowQrCode(poi)">
-                                    <i class="bi bi-qr-code"></i> QR
+                                <button class="btn btn-sm btn-outline-info me-1" @onclick="() => ShowQrCode(poi)" title="QR Code">
+                                    <i class="bi bi-qr-code"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-primary me-2" @onclick="() => TranslatePoiAsync(poi)" disabled="@_isTranslating">
-                                    🌐 Translate
+                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => TranslatePoiAsync(poi)" disabled="@_isTranslating" title="Translate">
+                                    <i class="bi bi-translate"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-secondary me-2" @onclick="() => StartEdit(poi)">Edit</button>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(poi)">Delete</button>
+                                <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => StartEdit(poi)" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(poi)" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             </td>
                         </tr>
                     }
                 </tbody>
             </table>
         </div>
+
+        @if (GetTotalPoiPages() > 1)
+        {
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <small class="text-muted">Page @_currentPage of @GetTotalPoiPages()</small>
+                <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-secondary" disabled="@(_currentPage <= 1)" @onclick="() => _currentPage--">
+                        <i class="bi bi-chevron-left"></i> Prev
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" disabled="@(_currentPage >= GetTotalPoiPages())" @onclick="() => _currentPage++">
+                        Next <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        }
     }
 </div>
 
@@ -122,6 +156,10 @@
                             <div class="col-12">
                                 <label class="form-label">Description</label>
                                 <InputText class="form-control" @bind-Value="_form.Description" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">TTS Text Content</label>
+                                <InputTextArea class="form-control" rows="3" @bind-Value="_form.TextContent" placeholder="Used as source for Text-To-Speech if Audio URL is blank" />
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Latitude</label>
@@ -207,6 +245,31 @@
                                     <label class="form-label text-muted">🇯🇵 Description (Ja)</label>
                                     <input class="form-control form-control-sm" readonly value="@_form.DescriptionJa" />
                                 </div>
+                                
+                                <h6 class="mb-0 mt-4"><i class="bi bi-volume-up"></i> TTS Text Content Translations</h6>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted">🇻🇳 TTS Text (Vi)</label>
+                                    <textarea class="form-control form-control-sm" readonly rows="2">@_form.TextContentVi</textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted">🇺🇸 TTS Text (En)</label>
+                                    <textarea class="form-control form-control-sm" readonly rows="2">@_form.TextContentEn</textarea>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted">🇨🇳 TTS Text (Zh)</label>
+                                    <textarea class="form-control form-control-sm" readonly rows="2">@_form.TextContentZh</textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted">🇰🇷 TTS Text (Ko)</label>
+                                    <textarea class="form-control form-control-sm" readonly rows="2">@_form.TextContentKo</textarea>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <label class="form-label text-muted">🇯🇵 TTS Text (Ja)</label>
+                                    <textarea class="form-control form-control-sm" readonly rows="2">@_form.TextContentJa</textarea>
+                                </div>
                             </div>
                         }
                     </div>
@@ -237,6 +300,25 @@
     private POI? _selectedPoiForQr;
     private int? _deleteId;
     private PoiFormViewModel _form = new();
+    private string _searchTerm = string.Empty;
+    private int _currentPage = 1;
+    private int _pageSize = 10;
+
+    private IEnumerable<POI> GetFilteredPois()
+    {
+        var q = _pois.OrderByDescending(x => x.Id).AsEnumerable();
+        if (!string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            var term = _searchTerm.Trim();
+            q = q.Where(p => (p.Name ?? "").Contains(term, StringComparison.OrdinalIgnoreCase)
+                          || (p.Description ?? "").Contains(term, StringComparison.OrdinalIgnoreCase));
+        }
+        return q;
+    }
+
+    private IEnumerable<POI> GetPagedPois() => GetFilteredPois().Skip((_currentPage - 1) * _pageSize).Take(_pageSize);
+
+    private int GetTotalPoiPages() => (int)Math.Ceiling((double)GetFilteredPois().Count() / _pageSize);
 
     protected override async Task OnInitializedAsync()
     {
@@ -294,7 +376,13 @@
             DescriptionEn = poi.DescriptionEn,
             DescriptionZh = poi.DescriptionZh,
             DescriptionKo = poi.DescriptionKo,
-            DescriptionJa = poi.DescriptionJa
+            DescriptionJa = poi.DescriptionJa,
+            TextContent = poi.TextContent,
+            TextContentVi = poi.TextContentVi,
+            TextContentEn = poi.TextContentEn,
+            TextContentZh = poi.TextContentZh,
+            TextContentKo = poi.TextContentKo,
+            TextContentJa = poi.TextContentJa
         };
         _isEditorOpen = true;
     }
@@ -330,7 +418,13 @@
                 DescriptionEn = _form.DescriptionEn,
                 DescriptionZh = _form.DescriptionZh,
                 DescriptionKo = _form.DescriptionKo,
-                DescriptionJa = _form.DescriptionJa
+                DescriptionJa = _form.DescriptionJa,
+                TextContent = _form.TextContent,
+                TextContentVi = _form.TextContentVi,
+                TextContentEn = _form.TextContentEn,
+                TextContentZh = _form.TextContentZh,
+                TextContentKo = _form.TextContentKo,
+                TextContentJa = _form.TextContentJa
             };
 
             if (_isEditing)
@@ -381,6 +475,12 @@
                 _form.DescriptionZh = translated.DescriptionZh;
                 _form.DescriptionKo = translated.DescriptionKo;
                 _form.DescriptionJa = translated.DescriptionJa;
+                
+                _form.TextContentVi = translated.TextContentVi;
+                _form.TextContentEn = translated.TextContentEn;
+                _form.TextContentZh = translated.TextContentZh;
+                _form.TextContentKo = translated.TextContentKo;
+                _form.TextContentJa = translated.TextContentJa;
 
                 // Also refresh the list to show badges
                 _pois.Clear();

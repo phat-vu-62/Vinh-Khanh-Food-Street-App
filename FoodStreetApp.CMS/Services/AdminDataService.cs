@@ -59,6 +59,13 @@ public class AdminDataService : IAdminDataService
         item.DescriptionKo = poi.DescriptionKo;
         item.DescriptionJa = poi.DescriptionJa;
 
+        item.TextContent = poi.TextContent;
+        item.TextContentVi = poi.TextContentVi;
+        item.TextContentEn = poi.TextContentEn;
+        item.TextContentZh = poi.TextContentZh;
+        item.TextContentKo = poi.TextContentKo;
+        item.TextContentJa = poi.TextContentJa;
+
         _dbContext.SaveChanges();
         TrackPoiAction(item.Id, "Updated");
         return true;

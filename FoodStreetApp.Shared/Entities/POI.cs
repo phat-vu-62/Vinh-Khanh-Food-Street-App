@@ -26,4 +26,11 @@ public class POI
     public string? DescriptionZh { get; set; }
     public string? DescriptionKo { get; set; }
     public string? DescriptionJa { get; set; }
+
+    public string? TextContent { get; set; }
+    public string? TextContentVi { get; set; }
+    public string? TextContentEn { get; set; }
+    public string? TextContentZh { get; set; }
+    public string? TextContentKo { get; set; }
+    public string? TextContentJa { get; set; }
 }

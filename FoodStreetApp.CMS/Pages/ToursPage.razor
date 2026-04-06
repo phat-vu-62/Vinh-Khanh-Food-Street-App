@@ -15,7 +15,12 @@
 
     @if (!_isLoading && _tours.Count == 0)
     {
-        <div class="empty-state">No tours yet.</div>
+        <div class="empty-state">
+            <i class="bi bi-map empty-icon"></i>
+            <div class="empty-title">No tours yet</div>
+            <div class="empty-description">Create guided tours by chaining multiple POIs together into a walking route.</div>
+            <button class="btn btn-primary mt-2" @onclick="StartCreate"><i class="bi bi-plus-lg"></i> Create first tour</button>
+        </div>
     }
     else if (!_isLoading)
     {
@@ -33,12 +38,21 @@
                     @foreach (var tour in _tours.OrderByDescending(x => x.Id))
                     {
                         <tr>
-                            <td>@tour.Name</td>
-                            <td class="text-muted">@tour.Description</td>
-                            <td>@string.Join(" → ", tour.PoiIds.Select(FindPoiName))</td>
+                            <td class="fw-semibold">@tour.Name</td>
+                            <td class="text-muted" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@tour.Description</td>
+                            <td>
+                                @foreach (var poiId in tour.PoiIds)
+                                {
+                                    <span class="badge text-bg-secondary me-1">@FindPoiName(poiId)</span>
+                                }
+                            </td>
                             <td class="text-end">
-                                <button class="btn btn-sm btn-outline-secondary me-2" @onclick="() => StartEdit(tour)">Edit</button>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(tour.Id)">Delete</button>
+                                <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => StartEdit(tour)" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(tour.Id)" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             </td>
                         </tr>
                     }

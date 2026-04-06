@@ -27,35 +27,47 @@
 
 @if (!_isLoading)
 {
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-lg-3">
+    <div class="row g-4 mb-4">
+        <div class="col-12 col-sm-6 col-xl-3">
             <div class="card stats-card h-100">
-                <div class="card-body">
-                    <div class="stats-title"><i class="bi bi-geo-alt text-primary"></i> Total POIs</div>
+                <div class="stats-icon text-primary bg-primary bg-opacity-10">
+                    <i class="bi bi-geo-alt"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-title">Total POIs</div>
                     <div class="stats-value">@Pois.Count</div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
+        <div class="col-12 col-sm-6 col-xl-3">
             <div class="card stats-card h-100">
-                <div class="card-body">
-                    <div class="stats-title"><i class="bi bi-music-note text-info"></i> Audios</div>
+                <div class="stats-icon text-info bg-info bg-opacity-10">
+                    <i class="bi bi-file-earmark-music"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-title">Total Audio</div>
                     <div class="stats-value">@Audios.Count</div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
+        <div class="col-12 col-sm-6 col-xl-3">
             <div class="card stats-card h-100">
-                <div class="card-body">
-                    <div class="stats-title"><i class="bi bi-map text-success"></i> Tours</div>
+                <div class="stats-icon text-success bg-success bg-opacity-10">
+                    <i class="bi bi-map"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-title">Active Tours</div>
                     <div class="stats-value">@Tours.Count</div>
                 </div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
+        <div class="col-12 col-sm-6 col-xl-3">
             <div class="card stats-card h-100">
-                <div class="card-body">
-                    <div class="stats-title"><i class="bi bi-eye text-warning"></i> Total Interactions</div>
+                <div class="stats-icon text-warning bg-warning bg-opacity-10">
+                    <i class="bi bi-bar-chart"></i>
+                </div>
+                <div class="stats-info">
+                    <div class="stats-title">Interactions</div>
                     <div class="stats-value">@Histories.Count</div>
                 </div>
             </div>
@@ -204,9 +216,9 @@
             
             CalculateAnalytics();
         }
-        catch
+        catch (Exception ex)
         {
-            Toasts.Error("Cannot load dashboard data.");
+            Toasts.Error($"Cannot load dashboard data: {ex.Message}");
         }
         finally
         {

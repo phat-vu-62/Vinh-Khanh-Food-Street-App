@@ -33,7 +33,11 @@
 
     @if (!_isLoading && _pois.Count == 0)
     {
-        <div class="empty-state">No POIs found.</div>
+        <div class="empty-state">
+            <i class="bi bi-translate empty-icon"></i>
+            <div class="empty-title">No POIs found</div>
+            <div class="empty-description">Add POIs first, then you can manage their multilingual translations here.</div>
+        </div>
     }
     else if (!_isLoading)
     {

@@ -43,11 +43,12 @@ public class GeminiTranslationService : IGeminiTranslationService
 
         var prompt = $@"
         You are a professional translator for a food and tourism application. 
-        Please translate the following Name and Description into Vietnamese (vi), English (en), Chinese (zh), Korean (ko), and Japanese (ja). 
+        Please translate the following Name, Description, and TTS Text Content into Vietnamese (vi), English (en), Chinese (zh), Korean (ko), and Japanese (ja). 
         Make sure the translation is natural and context-aware (not word-by-word).
         
         Original Name: {poi.Name}
         Original Description: {poi.Description}
+        Original TTS Text Content: {poi.TextContent}
         
         Return ONLY a JSON object matching the following structure exactly (do not wrap in markdown or anything else):
         {{
@@ -60,7 +61,12 @@ public class GeminiTranslationService : IGeminiTranslationService
             ""descriptionEn"": ""..."",
             ""descriptionZh"": ""..."",
             ""descriptionKo"": ""..."",
-            ""descriptionJa"": ""...""
+            ""descriptionJa"": ""..."",
+            ""textContentVi"": ""..."",
+            ""textContentEn"": ""..."",
+            ""textContentZh"": ""..."",
+            ""textContentKo"": ""..."",
+            ""textContentJa"": ""...""
         }}
         ";
 
@@ -124,6 +130,12 @@ public class GeminiTranslationService : IGeminiTranslationService
                     poi.DescriptionZh = !string.IsNullOrWhiteSpace(poi.DescriptionZh) ? poi.DescriptionZh : translation.DescriptionZh;
                     poi.DescriptionKo = !string.IsNullOrWhiteSpace(poi.DescriptionKo) ? poi.DescriptionKo : translation.DescriptionKo;
                     poi.DescriptionJa = !string.IsNullOrWhiteSpace(poi.DescriptionJa) ? poi.DescriptionJa : translation.DescriptionJa;
+
+                    poi.TextContentVi = !string.IsNullOrWhiteSpace(poi.TextContentVi) ? poi.TextContentVi : translation.TextContentVi ?? poi.TextContent;
+                    poi.TextContentEn = !string.IsNullOrWhiteSpace(poi.TextContentEn) ? poi.TextContentEn : translation.TextContentEn;
+                    poi.TextContentZh = !string.IsNullOrWhiteSpace(poi.TextContentZh) ? poi.TextContentZh : translation.TextContentZh;
+                    poi.TextContentKo = !string.IsNullOrWhiteSpace(poi.TextContentKo) ? poi.TextContentKo : translation.TextContentKo;
+                    poi.TextContentJa = !string.IsNullOrWhiteSpace(poi.TextContentJa) ? poi.TextContentJa : translation.TextContentJa;
 
                     _logger.LogInformation("Successfully translated POI '{Name}' into 5 languages.", poi.Name);
                 }

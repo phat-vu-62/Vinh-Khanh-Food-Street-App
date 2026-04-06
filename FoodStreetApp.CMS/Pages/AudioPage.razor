@@ -15,10 +15,23 @@
 
     @if (!_isLoading && _audios.Count == 0)
     {
-        <div class="empty-state">No audio records found.</div>
+        <div class="empty-state">
+            <i class="bi bi-file-earmark-music empty-icon"></i>
+            <div class="empty-title">No audio records found</div>
+            <div class="empty-description">Upload audio files or generate TTS clips to accompany your Points of Interest.</div>
+            <button class="btn btn-primary mt-2" @onclick="StartCreate"><i class="bi bi-plus-lg"></i> Add first audio</button>
+        </div>
     }
     else if (!_isLoading)
     {
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="input-group" style="max-width:320px;">
+                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                <input class="form-control" placeholder="Search audio..." @bind="_searchTerm" @bind:event="oninput" @bind:after="() => { _currentPage = 1; }" />
+            </div>
+            <small class="text-muted">@GetFilteredAudios().Count() items</small>
+        </div>
+
         <div class="table-responsive">
             <table class="table admin-table">
                 <thead>
@@ -26,34 +39,64 @@
                         <th>Title</th>
                         <th>POI</th>
                         <th>Duration</th>
+                        <th>Status</th>
                         <th>Preview</th>
                         <th class="text-end">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var audio in _audios.OrderByDescending(x => x.Id))
+                    @foreach (var audio in GetPagedAudios())
                     {
                         <tr>
-                            <td>@audio.Title</td>
+                            <td class="fw-semibold">@audio.Title</td>
                             <td>@FindPoiName(audio.PoiId)</td>
                             <td>@audio.DurationSeconds s</td>
                             <td>
+                                @if (audio.IsActive)
+                                {
+                                    <span class="badge bg-active">Active</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-inactive">Inactive</span>
+                                }
+                            </td>
+                            <td>
                                 @if (!string.IsNullOrWhiteSpace(audio.Url))
                                 {
-                                    <audio controls preload="none" style="height: 2rem; width: 220px;">
+                                    <audio controls preload="none" style="height: 2rem; width: 200px;">
                                         <source src="@audio.Url" />
                                     </audio>
                                 }
                             </td>
                             <td class="text-end">
-                                <button class="btn btn-sm btn-outline-secondary me-2" @onclick="() => StartEdit(audio)">Edit</button>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(audio.Id)">Delete</button>
+                                <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => StartEdit(audio)" title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(audio.Id)" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             </td>
                         </tr>
                     }
                 </tbody>
             </table>
         </div>
+
+        @if (GetTotalAudioPages() > 1)
+        {
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <small class="text-muted">Page @_currentPage of @GetTotalAudioPages()</small>
+                <div class="d-flex gap-1">
+                    <button class="btn btn-sm btn-outline-secondary" disabled="@(_currentPage <= 1)" @onclick="() => _currentPage--">
+                        <i class="bi bi-chevron-left"></i> Prev
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" disabled="@(_currentPage >= GetTotalAudioPages())" @onclick="() => _currentPage++">
+                        Next <i class="bi bi-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        }
     }
 </section>
 
@@ -174,6 +217,24 @@
     private string _ttsText = string.Empty;
     private string _ttsLanguage = "vi";
     private AudioFormViewModel _form = new();
+    private string _searchTerm = string.Empty;
+    private int _currentPage = 1;
+    private int _pageSize = 10;
+
+    private IEnumerable<Audio> GetFilteredAudios()
+    {
+        var q = _audios.OrderByDescending(x => x.Id).AsEnumerable();
+        if (!string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            var term = _searchTerm.Trim();
+            q = q.Where(a => (a.Title ?? "").Contains(term, StringComparison.OrdinalIgnoreCase)
+                          || FindPoiName(a.PoiId).Contains(term, StringComparison.OrdinalIgnoreCase));
+        }
+        return q;
+    }
+
+    private IEnumerable<Audio> GetPagedAudios() => GetFilteredAudios().Skip((_currentPage - 1) * _pageSize).Take(_pageSize);
+    private int GetTotalAudioPages() => (int)Math.Ceiling((double)GetFilteredAudios().Count() / _pageSize);
 
     protected override async Task OnInitializedAsync()
     {
