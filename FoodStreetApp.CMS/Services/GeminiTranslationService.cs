@@ -34,7 +34,7 @@ public class GeminiTranslationService : IGeminiTranslationService
         var apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY")
                      ?? _configuration["Gemini:ApiKey"];
 
-        var model = _configuration["Gemini:Model"] ?? "gemini-1.5-flash";
+        var model = _configuration["Gemini:Model"] ?? "gemini-2.5-flash";
 
         if (string.IsNullOrWhiteSpace(apiKey))
         {
@@ -104,7 +104,7 @@ public class GeminiTranslationService : IGeminiTranslationService
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
                 _logger.LogError("Gemini API translation failed: {StatusCode} - {Error}", response.StatusCode, errorContent);
-                _toastService.Error("Dịch tự động hiện không khả dụng. Bạn có thể nhập liệu thủ công.");
+                _toastService.Error("Hệ thống tự động tạm gián đoạn. Vui lòng nhập liệu thủ công.");
                 return;
             }
 
@@ -150,8 +150,8 @@ public class GeminiTranslationService : IGeminiTranslationService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Exception thrown while calling Gemini API for translations.");
-            _toastService.Error("Dịch tự động hiện không khả dụng. Bạn có thể nhập liệu thủ công.");
+            _logger.LogError(ex, "Gemini API exception. Please use manual input.");
+            _toastService.Error("Hệ thống tự động tạm gián đoạn. Vui lòng nhập liệu thủ công.");
         }
     }
 }
