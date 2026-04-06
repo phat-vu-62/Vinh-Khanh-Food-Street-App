@@ -15,12 +15,18 @@ public class GeminiTranslationService : IGeminiTranslationService
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
     private readonly ILogger<GeminiTranslationService> _logger;
+    private readonly ToastService _toastService;
 
-    public GeminiTranslationService(HttpClient httpClient, IConfiguration configuration, ILogger<GeminiTranslationService> logger)
+    public GeminiTranslationService(
+        HttpClient httpClient, 
+        IConfiguration configuration, 
+        ILogger<GeminiTranslationService> logger,
+        ToastService toastService)
     {
         _httpClient = httpClient;
         _configuration = configuration;
         _logger = logger;
+        _toastService = toastService;
     }
 
     public async Task TranslatePoiAsync(POI poi)
@@ -98,7 +104,8 @@ public class GeminiTranslationService : IGeminiTranslationService
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
                 _logger.LogError("Gemini API translation failed: {StatusCode} - {Error}", response.StatusCode, errorContent);
-                throw new Exception($"Gemini API returned {response.StatusCode}");
+                _toastService.Error("Dịch tự động hiện không khả dụng. Bạn có thể nhập liệu thủ công.");
+                return;
             }
 
             var apiResponse = await response.Content.ReadFromJsonAsync<GeminiResponse>();
@@ -141,14 +148,10 @@ public class GeminiTranslationService : IGeminiTranslationService
                 }
             }
         }
-        catch (Exception ex) when (ex.Message.Contains("Gemini API returned"))
-        {
-            throw; // Re-throw Gemini API errors so the UI can show them
-        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Exception thrown while calling Gemini API for translations.");
-            throw new Exception("Translation service error. Please try again later.", ex);
+            _toastService.Error("Dịch tự động hiện không khả dụng. Bạn có thể nhập liệu thủ công.");
         }
     }
 }
