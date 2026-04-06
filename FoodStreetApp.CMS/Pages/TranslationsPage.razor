@@ -4,8 +4,8 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h1 class="h4 mb-0">Translation Management</h1>
-        <small class="text-muted">Review and edit POI translations by language</small>
+        <h1 class="h4 mb-0">Quản lý bản dịch</h1>
+        <small class="text-muted">Xem và chỉnh sửa bản dịch của các điểm tham quan theo ngôn ngữ</small>
     </div>
     <div class="d-flex gap-2">
         <InputSelect class="form-select" style="min-width: 120px;" @bind-Value="_selectedLanguage">
@@ -18,25 +18,25 @@
             @if (_isTranslatingAll)
             {
                 <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                <span>Translating...</span>
+                <span>Đang dịch...</span>
             }
             else
             {
-                <span>Translate All POIs</span>
+                <span>Dịch tất cả POI</span>
             }
         </button>
     </div>
 </div>
 
 <section class="module-panel">
-    <LoadingState IsLoading="_isLoading" Message="Loading translations..." />
+    <LoadingState IsLoading="_isLoading" Message="Đang tải bản dịch..." />
 
     @if (!_isLoading && _pois.Count == 0)
     {
         <div class="empty-state">
             <i class="bi bi-translate empty-icon"></i>
-            <div class="empty-title">No POIs found</div>
-            <div class="empty-description">Add POIs first, then you can manage their multilingual translations here.</div>
+            <div class="empty-title">Không tìm thấy điểm tham quan nào</div>
+            <div class="empty-description">Hãy thêm điểm tham quan trước, sau đó bạn có thể quản lý bản dịch đa ngôn ngữ tại đây.</div>
         </div>
     }
     else if (!_isLoading)
@@ -45,10 +45,10 @@
             <table class="table admin-table">
                 <thead>
                     <tr>
-                        <th>POI</th>
-                        <th>Original Text</th>
-                        <th>Translated Text (@_selectedLanguage)</th>
-                        <th class="text-end">Actions</th>
+                        <th>Điểm tham quan</th>
+                        <th>Văn bản gốc</th>
+                        <th>Bản dịch (@_selectedLanguage)</th>
+                        <th class="text-end">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -57,20 +57,20 @@
                         <tr>
                             <td>
                                 <strong>@poi.Name</strong>
-                                <div class="small text-muted">Name</div>
+                                <div class="small text-muted">Tên</div>
                             </td>
                             <td>@poi.Name</td>
                             <td>
                                 <InputText class="form-control" Value="@GetNameTranslation(poi, _selectedLanguage)" ValueChanged="@(value => SetNameTranslation(poi, _selectedLanguage, value))" />
                             </td>
                             <td class="text-end" rowspan="2">
-                                <button class="btn btn-sm btn-outline-primary" @onclick="() => SavePoiAsync(poi)">Save</button>
+                                <button class="btn btn-sm btn-outline-primary" @onclick="() => SavePoiAsync(poi)">Lưu</button>
                             </td>
                         </tr>
                         <tr>
                             <td>
                                 <strong>@poi.Name</strong>
-                                <div class="small text-muted">Description</div>
+                                <div class="small text-muted">Mô tả</div>
                             </td>
                             <td class="text-muted">@poi.Description</td>
                             <td>

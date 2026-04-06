@@ -4,22 +4,22 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h1 class="h4 mb-0">Audio Management</h1>
-        <small class="text-muted">Assign audio track to POIs and preview playback</small>
+        <h1 class="h4 mb-0">Quản lý âm thanh</h1>
+        <small class="text-muted">Gán tệp âm thanh cho các điểm tham quan và nghe thử</small>
     </div>
-    <button class="btn btn-primary" @onclick="StartCreate">+ New Audio</button>
+    <button class="btn btn-primary" @onclick="StartCreate">+ Thêm âm thanh mới</button>
 </div>
 
 <section class="module-panel">
-    <LoadingState IsLoading="_isLoading" Message="Loading audio library..." />
+    <LoadingState IsLoading="_isLoading" Message="Đang tải thư viện âm thanh..." />
 
     @if (!_isLoading && _audios.Count == 0)
     {
         <div class="empty-state">
             <i class="bi bi-file-earmark-music empty-icon"></i>
-            <div class="empty-title">No audio records found</div>
-            <div class="empty-description">Upload audio files or generate TTS clips to accompany your Points of Interest.</div>
-            <button class="btn btn-primary mt-2" @onclick="StartCreate"><i class="bi bi-plus-lg"></i> Add first audio</button>
+            <div class="empty-title">Không tìm thấy âm thanh nào</div>
+            <div class="empty-description">Tải lên tệp âm thanh hoặc tạo đoạn TTS để đi kèm với các điểm tham quan của bạn.</div>
+            <button class="btn btn-primary mt-2" @onclick="StartCreate"><i class="bi bi-plus-lg"></i> Thêm âm thanh đầu tiên</button>
         </div>
     }
     else if (!_isLoading)
@@ -27,21 +27,21 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="input-group" style="max-width:320px;">
                 <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                <input class="form-control" placeholder="Search audio..." @bind="_searchTerm" @bind:event="oninput" @bind:after="() => { _currentPage = 1; }" />
+                <input class="form-control" placeholder="Tìm kiếm âm thanh..." @bind="_searchTerm" @bind:event="oninput" @bind:after="() => { _currentPage = 1; }" />
             </div>
-            <small class="text-muted">@GetFilteredAudios().Count() items</small>
+            <small class="text-muted">@GetFilteredAudios().Count() mục</small>
         </div>
 
         <div class="table-responsive">
             <table class="table admin-table">
                 <thead>
                     <tr>
-                        <th>Title</th>
-                        <th>POI</th>
-                        <th>Duration</th>
-                        <th>Status</th>
-                        <th>Preview</th>
-                        <th class="text-end">Actions</th>
+                        <th>Tiêu đề</th>
+                        <th>Điểm tham quan</th>
+                        <th>Thời lượng</th>
+                        <th>Trạng thái</th>
+                        <th>Nghe thử</th>
+                        <th class="text-end">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -50,15 +50,15 @@
                         <tr>
                             <td class="fw-semibold">@audio.Title</td>
                             <td>@FindPoiName(audio.PoiId)</td>
-                            <td>@audio.DurationSeconds s</td>
+
                             <td>
                                 @if (audio.IsActive)
                                 {
-                                    <span class="badge bg-active">Active</span>
+                                    <span class="badge bg-active">Hoạt động</span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-inactive">Inactive</span>
+                                    <span class="badge bg-inactive">Ngừng</span>
                                 }
                             </td>
                             <td>
@@ -86,13 +86,13 @@
         @if (GetTotalAudioPages() > 1)
         {
             <div class="d-flex justify-content-between align-items-center mt-3">
-                <small class="text-muted">Page @_currentPage of @GetTotalAudioPages()</small>
+                <small class="text-muted">Trang @_currentPage / @GetTotalAudioPages()</small>
                 <div class="d-flex gap-1">
                     <button class="btn btn-sm btn-outline-secondary" disabled="@(_currentPage <= 1)" @onclick="() => _currentPage--">
-                        <i class="bi bi-chevron-left"></i> Prev
+                        <i class="bi bi-chevron-left"></i> Trước
                     </button>
                     <button class="btn btn-sm btn-outline-secondary" disabled="@(_currentPage >= GetTotalAudioPages())" @onclick="() => _currentPage++">
-                        Next <i class="bi bi-chevron-right"></i>
+                        Sau <i class="bi bi-chevron-right"></i>
                     </button>
                 </div>
             </div>
@@ -107,17 +107,17 @@
             <div class="modal-content form-card">
                 <EditForm Model="_form" OnValidSubmit="SaveAsync">
                     <div class="modal-header">
-                        <h5 class="modal-title">@(_isEditing ? "Edit Audio" : "Create Audio")</h5>
+                        <h5 class="modal-title">@(_isEditing ? "Chỉnh sửa âm thanh" : "Tạo âm thanh mới")</h5>
                         <button type="button" class="btn-close" @onclick="CloseEditor"></button>
                     </div>
                     <div class="modal-body">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label">Title</label>
+                                <label class="form-label">Tiêu đề</label>
                                 <InputText class="form-control" @bind-Value="_form.Title" />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">POI</label>
+                                <label class="form-label">Điểm tham quan</label>
                                 <InputSelect class="form-select" @bind-Value="_form.PoiId">
                                     @foreach (var poi in _pois.OrderBy(x => x.Name))
                                     {
@@ -126,7 +126,7 @@
                                 </InputSelect>
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Duration (seconds)</label>
+                                <label class="form-label">Thời lượng (giây)</label>
                                 <InputNumber class="form-control" @bind-Value="_form.DurationSeconds" />
                             </div>
                             <div class="col-md-12 mb-3">
@@ -145,9 +145,9 @@
                                     <div class="card border-0 bg-light">
                                         <div class="card-body py-3">
                                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <label class="form-label mb-0">Generate TTS</label>
+                                                <label class="form-label mb-0">Tạo TTS</label>
                                                 <button type="button" class="btn btn-sm btn-primary" @onclick="GenerateTtsUrl">
-                                                    Generate Audio
+                                                    Tạo âm thanh
                                                 </button>
                                             </div>
                                             <div class="row g-2">
@@ -161,7 +161,7 @@
                                                     </InputSelect>
                                                 </div>
                                                 <div class="col-md-9">
-                                                    <InputTextArea class="form-control" @bind-Value="_ttsText" rows="2" placeholder="Enter text to synthesize" />
+                                                    <InputTextArea class="form-control" @bind-Value="_ttsText" rows="2" placeholder="Nhập văn bản cần chuyển đổi" />
                                                 </div>
                                             </div>
                                         </div>
@@ -172,7 +172,7 @@
                             @if (_audioMode == "Upload")
                             {
                                 <div class="col-12">
-                                    <label class="form-label">Upload audio file</label>
+                                    <label class="form-label">Tải tệp âm thanh lên</label>
                                     <InputFile class="form-control" OnChange="OnAudioSelected" accept="audio/*" />
                                 </div>
                             }
@@ -180,7 +180,7 @@
                             @if (!string.IsNullOrWhiteSpace(_form.Url) || !string.IsNullOrWhiteSpace(_uploadedPreviewUrl))
                             {
                                 <div class="col-12 mt-3 text-center">
-                                    <small class="text-muted d-block mb-1">Audio Preview</small>
+                                    <small class="text-muted d-block mb-1">Nghe thử</small>
                                     <audio controls class="w-100" style="max-height: 40px;">
                                         <source src="@(!string.IsNullOrWhiteSpace(_uploadedPreviewUrl) ? _uploadedPreviewUrl : _form.Url)" />
                                     </audio>
@@ -188,17 +188,17 @@
                             }
 
                             <div class="col-md-4 mt-3">
-                                <label class="form-label">Status</label>
+                                <label class="form-label">Trạng thái</label>
                                 <div class="form-check form-switch mt-2">
                                     <InputCheckbox class="form-check-input" @bind-Value="_form.IsActive" />
-                                    <label class="form-check-label">Active</label>
+                                    <label class="form-check-label">Hoạt động</label>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseEditor">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseEditor">Hủy</button>
+                        <button type="submit" class="btn btn-primary">Lưu</button>
                     </div>
                 </EditForm>
             </div>

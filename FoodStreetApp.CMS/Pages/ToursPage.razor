@@ -4,22 +4,22 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h1 class="h4 mb-0">Tours Management</h1>
-        <small class="text-muted">Build tours, add POIs, reorder POI sequence</small>
+        <h1 class="h4 mb-0">Quản lý hành trình</h1>
+        <small class="text-muted">Xây dựng các chuyến tham quan, thêm địa điểm và sắp xếp trình tự</small>
     </div>
-    <button class="btn btn-primary" @onclick="StartCreate">+ New Tour</button>
+    <button class="btn btn-primary" @onclick="StartCreate">+ Thêm hành trình mới</button>
 </div>
 
 <section class="module-panel">
-    <LoadingState IsLoading="_isLoading" Message="Loading tours..." />
+    <LoadingState IsLoading="_isLoading" Message="Đang tải danh sách hành trình..." />
 
     @if (!_isLoading && _tours.Count == 0)
     {
         <div class="empty-state">
             <i class="bi bi-map empty-icon"></i>
-            <div class="empty-title">No tours yet</div>
-            <div class="empty-description">Create guided tours by chaining multiple POIs together into a walking route.</div>
-            <button class="btn btn-primary mt-2" @onclick="StartCreate"><i class="bi bi-plus-lg"></i> Create first tour</button>
+            <div class="empty-title">Chưa có hành trình nào</div>
+            <div class="empty-description">Tạo hành trình bằng cách kết hợp nhiều điểm tham quan thành một tuyến đường đi bộ.</div>
+            <button class="btn btn-primary mt-2" @onclick="StartCreate"><i class="bi bi-plus-lg"></i> Tạo hành trình đầu tiên</button>
         </div>
     }
     else if (!_isLoading)
@@ -28,10 +28,10 @@
             <table class="table admin-table">
                 <thead>
                     <tr>
-                        <th>Name</th>
-                        <th>Description</th>
-                        <th>POIs</th>
-                        <th class="text-end">Actions</th>
+                        <th>Tên hành trình</th>
+                        <th>Mô tả</th>
+                        <th>Các điểm tham quan</th>
+                        <th class="text-end">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -69,21 +69,21 @@
             <div class="modal-content form-card">
                 <EditForm Model="_form" OnValidSubmit="SaveAsync">
                     <div class="modal-header">
-                        <h5 class="modal-title">@(_isEditing ? "Edit Tour" : "Create Tour")</h5>
+                        <h5 class="modal-title">@(_isEditing ? "Chỉnh sửa hành trình" : "Tạo hành trình mới")</h5>
                         <button type="button" class="btn-close" @onclick="CloseEditor"></button>
                     </div>
                     <div class="modal-body">
                         <div class="row g-3">
                             <div class="col-md-6">
-                                <label class="form-label">Name</label>
+                                <label class="form-label">Tên hành trình</label>
                                 <InputText class="form-control" @bind-Value="_form.Name" />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Description</label>
+                                <label class="form-label">Mô tả</label>
                                 <InputText class="form-control" @bind-Value="_form.Description" />
                             </div>
                             <div class="col-md-5">
-                                <label class="form-label">Available POIs</label>
+                                <label class="form-label">Các điểm có sẵn</label>
                                 <select class="form-select" @bind="_selectedPoiId">
                                     @foreach (var poi in _pois.OrderBy(x => x.Name))
                                     {
@@ -92,14 +92,14 @@
                                 </select>
                             </div>
                             <div class="col-md-2 d-flex align-items-end">
-                                <button type="button" class="btn btn-outline-primary w-100" @onclick="AddPoiToTour">Add</button>
+                                <button type="button" class="btn btn-outline-primary w-100" @onclick="AddPoiToTour">Thêm</button>
                             </div>
                             <div class="col-md-5">
-                                <label class="form-label">Tour POIs (Drag to reorder)</label>
+                                <label class="form-label">Danh sách điểm (Kéo để sắp xếp)</label>
                                 <ul class="list-group list-group-flush border rounded" ondragover="event.preventDefault();">
                                     @if (_form.PoiIds.Count == 0)
                                     {
-                                        <li class="list-group-item text-muted">No POI selected</li>
+                                        <li class="list-group-item text-muted">Chưa chọn điểm nào</li>
                                     }
                                     @for (var i = 0; i < _form.PoiIds.Count; i++)
                                     {
@@ -121,8 +121,8 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseEditor">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseEditor">Hủy</button>
+                        <button type="submit" class="btn btn-primary">Lưu</button>
                     </div>
                 </EditForm>
             </div>

@@ -4,25 +4,25 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h1 class="h4 mb-0">Usage History</h1>
-        <small class="text-muted">POI viewed and audio played activity logs</small>
+        <h1 class="h4 mb-0">Lịch sử sử dụng</h1>
+        <small class="text-muted">Nhật ký hoạt động xem điểm tham quan và nghe âm thanh</small>
     </div>
     <div class="d-flex gap-2">
-        <InputDate class="form-control" style="min-width: 150px;" @bind-Value="_selectedDate" @bind-Value:after="() => { _currentPage = 1; LoadAsync(); }" TValue="DateTime?" placeholder="Filter by Date..." />
-        <button class="btn btn-outline-secondary" @onclick="ClearFilter" disabled="@(_selectedDate == null)">Clear</button>
-        <button class="btn btn-outline-primary" @onclick="LoadAsync">Refresh</button>
+        <InputDate class="form-control" style="min-width: 150px;" @bind-Value="_selectedDate" @bind-Value:after="() => { _currentPage = 1; LoadAsync(); }" TValue="DateTime?" placeholder="Lọc theo ngày..." />
+        <button class="btn btn-outline-secondary" @onclick="ClearFilter" disabled="@(_selectedDate == null)">Xóa lọc</button>
+        <button class="btn btn-outline-primary" @onclick="LoadAsync">Làm mới</button>
     </div>
 </div>
 
 <section class="module-panel">
-    <LoadingState IsLoading="_isLoading" Message="Loading usage history..." />
+    <LoadingState IsLoading="_isLoading" Message="Đang tải lịch sử sử dụng..." />
 
     @if (!_isLoading && _history.Count == 0)
     {
         <div class="empty-state">
             <i class="bi bi-clock-history empty-icon"></i>
-            <div class="empty-title">No usage history yet</div>
-            <div class="empty-description">Activity logs will appear here once users start interacting with POIs through the mobile app.</div>
+            <div class="empty-title">Chưa có lịch sử sử dụng</div>
+            <div class="empty-description">Nhật ký hoạt động sẽ xuất hiện tại đây khi người dùng tương tác với các điểm tham quan qua ứng dụng di động.</div>
         </div>
     }
     else if (!_isLoading)
@@ -30,20 +30,20 @@
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="input-group" style="max-width:320px;">
                 <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                <input class="form-control" placeholder="Search by user, POI or action..." @bind="_searchTerm" @bind:event="oninput" @bind:after="() => { _currentPage = 1; }" />
+                <input class="form-control" placeholder="Tìm kiếm theo người dùng, điểm hoặc hành động..." @bind="_searchTerm" @bind:event="oninput" @bind:after="() => { _currentPage = 1; }" />
             </div>
-            <small class="text-muted">@GetFilteredHistory().Count() records</small>
+            <small class="text-muted">@GetFilteredHistory().Count() bản ghi</small>
         </div>
 
         <div class="table-responsive">
             <table class="table admin-table">
                 <thead>
                     <tr>
-                        <th>User</th>
-                        <th>POI Name</th>
-                        <th>Action Type</th>
-                        <th>Duration</th>
-                        <th>Timestamp</th>
+                        <th>Người dùng</th>
+                        <th>Điểm tham quan</th>
+                        <th>Hành động</th>
+                        <th>Thời lượng</th>
+                        <th>Thời gian</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -53,7 +53,7 @@
                             <td>
                                 <span class="d-inline-flex align-items-center gap-1">
                                     <i class="bi bi-person-circle text-muted"></i>
-                                    @(string.IsNullOrWhiteSpace(item.UserId) ? "Guest" : (item.UserId.Length > 8 ? item.UserId[..8] + "…" : item.UserId))
+
                                 </span>
                             </td>
                             <td class="fw-semibold">@FindPoiName(item.PoiId)</td>
@@ -63,7 +63,7 @@
                             <td>
                                 @if (item.DurationSeconds.HasValue && item.DurationSeconds > 0)
                                 {
-                                    <span>@item.DurationSeconds s</span>
+                                    <span>@item.DurationSeconds giây</span>
                                 }
                                 else
                                 {
@@ -80,13 +80,13 @@
         @if (GetTotalHistoryPages() > 1)
         {
             <div class="d-flex justify-content-between align-items-center mt-3">
-                <small class="text-muted">Page @_currentPage of @GetTotalHistoryPages()</small>
+                <small class="text-muted">Trang @_currentPage / @GetTotalHistoryPages()</small>
                 <div class="d-flex gap-1">
                     <button class="btn btn-sm btn-outline-secondary" disabled="@(_currentPage <= 1)" @onclick="() => _currentPage--">
-                        <i class="bi bi-chevron-left"></i> Prev
+                        <i class="bi bi-chevron-left"></i> Trước
                     </button>
                     <button class="btn btn-sm btn-outline-secondary" disabled="@(_currentPage >= GetTotalHistoryPages())" @onclick="() => _currentPage++">
-                        Next <i class="bi bi-chevron-right"></i>
+                        Sau <i class="bi bi-chevron-right"></i>
                     </button>
                 </div>
             </div>
@@ -167,7 +167,7 @@
             VisitedAtUtc = now.AddMinutes(-7)
         });
 
-        Toasts.Info("Initialized mock usage history.");
+        Toasts.Info("Đã khởi tạo lịch sử sử dụng giả lập.");
     }
 
     private IEnumerable<UserHistory> GetFilteredHistory()
@@ -202,7 +202,14 @@
 
     private string FindPoiName(int poiId) => _pois.FirstOrDefault(x => x.Id == poiId)?.Name ?? $"POI #{poiId}";
 
-    private static string GetActionLabel(string? action) => string.IsNullOrWhiteSpace(action) ? "Unknown" : action;
+    private static string GetActionLabel(string? action) => string.IsNullOrWhiteSpace(action) ? "Không rõ" : (action.ToLowerInvariant() switch
+    {
+        "poi viewed" or "poi_viewed" => "Xem điểm",
+        "audio played" or "audio_played" => "Nghe âm thanh",
+        "route_entry" => "Vào tuyến",
+        "listen" => "Đã nghe",
+        _ => action
+    });
 
     private static string GetActionBadge(string? action)
     {
