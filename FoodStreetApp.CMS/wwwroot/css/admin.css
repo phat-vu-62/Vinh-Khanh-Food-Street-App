@@ -1,6 +1,6 @@
 :root {
-    --primary-color: #c53030;
-    --primary-hover: #9b2c2c;
+    --primary-color: #2563eb;
+    --primary-hover: #1d4ed8;
     --sidebar-width: 260px;
     --bg-light: #f8fafc;
     --text-dark: #1e293b;
@@ -53,14 +53,14 @@ body {
 }
 
 .nav-link:hover {
-    background-color: #fee2e2;
+    background-color: #dbeafe;
     color: var(--primary-color);
 }
 
 .nav-link.active {
     background-color: var(--primary-color);
     color: white;
-    box-shadow: 0 4px 6px -1px rgba(197, 48, 48, 0.4);
+    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.4);
 }
 
 /* Main Content Area */
@@ -100,7 +100,7 @@ body {
     width: 48px;
     height: 48px;
     border-radius: 12px;
-    background: #fee2e2;
+    background: #dbeafe;
     color: var(--primary-color);
     display: flex;
     align-items: center;
@@ -225,7 +225,7 @@ body {
 
 .form-control:focus, .form-select:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 3px rgba(197, 48, 48, 0.15);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
 /* Overlays */
@@ -247,7 +247,7 @@ body {
 }
 
 .admin-table tbody tr:hover {
-    background-color: #fef2f2;
+    background-color: #eff6ff;
 }
 
 /* Toast styling */

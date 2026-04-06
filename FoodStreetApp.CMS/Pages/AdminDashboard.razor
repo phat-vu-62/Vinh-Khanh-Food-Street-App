@@ -206,25 +206,41 @@
 
     private Task LoadAsync()
     {
+        _isLoading = true;
         try
         {
-            _isLoading = true;
             Pois = DataService.GetPois();
+        }
+        catch { Pois = []; }
+
+        try
+        {
             Audios = DataService.GetAudios();
+        }
+        catch { Audios = []; }
+
+        try
+        {
             Tours = DataService.GetTours();
+        }
+        catch { Tours = []; }
+
+        try
+        {
             Histories = DataService.GetUsageHistories();
-            
+        }
+        catch { Histories = []; }
+
+        try
+        {
             CalculateAnalytics();
         }
         catch (Exception ex)
         {
-            Toasts.Error($"Cannot load dashboard data: {ex.Message}");
-        }
-        finally
-        {
-            _isLoading = false;
+            System.Diagnostics.Debug.WriteLine($"[DASHBOARD] Analytics error: {ex.Message}");
         }
 
+        _isLoading = false;
         return Task.CompletedTask;
     }
 

@@ -110,31 +110,37 @@
 
     private async Task LoadAsync()
     {
+        _isLoading = true;
+        _history.Clear();
+        _pois.Clear();
+
         try
         {
-            _isLoading = true;
-            _history.Clear();
-            _pois.Clear();
-
             _pois.AddRange(DataService.GetPois());
-            _history.AddRange(DataService.GetUsageHistories());
+        }
+        catch { /* POI table may be empty */ }
 
-            if (_history.Count == 0 && _pois.Count > 0)
+        try
+        {
+            _history.AddRange(DataService.GetUsageHistories());
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[USAGE] Cannot load histories: {ex.Message}");
+        }
+
+        if (_history.Count == 0 && _pois.Count > 0)
+        {
+            try
             {
                 SeedMockHistory();
                 _history.Clear();
                 _history.AddRange(DataService.GetUsageHistories());
             }
-        }
-        catch (Exception ex)
-        {
-            Toasts.Error($"Failed to load usage history: {ex.Message}");
-        }
-        finally
-        {
-            _isLoading = false;
+            catch { /* seeding failed, show empty */ }
         }
 
+        _isLoading = false;
         await Task.CompletedTask;
     }
 

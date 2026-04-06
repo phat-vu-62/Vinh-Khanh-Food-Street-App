@@ -56,13 +56,14 @@ using (var scope = app.Services.CreateScope())
     dbContext.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS \"IX_PoiSyncActions_OccurredAtUtc\" ON \"PoiSyncActions\" (\"OccurredAtUtc\");");
     dbContext.Database.ExecuteSqlRaw("CREATE INDEX IF NOT EXISTS \"IX_PoiSyncActions_PoiId\" ON \"PoiSyncActions\" (\"PoiId\");");
 
-    // Ensure translation columns exist on the Pois table
-    var translationColumns = new[]
+    // Ensure translation + TextContent columns exist on the Pois table
+    var poiColumns = new[]
     {
         "NameVi", "NameEn", "NameZh", "NameKo", "NameJa",
-        "DescriptionVi", "DescriptionEn", "DescriptionZh", "DescriptionKo", "DescriptionJa"
+        "DescriptionVi", "DescriptionEn", "DescriptionZh", "DescriptionKo", "DescriptionJa",
+        "TextContent", "TextContentVi", "TextContentEn", "TextContentZh", "TextContentKo", "TextContentJa"
     };
-    foreach (var col in translationColumns)
+    foreach (var col in poiColumns)
     {
         try
         {
@@ -73,6 +74,16 @@ using (var scope = app.Services.CreateScope())
         {
             // Column already exists or DB doesn't support IF NOT EXISTS — safe to ignore
         }
+    }
+
+    // Ensure DurationSeconds column exists on UserHistories table
+    try
+    {
+        dbContext.Database.ExecuteSqlRaw("ALTER TABLE \"UserHistories\" ADD COLUMN IF NOT EXISTS \"DurationSeconds\" integer;");
+    }
+    catch
+    {
+        // Column already exists — safe to ignore
     }
 }
 
