@@ -107,10 +107,25 @@ public class GeminiTranslationService : IGeminiTranslationService
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
                 _logger.LogError("Gemini API error: {StatusCode} - {Error}", response.StatusCode, errorContent);
-                _toastService.Error("Dịch tự động tạm gián đoạn. Vui lòng nhập liệu thủ công.");
+                
+                // Fallback to 1.5 if 2.5 fails (likely 404)
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound && model != "gemini-1.5-flash")
+                {
+                    _logger.LogWarning("Model {model} not found. Falling back to gemini-1.5-flash.", model);
+                    var fallbackUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}";
+                    var fallbackResponse = await _httpClient.PostAsJsonAsync(fallbackUrl, requestBody);
+                    if (fallbackResponse.IsSuccessStatusCode)
+                    {
+                        response = fallbackResponse;
+                        goto ProcessResponse;
+                    }
+                }
+
+                _toastService.Error($"Dịch thất bại (Lỗi {response.StatusCode}). Vui lòng nhập liệu thủ công.");
                 return false;
             }
 
+        ProcessResponse:
             var apiResponse = await response.Content.ReadFromJsonAsync<GeminiResponse>();
             var jsonText = apiResponse?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text;
 
