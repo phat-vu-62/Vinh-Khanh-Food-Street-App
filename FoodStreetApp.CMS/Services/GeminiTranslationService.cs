@@ -99,45 +99,33 @@ public class GeminiTranslationService : IGeminiTranslationService
                 }
             };
 
-            // Strategy: try v1beta first (supports responseMimeType), then v1 without it
-            var endpoints = new[]
-            {
-                $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}",
-                $"https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={apiKey}",
-            };
-
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
             HttpResponseMessage? response = null;
 
-            foreach (var endpoint in endpoints)
+            // Retry up to 3 times with backoff for rate-limiting (429)
+            for (int attempt = 1; attempt <= 3; attempt++)
             {
-                _logger.LogInformation("Trying Gemini endpoint: {Endpoint}", endpoint.Split("?")[0]);
-                response = await _httpClient.PostAsJsonAsync(endpoint, requestBody);
+                _logger.LogInformation("Gemini API attempt {Attempt}/3 using model {Model}...", attempt, model);
+                response = await _httpClient.PostAsJsonAsync(url, requestBody);
 
                 if (response.IsSuccessStatusCode)
                 {
-                    _logger.LogInformation("Gemini endpoint succeeded.");
+                    _logger.LogInformation("Gemini API call succeeded on attempt {Attempt}.", attempt);
                     break;
                 }
 
-                var errBody = await response.Content.ReadAsStringAsync();
-                _logger.LogWarning("Gemini endpoint failed: {Status} - {Body}", response.StatusCode, errBody);
-
-                // If BadRequest, the issue is likely responseMimeType — retry without it
-                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                // On rate limit, wait and retry
+                if (response.StatusCode == (System.Net.HttpStatusCode)429 && attempt < 3)
                 {
-                    _logger.LogInformation("Retrying without responseMimeType...");
-                    var plainBody = new GeminiRequest
-                    {
-                        Contents = requestBody.Contents
-                        // No GenerationConfig — let the model return free-form text
-                    };
-                    response = await _httpClient.PostAsJsonAsync(endpoint, plainBody);
-                    if (response.IsSuccessStatusCode)
-                    {
-                        _logger.LogInformation("Retry without responseMimeType succeeded.");
-                        break;
-                    }
+                    var waitSeconds = attempt * 5; // 5s, 10s
+                    _logger.LogWarning("Rate limited (429). Waiting {Wait}s before retry...", waitSeconds);
+                    await Task.Delay(waitSeconds * 1000);
+                    continue;
                 }
+
+                var errBody = await response.Content.ReadAsStringAsync();
+                _logger.LogError("Gemini API error: {Status} - {Body}", response.StatusCode, errBody);
+                break;
             }
 
             if (response == null || !response.IsSuccessStatusCode)
