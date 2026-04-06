@@ -4,26 +4,12 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
-        <h1 class="h4 mb-0">Dashboard</h1>
-        <small class="text-muted">Overview of live FoodStreet content</small>
-    </div>
-    <div class="d-flex gap-2">
-        <button class="btn btn-primary d-flex align-items-center gap-2" @onclick="TranslateAllPois" disabled="@_isTranslating">
-            @if (_isTranslating)
-            {
-                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                <span>Translating...</span>
-            }
-            else
-            {
-                <span>🌐 Translate All POIs</span>
-            }
-        </button>
-        <button class="btn btn-outline-primary" @onclick="LoadAsync" disabled="@_isTranslating">Refresh</button>
+        <h1 class="h4 mb-0">Bảng điều khiển</h1>
+        <small class="text-muted">Tổng quan nội dung Vinh Khánh Food Street</small>
     </div>
 </div>
 
-<LoadingState IsLoading="_isLoading" Message="Loading dashboard data..." />
+<LoadingState IsLoading="_isLoading" Message="Đang tải dữ liệu..." />
 
 @if (!_isLoading)
 {
@@ -34,7 +20,7 @@
                     <i class="bi bi-geo-alt"></i>
                 </div>
                 <div class="stats-info">
-                    <div class="stats-title">Total POIs</div>
+                    <div class="stats-title">Tổng điểm tham quan</div>
                     <div class="stats-value">@Pois.Count</div>
                 </div>
             </div>
@@ -45,7 +31,7 @@
                     <i class="bi bi-file-earmark-music"></i>
                 </div>
                 <div class="stats-info">
-                    <div class="stats-title">Total Audio</div>
+                    <div class="stats-title">Tổng âm thanh</div>
                     <div class="stats-value">@Audios.Count</div>
                 </div>
             </div>
@@ -56,7 +42,7 @@
                     <i class="bi bi-map"></i>
                 </div>
                 <div class="stats-info">
-                    <div class="stats-title">Active Tours</div>
+                    <div class="stats-title">Hành trình</div>
                     <div class="stats-value">@Tours.Count</div>
                 </div>
             </div>
@@ -67,7 +53,7 @@
                     <i class="bi bi-bar-chart"></i>
                 </div>
                 <div class="stats-info">
-                    <div class="stats-title">Interactions</div>
+                    <div class="stats-title">Lượt tương tác</div>
                     <div class="stats-value">@Histories.Count</div>
                 </div>
             </div>
@@ -80,21 +66,21 @@
         <div class="col-lg-6 mb-3">
             <div class="card h-100 shadow-sm border-0">
                 <div class="card-header bg-white border-0 py-3">
-                    <h5 class="mb-0"><i class="bi bi-signpost-split"></i> Travel Route Tracking</h5>
-                    <small class="text-muted">User movement paths based on history</small>
+                    <h5 class="mb-0"><i class="bi bi-signpost-split"></i> Theo dõi tuyến di chuyển</h5>
+                    <small class="text-muted">Lộ trình di chuyển dựa trên lịch sử người dùng</small>
                 </div>
                 <div class="card-body pt-0">
                     <div class="route-map p-3 bg-light rounded" style="min-height: 200px; max-height: 300px; overflow-y: auto;">
                         @if (UserRoutes.Count == 0)
                         {
-                            <p class="text-muted text-center mt-4">No travel routes found.</p>
+                            <p class="text-muted text-center mt-4">Chưa có lộ trình nào.</p>
                         }
                         else
                         {
                             @foreach (var route in UserRoutes)
                             {
                                 <div class="mb-3">
-                                    <strong>User: @route.Key</strong>
+                                    <strong>Người dùng: @route.Key</strong>
                                     <div class="d-flex flex-wrap mt-2 align-items-center gap-2">
                                         @for (int i = 0; i < route.Value.Count; i++)
                                         {
@@ -118,24 +104,24 @@
         <div class="col-lg-6 mb-3">
             <div class="card h-100 shadow-sm border-0">
                 <div class="card-header bg-white border-0 py-3">
-                    <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Top Audios & Listening</h5>
-                    <small class="text-muted">Most listened POIs and avg times</small>
+                    <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Âm thanh phổ biến</h5>
+                    <small class="text-muted">Điểm nghe nhiều nhất & thời gian trung bình</small>
                 </div>
                 <div class="card-body pt-0">
                     <table class="table table-hover align-middle">
                         <thead class="table-light">
                             <tr>
-                                <th>Rank</th>
-                                <th>POI Name</th>
-                                <th>Listens</th>
-                                <th>Avg Time</th>
+                                <th>Hạng</th>
+                                <th>Tên điểm</th>
+                                <th>Lượt nghe</th>
+                                <th>TB thời gian</th>
                             </tr>
                         </thead>
                         <tbody>
                             @if (TopPois.Count == 0)
                             {
                                 <tr>
-                                    <td colspan="4" class="text-center text-muted">No data available</td>
+                                    <td colspan="4" class="text-center text-muted">Chưa có dữ liệu</td>
                                 </tr>
                             }
                             else
@@ -147,7 +133,7 @@
                                         <td><span class="badge bg-primary rounded-circle">@rank</span></td>
                                         <td>@p.PoiName</td>
                                         <td>@p.Count</td>
-                                        <td>@p.AvgTime.ToString("0.0") sec</td>
+                                        <td>@p.AvgTime.ToString("0.0") giây</td>
                                     </tr>
                                     rank++;
                                 }
@@ -164,7 +150,7 @@
         <div class="col-12">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white border-0 py-3">
-                    <h5 class="mb-0"><i class="bi bi-map-fill"></i> Activity Heatmap</h5>
+                    <h5 class="mb-0"><i class="bi bi-map-fill"></i> Bản đồ nhiệt hoạt động</h5>
                 </div>
                 <div class="card-body text-center bg-light heat-map-container" style="min-height: 300px; position: relative; overflow: hidden; border-radius: 8px;">
                      <!-- Simple Map Visualization -->
@@ -178,7 +164,7 @@
                              <circle cx="@cx" cy="@cy" r="@r" fill="rgba(255, 0, 0, 0.5)" filter="blur(8px)" />
                              <circle cx="@cx" cy="@cy" r="@(r/2)" fill="rgba(255, 50, 0, 0.8)" title="@dp.Title" />
                          }
-                         <text x="10" y="20" font-size="12" fill="gray">Based on user history coordinates</text>
+                         <text x="10" y="20" font-size="12" fill="gray">Dựa trên tọa độ lịch sử người dùng</text>
                      </svg>
                 </div>
             </div>
