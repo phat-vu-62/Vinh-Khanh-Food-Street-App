@@ -75,7 +75,7 @@
                                 <button class="btn btn-sm btn-outline-info me-1" @onclick="() => ShowQrCode(poi)" title="QR Code">
                                     <i class="bi bi-qr-code"></i>
                                 </button>
-                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => TranslatePoiAsync(poi)" disabled="@_isTranslating" title="Translate">
+                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => TranslatePoiSingleAsync(poi)" disabled="@_isTranslating" title="Translate">
                                     <i class="bi bi-translate"></i>
                                 </button>
                                 <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => StartEdit(poi)" title="Edit">
@@ -182,7 +182,7 @@
                                 <button type="button"
                                         class="btn btn-outline-primary btn-sm"
                                         disabled="@_isTranslating"
-                                        @onclick="TranslateAsync">
+                                        @onclick="TranslateInEditorAsync">
                                     @if (_isTranslating)
                                     {
                                         <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
@@ -449,7 +449,7 @@
         return Task.CompletedTask;
     }
 
-    private async Task TranslateAsync()
+    private async Task TranslateInEditorAsync()
     {
         if (_form.Id <= 0)
         {
@@ -482,20 +482,11 @@
                 _form.TextContentKo = translated.TextContentKo;
                 _form.TextContentJa = translated.TextContentJa;
 
-                // Also refresh the list to show badges
+                Toasts.Success("Dịch tự động thành công!");
                 _pois.Clear();
                 _pois.AddRange(DataService.GetPois());
-
-                Toasts.Success("Translation completed successfully!");
             }
-            else
-            {
-                Toasts.Error("POI not found or translation failed.");
-            }
-        }
-        catch (Exception ex)
-        {
-            Toasts.Error("Hệ thống tự động tạm gián đoạn. Vui lòng nhập liệu thủ công.");
+            // Error toast is handled by the service
         }
         finally
         {
@@ -561,24 +552,18 @@
         return Task.CompletedTask;
     }
 
-    private async Task TranslatePoiAsync(POI poi)
+    private async Task TranslatePoiSingleAsync(POI poi)
     {
         try
         {
             _isTranslating = true;
             var translated = await DataService.TranslatePoiAsync(poi.Id);
-            if (translated is null)
+            if (translated != null)
             {
-                Toasts.Error("POI not found or translation failed.");
-                return;
+                Toasts.Success("Dịch tự động thành công!");
+                await LoadAsync();
             }
-
-            Toasts.Success("POI translated.");
-            await LoadAsync();
-        }
-        catch (Exception ex)
-        {
-            Toasts.Error($"Translation failed: {ex.Message}");
+            // Error toast is already triggered by GeminiTranslationService
         }
         finally
         {

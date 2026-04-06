@@ -2,18 +2,18 @@
 @inject IAdminDataService DataService
 @inject ToastService Toasts
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3 text-white">
     <div>
         <h1 class="h4 mb-0">Translations</h1>
-        <small class="text-muted">Review and edit POI translations by language</small>
+        <small class="text-white-50">Review and edit POI translations by language</small>
     </div>
     <div class="d-flex gap-2">
-        <InputSelect class="form-select" style="min-width: 120px;" @bind-Value="_selectedLanguage">
+        <select class="form-select bg-dark text-white border-secondary" style="min-width: 120px;" @bind="_selectedLanguage">
             @foreach (var language in _languages)
             {
-                <option value="@language">@language</option>
+                <option value="@language">@language.ToUpper()</option>
             }
-        </InputSelect>
+        </select>
         <button class="btn btn-primary" @onclick="TranslateAllAsync" disabled="@_isTranslatingAll">
             @if (_isTranslatingAll)
             {
@@ -47,7 +47,7 @@
                     <tr>
                         <th>POI</th>
                         <th>Original Text</th>
-                        <th>Translated Text (@_selectedLanguage)</th>
+                        <th>Translated Text (@_selectedLanguage.ToUpper())</th>
                         <th class="text-end">Actions</th>
                     </tr>
                 </thead>
@@ -61,9 +61,11 @@
                             </td>
                             <td>@poi.Name</td>
                             <td>
-                                <InputText class="form-control" Value="@GetNameTranslation(poi, _selectedLanguage)" ValueChanged="@(value => SetNameTranslation(poi, _selectedLanguage, value))" />
+                                <input type="text" class="form-control" 
+                                       value="@GetNameTranslation(poi, _selectedLanguage)" 
+                                       @onchange="@(e => SetNameTranslation(poi, _selectedLanguage, e.Value?.ToString()))" />
                             </td>
-                            <td class="text-end" rowspan="2">
+                            <td class="text-end" rowspan="2" style="vertical-align: middle;">
                                 <button class="btn btn-sm btn-outline-primary" @onclick="() => SavePoiAsync(poi)">Lưu thay đổi</button>
                             </td>
                         </tr>
@@ -72,9 +74,11 @@
                                 <strong>@poi.Name</strong>
                                 <div class="small text-muted">Mô tả</div>
                             </td>
-                            <td class="text-muted">@poi.Description</td>
+                            <td class="text-muted" style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@poi.Description</td>
                             <td>
-                                <InputText class="form-control" Value="@GetDescriptionTranslation(poi, _selectedLanguage)" ValueChanged="@(value => SetDescriptionTranslation(poi, _selectedLanguage, value))" />
+                                <input type="text" class="form-control" 
+                                       value="@GetDescriptionTranslation(poi, _selectedLanguage)" 
+                                       @onchange="@(e => SetDescriptionTranslation(poi, _selectedLanguage, e.Value?.ToString()))" />
                             </td>
                         </tr>
                     }
@@ -102,11 +106,15 @@
         {
             _isLoading = true;
             _pois.Clear();
-            _pois.AddRange(DataService.GetPois());
+            var data = DataService.GetPois();
+            if (data != null)
+            {
+                _pois.AddRange(data);
+            }
         }
-        catch
+        catch (Exception ex)
         {
-            Toasts.Error("Không thể tải Translations.");
+            Toasts.Error("Không thể tải danh sách bản dịch.");
         }
         finally
         {
@@ -116,19 +124,17 @@
         return Task.CompletedTask;
     }
 
-    private Task SavePoiAsync(POI poi)
+    private async Task SavePoiAsync(POI poi)
     {
         try
         {
             DataService.UpdatePoi(poi);
-            Toasts.Success("Translation saved.");
+            Toasts.Success("Đã lưu bản dịch thành công.");
         }
         catch
         {
-            Toasts.Error("Failed to save translation.");
+            Toasts.Error("Không thể lưu bản dịch.");
         }
-
-        return Task.CompletedTask;
     }
 
     private async Task TranslateAllAsync()
@@ -136,13 +142,16 @@
         try
         {
             _isTranslatingAll = true;
-            var translated = await DataService.TranslateAllPoisAsync();
-            Toasts.Success($"✔ Translated {translated} POIs");
-            await LoadAsync();
+            var translatedCount = await DataService.TranslateAllPoisAsync();
+            if (translatedCount > 0)
+            {
+                Toasts.Success($"✔ Đã dịch thành công {translatedCount} POI.");
+                await LoadAsync();
+            }
         }
         catch (Exception ex)
         {
-            Toasts.Error($"❌ Translate all failed: {ex.Message}");
+            Toasts.Error($"❌ Tự động dịch thất bại: {ex.Message}");
         }
         finally
         {
@@ -174,21 +183,11 @@
     {
         switch (language)
         {
-            case "vi":
-                poi.NameVi = value;
-                break;
-            case "en":
-                poi.NameEn = value;
-                break;
-            case "zh":
-                poi.NameZh = value;
-                break;
-            case "ko":
-                poi.NameKo = value;
-                break;
-            case "ja":
-                poi.NameJa = value;
-                break;
+            case "vi": poi.NameVi = value; break;
+            case "en": poi.NameEn = value; break;
+            case "zh": poi.NameZh = value; break;
+            case "ko": poi.NameKo = value; break;
+            case "ja": poi.NameJa = value; break;
         }
     }
 
@@ -196,21 +195,11 @@
     {
         switch (language)
         {
-            case "vi":
-                poi.DescriptionVi = value;
-                break;
-            case "en":
-                poi.DescriptionEn = value;
-                break;
-            case "zh":
-                poi.DescriptionZh = value;
-                break;
-            case "ko":
-                poi.DescriptionKo = value;
-                break;
-            case "ja":
-                poi.DescriptionJa = value;
-                break;
+            case "vi": poi.DescriptionVi = value; break;
+            case "en": poi.DescriptionEn = value; break;
+            case "zh": poi.DescriptionZh = value; break;
+            case "ko": poi.DescriptionKo = value; break;
+            case "ja": poi.DescriptionJa = value; break;
         }
     }
 }

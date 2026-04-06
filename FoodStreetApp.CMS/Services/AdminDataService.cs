@@ -231,29 +231,21 @@ public class AdminDataService : IAdminDataService
         return true;
     }
 
-    /// <summary>
-    /// Translates a POI using the Gemini API and persists the translation fields.
-    /// </summary>
     public async Task<POI?> TranslatePoiAsync(int id)
     {
         var poi = _dbContext.Pois.FirstOrDefault(x => x.Id == id);
-        if (poi is null)
-        {
-            return null;
-        }
+        if (poi is null) return null;
 
-        await _translationService.TranslatePoiAsync(poi);
+        bool isAiSuccess = await _translationService.TranslatePoiAsync(poi);
+        
         _dbContext.SaveChanges();
         TrackPoiAction(poi.Id, "Updated");
 
-        _logger.LogInformation("POI {Id} translated and saved.", poi.Id);
-        return poi;
+        // We return the POI in both cases, but we might want the UI to know.
+        // For simplicity, we stick to the POI return, but the service has already toasted if failed.
+        return isAiSuccess ? poi : null; 
     }
 
-    /// <summary>
-    /// Batch translates all POIs utilizing Gemini API locally and returns the number of objects modified.
-    /// Skips any POI that already has English translation data.
-    /// </summary>
     public async Task<int> TranslateAllPoisAsync()
     {
         var pois = _dbContext.Pois.ToList();
@@ -265,15 +257,14 @@ public class AdminDataService : IAdminDataService
             {
                 try
                 {
-                    await _translationService.TranslatePoiAsync(poi);
-                    _dbContext.SaveChanges();
-                    TrackPoiAction(poi.Id, "Updated");
-                    
-                    translatedCount++;
-                    _logger.LogInformation("Batch translation successful for POI {Id}.", poi.Id);
-                    
-                    // Add delay to prevent hitting Gemini rate limits
-                    await Task.Delay(300);
+                    bool success = await _translationService.TranslatePoiAsync(poi);
+                    if (success)
+                    {
+                        _dbContext.SaveChanges();
+                        TrackPoiAction(poi.Id, "Updated");
+                        translatedCount++;
+                        await Task.Delay(300); // Rate limit
+                    }
                 }
                 catch (Exception ex)
                 {

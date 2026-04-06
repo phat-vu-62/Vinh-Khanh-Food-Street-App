@@ -7,7 +7,10 @@ namespace FoodStreetApp.CMS.Services;
 
 public interface IGeminiTranslationService
 {
-    Task TranslatePoiAsync(POI poi);
+    /// <summary>
+    /// Translates a POI. Returns true if AI translation succeeded, false if fallback/error occurred.
+    /// </summary>
+    Task<bool> TranslatePoiAsync(POI poi);
 }
 
 public class GeminiTranslationService : IGeminiTranslationService
@@ -29,7 +32,7 @@ public class GeminiTranslationService : IGeminiTranslationService
         _toastService = toastService;
     }
 
-    public async Task TranslatePoiAsync(POI poi)
+    public async Task<bool> TranslatePoiAsync(POI poi)
     {
         try
         {
@@ -41,12 +44,12 @@ public class GeminiTranslationService : IGeminiTranslationService
             if (string.IsNullOrWhiteSpace(apiKey))
             {
                 _logger.LogWarning("Gemini API key is not configured.");
-                return;
+                return false;
             }
 
             if (string.IsNullOrWhiteSpace(poi.Name) && string.IsNullOrWhiteSpace(poi.Description))
             {
-                return;
+                return false;
             }
 
             var prompt = $@"
@@ -105,7 +108,7 @@ public class GeminiTranslationService : IGeminiTranslationService
                 var errorContent = await response.Content.ReadAsStringAsync();
                 _logger.LogError("Gemini API error: {StatusCode} - {Error}", response.StatusCode, errorContent);
                 _toastService.Error("Dịch tự động tạm gián đoạn. Vui lòng nhập liệu thủ công.");
-                return; // Gracefully return, preserving existing values
+                return false;
             }
 
             var apiResponse = await response.Content.ReadFromJsonAsync<GeminiResponse>();
@@ -126,30 +129,33 @@ public class GeminiTranslationService : IGeminiTranslationService
                 if (translation != null)
                 {
                     poi.NameVi = translation.NameVi ?? poi.Name;
-                    poi.NameEn = translation.NameEn ?? poi.NameEn;
-                    poi.NameZh = translation.NameZh ?? poi.NameZh;
-                    poi.NameKo = translation.NameKo ?? poi.NameKo;
-                    poi.NameJa = translation.NameJa ?? poi.NameJa;
+                    poi.NameEn = translation.NameEn ?? (poi.NameEn ?? string.Empty);
+                    poi.NameZh = translation.NameZh ?? (poi.NameZh ?? string.Empty);
+                    poi.NameKo = translation.NameKo ?? (poi.NameKo ?? string.Empty);
+                    poi.NameJa = translation.NameJa ?? (poi.NameJa ?? string.Empty);
 
-                    poi.DescriptionVi = translation.DescriptionVi ?? poi.DescriptionVi;
-                    poi.DescriptionEn = translation.DescriptionEn ?? poi.DescriptionEn;
-                    poi.DescriptionZh = translation.DescriptionZh ?? poi.DescriptionZh;
-                    poi.DescriptionKo = translation.DescriptionKo ?? poi.DescriptionKo;
-                    poi.DescriptionJa = translation.DescriptionJa ?? poi.DescriptionJa;
+                    poi.DescriptionVi = translation.DescriptionVi ?? (poi.DescriptionVi ?? string.Empty);
+                    poi.DescriptionEn = translation.DescriptionEn ?? (poi.DescriptionEn ?? string.Empty);
+                    poi.DescriptionZh = translation.DescriptionZh ?? (poi.DescriptionZh ?? string.Empty);
+                    poi.DescriptionKo = translation.DescriptionKo ?? (poi.DescriptionKo ?? string.Empty);
+                    poi.DescriptionJa = translation.DescriptionJa ?? (poi.DescriptionJa ?? string.Empty);
 
-                    poi.TextContentVi = translation.TextContentVi ?? poi.TextContentVi;
-                    poi.TextContentEn = translation.TextContentEn ?? poi.TextContentEn;
-                    poi.TextContentZh = translation.TextContentZh ?? poi.TextContentZh;
-                    poi.TextContentKo = translation.TextContentKo ?? poi.TextContentKo;
-                    poi.TextContentJa = translation.TextContentJa ?? poi.TextContentJa;
+                    poi.TextContentVi = translation.TextContentVi ?? (poi.TextContentVi ?? string.Empty);
+                    poi.TextContentEn = translation.TextContentEn ?? (poi.TextContentEn ?? string.Empty);
+                    poi.TextContentZh = translation.TextContentZh ?? (poi.TextContentZh ?? string.Empty);
+                    poi.TextContentKo = translation.TextContentKo ?? (poi.TextContentKo ?? string.Empty);
+                    poi.TextContentJa = translation.TextContentJa ?? (poi.TextContentJa ?? string.Empty);
+                    
+                    return true;
                 }
             }
+            return false;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Gemini translation service exception occurred.");
             _toastService.Info("Kết nối API tự động tạm gián đoạn. Vui lòng kiểm tra lại thủ công.");
-            // On catastrophic failure, the POI values are simply not updated (remaining as they were)
+            return false;
         }
     }
 }
