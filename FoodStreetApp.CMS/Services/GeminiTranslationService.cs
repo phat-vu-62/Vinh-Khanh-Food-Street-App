@@ -31,71 +31,71 @@ public class GeminiTranslationService : IGeminiTranslationService
 
     public async Task TranslatePoiAsync(POI poi)
     {
-        var apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY")
-                     ?? _configuration["Gemini:ApiKey"];
-
-        var model = _configuration["Gemini:Model"] ?? "gemini-2.5-flash";
-
-        if (string.IsNullOrWhiteSpace(apiKey))
-        {
-            _logger.LogWarning("Gemini API key is not configured. Skipping translations.");
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(poi.Name) && string.IsNullOrWhiteSpace(poi.Description))
-        {
-            return;
-        }
-
-        var prompt = $@"
-        You are a professional translator for a food and tourism application. 
-        Please translate the following Name, Description, and TTS Text Content into Vietnamese (vi), English (en), Chinese (zh), Korean (ko), and Japanese (ja). 
-        Make sure the translation is natural and context-aware (not word-by-word).
-        
-        Original Name: {poi.Name}
-        Original Description: {poi.Description}
-        Original TTS Text Content: {poi.TextContent}
-        
-        Return ONLY a JSON object matching the following structure exactly (do not wrap in markdown or anything else):
-        {{
-            ""nameVi"": ""..."",
-            ""nameEn"": ""..."",
-            ""nameZh"": ""..."",
-            ""nameKo"": ""..."",
-            ""nameJa"": ""..."",
-            ""descriptionVi"": ""..."",
-            ""descriptionEn"": ""..."",
-            ""descriptionZh"": ""..."",
-            ""descriptionKo"": ""..."",
-            ""descriptionJa"": ""..."",
-            ""textContentVi"": ""..."",
-            ""textContentEn"": ""..."",
-            ""textContentZh"": ""..."",
-            ""textContentKo"": ""..."",
-            ""textContentJa"": ""...""
-        }}
-        ";
-
-        var requestBody = new GeminiRequest
-        {
-            Contents = new List<GeminiContent>
-            {
-                new GeminiContent
-                {
-                    Parts = new List<GeminiPart>
-                    {
-                        new GeminiPart { Text = prompt }
-                    }
-                }
-            },
-            GenerationConfig = new GeminiGenerationConfig
-            {
-                ResponseMimeType = "application/json"
-            }
-        };
-
         try
         {
+            var apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY")
+                         ?? _configuration["Gemini:ApiKey"];
+
+            var model = _configuration["Gemini:Model"] ?? "gemini-2.5-flash";
+
+            if (string.IsNullOrWhiteSpace(apiKey))
+            {
+                _logger.LogWarning("Gemini API key is not configured.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(poi.Name) && string.IsNullOrWhiteSpace(poi.Description))
+            {
+                return;
+            }
+
+            var prompt = $@"
+            You are a professional translator for a food and tourism application. 
+            Please translate the following Name, Description, and TTS Text Content into Vietnamese (vi), English (en), Chinese (zh), Korean (ko), and Japanese (ja). 
+            Make sure the translation is natural and context-aware (not word-by-word).
+            
+            Original Name: {poi.Name}
+            Original Description: {poi.Description}
+            Original TTS Text Content: {poi.TextContent}
+            
+            Return ONLY a JSON object matching the following structure exactly (do not wrap in markdown or anything else):
+            {{
+                ""nameVi"": ""..."",
+                ""nameEn"": ""..."",
+                ""nameZh"": ""..."",
+                ""nameKo"": ""..."",
+                ""nameJa"": ""..."",
+                ""descriptionVi"": ""..."",
+                ""descriptionEn"": ""..."",
+                ""descriptionZh"": ""..."",
+                ""descriptionKo"": ""..."",
+                ""descriptionJa"": ""..."",
+                ""textContentVi"": ""..."",
+                ""textContentEn"": ""..."",
+                ""textContentZh"": ""..."",
+                ""textContentKo"": ""..."",
+                ""textContentJa"": ""...""
+            }}
+            ";
+
+            var requestBody = new GeminiRequest
+            {
+                Contents = new List<GeminiContent>
+                {
+                    new GeminiContent
+                    {
+                        Parts = new List<GeminiPart>
+                        {
+                            new GeminiPart { Text = prompt }
+                        }
+                    }
+                },
+                GenerationConfig = new GeminiGenerationConfig
+                {
+                    ResponseMimeType = "application/json"
+                }
+            };
+
             var requestUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
 
             var response = await _httpClient.PostAsJsonAsync(requestUrl, requestBody);
@@ -103,9 +103,9 @@ public class GeminiTranslationService : IGeminiTranslationService
             if (!response.IsSuccessStatusCode)
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                _logger.LogError("Gemini API translation failed: {StatusCode} - {Error}", response.StatusCode, errorContent);
-                _toastService.Error("Hệ thống tự động tạm gián đoạn. Vui lòng nhập liệu thủ công.");
-                return;
+                _logger.LogError("Gemini API error: {StatusCode} - {Error}", response.StatusCode, errorContent);
+                _toastService.Error("Dịch tự động tạm gián đoạn. Vui lòng nhập liệu thủ công.");
+                return; // Gracefully return, preserving existing values
             }
 
             var apiResponse = await response.Content.ReadFromJsonAsync<GeminiResponse>();
@@ -114,7 +114,6 @@ public class GeminiTranslationService : IGeminiTranslationService
             if (!string.IsNullOrWhiteSpace(jsonText))
             {
                 jsonText = jsonText.Trim();
-                // Clean up possible markdown code blocks if the AI ignored output constraints
                 if (jsonText.StartsWith("```json") || jsonText.StartsWith("```"))
                 {
                     var lines = jsonText.Split('\n');
@@ -126,32 +125,31 @@ public class GeminiTranslationService : IGeminiTranslationService
 
                 if (translation != null)
                 {
-                    poi.NameVi = !string.IsNullOrWhiteSpace(poi.NameVi) ? poi.NameVi : translation.NameVi ?? poi.Name;
-                    poi.NameEn = !string.IsNullOrWhiteSpace(poi.NameEn) ? poi.NameEn : translation.NameEn ?? string.Empty;
-                    poi.NameZh = !string.IsNullOrWhiteSpace(poi.NameZh) ? poi.NameZh : translation.NameZh ?? string.Empty;
-                    poi.NameKo = !string.IsNullOrWhiteSpace(poi.NameKo) ? poi.NameKo : translation.NameKo ?? string.Empty;
-                    poi.NameJa = !string.IsNullOrWhiteSpace(poi.NameJa) ? poi.NameJa : translation.NameJa ?? string.Empty;
+                    poi.NameVi = translation.NameVi ?? poi.Name;
+                    poi.NameEn = translation.NameEn ?? poi.NameEn;
+                    poi.NameZh = translation.NameZh ?? poi.NameZh;
+                    poi.NameKo = translation.NameKo ?? poi.NameKo;
+                    poi.NameJa = translation.NameJa ?? poi.NameJa;
 
-                    poi.DescriptionVi = !string.IsNullOrWhiteSpace(poi.DescriptionVi) ? poi.DescriptionVi : translation.DescriptionVi ?? poi.Description;
-                    poi.DescriptionEn = !string.IsNullOrWhiteSpace(poi.DescriptionEn) ? poi.DescriptionEn : translation.DescriptionEn;
-                    poi.DescriptionZh = !string.IsNullOrWhiteSpace(poi.DescriptionZh) ? poi.DescriptionZh : translation.DescriptionZh;
-                    poi.DescriptionKo = !string.IsNullOrWhiteSpace(poi.DescriptionKo) ? poi.DescriptionKo : translation.DescriptionKo;
-                    poi.DescriptionJa = !string.IsNullOrWhiteSpace(poi.DescriptionJa) ? poi.DescriptionJa : translation.DescriptionJa;
+                    poi.DescriptionVi = translation.DescriptionVi ?? poi.DescriptionVi;
+                    poi.DescriptionEn = translation.DescriptionEn ?? poi.DescriptionEn;
+                    poi.DescriptionZh = translation.DescriptionZh ?? poi.DescriptionZh;
+                    poi.DescriptionKo = translation.DescriptionKo ?? poi.DescriptionKo;
+                    poi.DescriptionJa = translation.DescriptionJa ?? poi.DescriptionJa;
 
-                    poi.TextContentVi = !string.IsNullOrWhiteSpace(poi.TextContentVi) ? poi.TextContentVi : translation.TextContentVi ?? poi.TextContent;
-                    poi.TextContentEn = !string.IsNullOrWhiteSpace(poi.TextContentEn) ? poi.TextContentEn : translation.TextContentEn;
-                    poi.TextContentZh = !string.IsNullOrWhiteSpace(poi.TextContentZh) ? poi.TextContentZh : translation.TextContentZh;
-                    poi.TextContentKo = !string.IsNullOrWhiteSpace(poi.TextContentKo) ? poi.TextContentKo : translation.TextContentKo;
-                    poi.TextContentJa = !string.IsNullOrWhiteSpace(poi.TextContentJa) ? poi.TextContentJa : translation.TextContentJa;
-
-                    _logger.LogInformation("Successfully translated POI '{Name}' into 5 languages.", poi.Name);
+                    poi.TextContentVi = translation.TextContentVi ?? poi.TextContentVi;
+                    poi.TextContentEn = translation.TextContentEn ?? poi.TextContentEn;
+                    poi.TextContentZh = translation.TextContentZh ?? poi.TextContentZh;
+                    poi.TextContentKo = translation.TextContentKo ?? poi.TextContentKo;
+                    poi.TextContentJa = translation.TextContentJa ?? poi.TextContentJa;
                 }
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Gemini API exception. Please use manual input.");
-            _toastService.Error("Hệ thống tự động tạm gián đoạn. Vui lòng nhập liệu thủ công.");
+            _logger.LogError(ex, "Gemini translation service exception occurred.");
+            _toastService.Info("Kết nối API tự động tạm gián đoạn. Vui lòng kiểm tra lại thủ công.");
+            // On catastrophic failure, the POI values are simply not updated (remaining as they were)
         }
     }
 }

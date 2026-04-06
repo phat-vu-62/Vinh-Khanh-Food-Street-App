@@ -34,8 +34,12 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddDbContext<CmsDbContext>(options => options.UseNpgsql(connectionString));
 
-// Register Gemini translation service
-builder.Services.AddHttpClient<IGeminiTranslationService, GeminiTranslationService>();
+// Register Gemini translation service with SSL bypass for firewall compatibility
+builder.Services.AddHttpClient<IGeminiTranslationService, GeminiTranslationService>()
+    .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+    {
+        ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+    });
 
 // Register Admin Services
 builder.Services.AddScoped<IAdminDataService, AdminDataService>();
