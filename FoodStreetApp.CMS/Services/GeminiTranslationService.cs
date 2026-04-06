@@ -99,40 +99,54 @@ public class GeminiTranslationService : IGeminiTranslationService
                 }
             };
 
-            var apiUrl = $"https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={apiKey}";
-            var response = await _httpClient.PostAsJsonAsync(apiUrl, requestBody);
-
-            // If v1 fails with 404, try v1beta
-            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+            // Strategy: try v1beta first (supports responseMimeType), then v1 without it
+            var endpoints = new[]
             {
-                _logger.LogInformation("V1 endpoint returned 404 for model {model}, trying v1beta...", model);
-                var v1betaUrl = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
-                response = await _httpClient.PostAsJsonAsync(v1betaUrl, requestBody);
-            }
+                $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}",
+                $"https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={apiKey}",
+            };
 
-            if (!response.IsSuccessStatusCode)
+            HttpResponseMessage? response = null;
+
+            foreach (var endpoint in endpoints)
             {
-                var errorContent = await response.Content.ReadAsStringAsync();
-                _logger.LogError("Gemini API error: {StatusCode} - {Error}", response.StatusCode, errorContent);
-                
-                // Fallback to 1.5 if 2.5 fails (likely 404)
-                if (response.StatusCode == System.Net.HttpStatusCode.NotFound && model != "gemini-1.5-flash")
+                _logger.LogInformation("Trying Gemini endpoint: {Endpoint}", endpoint.Split("?")[0]);
+                response = await _httpClient.PostAsJsonAsync(endpoint, requestBody);
+
+                if (response.IsSuccessStatusCode)
                 {
-                    _logger.LogWarning("Model {model} not found. Falling back to gemini-1.5-flash.", model);
-                    var fallbackUrl = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={apiKey}";
-                    var fallbackResponse = await _httpClient.PostAsJsonAsync(fallbackUrl, requestBody);
-                    if (fallbackResponse.IsSuccessStatusCode)
-                    {
-                        response = fallbackResponse;
-                        goto ProcessResponse;
-                    }
+                    _logger.LogInformation("Gemini endpoint succeeded.");
+                    break;
                 }
 
-                _toastService.Error($"Dịch thất bại (Lỗi {response.StatusCode} - Model: {model}). Vui lòng nhập liệu thủ công.");
+                var errBody = await response.Content.ReadAsStringAsync();
+                _logger.LogWarning("Gemini endpoint failed: {Status} - {Body}", response.StatusCode, errBody);
+
+                // If BadRequest, the issue is likely responseMimeType — retry without it
+                if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                {
+                    _logger.LogInformation("Retrying without responseMimeType...");
+                    var plainBody = new GeminiRequest
+                    {
+                        Contents = requestBody.Contents
+                        // No GenerationConfig — let the model return free-form text
+                    };
+                    response = await _httpClient.PostAsJsonAsync(endpoint, plainBody);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        _logger.LogInformation("Retry without responseMimeType succeeded.");
+                        break;
+                    }
+                }
+            }
+
+            if (response == null || !response.IsSuccessStatusCode)
+            {
+                var statusCode = response?.StatusCode.ToString() ?? "Unknown";
+                _toastService.Error($"Dịch thất bại (Lỗi {statusCode} - Model: {model}). Vui lòng nhập liệu thủ công.");
                 return false;
             }
 
-        ProcessResponse:
             var apiResponse = await response.Content.ReadFromJsonAsync<GeminiResponse>();
             var jsonText = apiResponse?.Candidates?.FirstOrDefault()?.Content?.Parts?.FirstOrDefault()?.Text;
 
