@@ -19,6 +19,7 @@ namespace FoodStreetApp.Services
         private List<POI> _allPois = new();
         private List<POI> _clusteredPois = new();
         private readonly INarrationService _narrationService;
+        private readonly ITrackingService _trackingService;
 
         // --- Narration flow state ---
         private POI? _lastNarratedPoi;
@@ -47,9 +48,10 @@ namespace FoodStreetApp.Services
         /// </summary>
         private const double MinimumSpacingMeters = 15.0;
 
-        public GeofenceService(INarrationService narrationService)
+        public GeofenceService(INarrationService narrationService, ITrackingService trackingService)
         {
             _narrationService = narrationService;
+            _trackingService = trackingService;
         }
 
         /// <summary>
@@ -158,7 +160,10 @@ namespace FoodStreetApp.Services
 
                 // Maintain entered-set: add on inward crossing, remove when outside
                 if (isNowInside && wasOutside)
+                {
                     _enteredPoiIds.Add(poi.Id);
+                    _ = _trackingService.TrackEventAsync(poi.Id, "Route_Entry");
+                }
                 else if (!isNowInside)
                     _enteredPoiIds.Remove(poi.Id);
 

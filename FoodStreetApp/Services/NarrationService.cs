@@ -22,10 +22,15 @@ namespace FoodStreetApp.Services
         private string? _lastTtsText = null;
         private Locale? _lastTtsLocale = null;
         private bool _isTtsPaused = false;
+        
+        private readonly ITrackingService _trackingService;
+        private DateTime? _playStartTime = null;
+        private int? _currentPlayingPoiId = null;
 
-        public NarrationService(IAudioManager audioManager)
+        public NarrationService(IAudioManager audioManager, ITrackingService trackingService)
         {
             _audioManager = audioManager;
+            _trackingService = trackingService;
             LoadLanguagePreference();
             // Cache TTS locales in the background — avoids blocking the UI thread later.
             _ = CacheLocalesAsync();
@@ -108,6 +113,8 @@ namespace FoodStreetApp.Services
                 // Stop whatever is currently playing before starting new narration.
                 await StopNarrationAsync();
                 _isSpeaking = true;
+                _playStartTime = DateTime.UtcNow;
+                _currentPlayingPoiId = poi.Id;
 
                 // --- Priority 1: TTS ---
                 if (poi.UseTts)
@@ -261,6 +268,16 @@ namespace FoodStreetApp.Services
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"[NARRATION] StopNarration error: {ex.Message}");
+            }
+            finally
+            {
+                if (_playStartTime.HasValue && _currentPlayingPoiId.HasValue)
+                {
+                    var duration = (int)(DateTime.UtcNow - _playStartTime.Value).TotalSeconds;
+                    _ = _trackingService.TrackEventAsync(_currentPlayingPoiId.Value, "audio_played", duration);
+                    _playStartTime = null;
+                    _currentPlayingPoiId = null;
+                }
             }
         }
 

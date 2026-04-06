@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using FoodStreetApp.Services;
 using FoodStreetApp.Views;
 using FoodStreetApp.ViewModels;
@@ -36,7 +36,8 @@ namespace FoodStreetApp
             builder.Services.AddSingleton<IAudioService, AudioService>();
             builder.Services.AddSingleton<INarrationService, NarrationService>();
             builder.Services.AddSingleton<IPOIService, POIService>();
-            builder.Services.AddSingleton<IGeofenceService, GeofenceService>();
+            builder.Services.AddSingleton<ITrackingService, TrackingService>();
+        builder.Services.AddSingleton<IGeofenceService, GeofenceService>();
 
             // ViewModels & Views
             builder.Services.AddTransient<HomeViewModel>();

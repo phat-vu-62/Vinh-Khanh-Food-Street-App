@@ -245,10 +245,15 @@
             var poi = Pois.FirstOrDefault(p => p.Id == group.Key);
             if (poi != null)
             {
-                // Calculating average listening time 
-                // Since our model doesn't have play duration, we simulate average listening time (e.g. 30s to 120s) for demonstration
-                double simulatedAvgTime = rnd.NextDouble() * 90 + 30; 
-                TopPois.Add(new TopPoiStats { PoiName = poi.Name, Count = group.Count(), AvgTime = simulatedAvgTime });
+                // Calculating average listening time using real DurationSeconds
+                double avgTime = group.Any(h => h.DurationSeconds > 0) 
+                    ? group.Where(h => h.DurationSeconds > 0).Average(h => h.DurationSeconds.Value) 
+                    : 0;
+                    
+                if (avgTime == 0 && group.Count() > 0) 
+                    avgTime = rnd.NextDouble() * 90 + 30; // Fallback for old data
+                    
+                TopPois.Add(new TopPoiStats { PoiName = poi.Name, Count = group.Count(), AvgTime = avgTime });
             }
         }
         

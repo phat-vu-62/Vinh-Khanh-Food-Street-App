@@ -7,4 +7,5 @@ public class UserHistory
     public int PoiId { get; set; }
     public DateTime VisitedAtUtc { get; set; } = DateTime.UtcNow;
     public string? Action { get; set; }
+    public int? DurationSeconds { get; set; }
 }
