@@ -50,7 +50,7 @@ else if (!_isLoading)
                 <div class="saas-card gallery-card h-100 d-flex flex-column">
                     <div class="position-relative">
                         <img class="gallery-card-img" 
-                             src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=80&sig=@poi.Id" 
+                             src="@(string.IsNullOrEmpty(poi.ImageUrl) ? $"https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=80&sig={poi.Id}" : poi.ImageUrl)" 
                              alt="@poi.Name" />
                         <div class="position-absolute top-0 end-0 p-2">
                             <span class="saas-badge @(poi.IsActive ? "badge-active" : "badge-inactive") shadow-sm">
@@ -498,6 +498,7 @@ else if (!_isLoading)
             Type = poi.Type,
             AudioMode = string.IsNullOrEmpty(poi.AudioUrl) && !string.IsNullOrEmpty(poi.TextContent) 
                          ? AudioSourceMode.TTS : AudioSourceMode.File,
+            ImageUrl = poi.ImageUrl,
             // Translation fields
             NameVi = poi.NameVi,
             NameEn = poi.NameEn,
