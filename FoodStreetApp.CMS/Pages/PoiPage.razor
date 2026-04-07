@@ -555,9 +555,26 @@ else if (!_isLoading)
         }
 
         Toasts.Info("Đang khởi tạo giọng đọc AI... 🎙️");
-        await Task.Delay(500);
-        // Using browser's built-in speech synthesis for a quick mock preview
-        await JS.InvokeVoidAsync("eval", $"var msg = new SpeechSynthesisUtterance('{_form.TextContent.Replace("'", "\\'")}'); msg.lang = 'vi-VN'; window.speechSynthesis.speak(msg);");
+        
+        // Advanced JS to find native Vietnamese voice
+        var script = @"
+            (function(text) {
+                var synth = window.speechSynthesis;
+                var voices = synth.getVoices();
+                
+                // Attempt to find a native Vietnamese voice
+                var viVoice = voices.find(v => v.lang.includes('vi') || v.name.toLowerCase().includes('vietnam'));
+                
+                var msg = new SpeechSynthesisUtterance(text);
+                if (viVoice) {
+                    msg.voice = viVoice;
+                }
+                msg.lang = 'vi-VN';
+                msg.rate = 0.9; // Slightly slower for better clarity
+                synth.speak(msg);
+            })";
+            
+        await JS.InvokeVoidAsync("eval", $"{script}('{_form.TextContent.Replace("'", "\\'").Replace("\n", " ")}')");
     }
 
     [JSInvokable]
