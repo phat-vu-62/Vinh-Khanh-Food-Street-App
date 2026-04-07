@@ -598,12 +598,12 @@ else if (!_isLoading)
                 DescriptionZh = _form.DescriptionZh,
                 DescriptionKo = _form.DescriptionKo,
                 DescriptionJa = _form.DescriptionJa,
+                ImageUrl = !string.IsNullOrEmpty(_form.ImageBase64) ? _form.ImageBase64 : _form.ImageUrl,
                 TextContentVi = _form.TextContentVi,
                 TextContentEn = _form.TextContentEn,
                 TextContentZh = _form.TextContentZh,
                 TextContentKo = _form.TextContentKo,
-                TextContentJa = _form.TextContentJa,
-                ImageUrl = _form.ImageBase64 ?? _form.ImageUrl
+                TextContentJa = _form.TextContentJa
             };
 
             if (_isEditing)

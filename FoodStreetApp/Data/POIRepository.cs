@@ -197,6 +197,7 @@ namespace FoodStreetApp.Data
                 UseTts = p.UseTts,
                 CooldownSeconds = p.CooldownSeconds <= 0 ? 60 : p.CooldownSeconds,
                 IsActive = p.IsActive,
+                ImageUrl = p.ImageUrl ?? string.Empty,
                 CreatedAt = DateTime.UtcNow
             };
         }
