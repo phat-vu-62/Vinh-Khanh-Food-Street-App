@@ -8,6 +8,7 @@ namespace FoodStreetApp.Data
     {
         private SQLiteAsyncConnection? _database;
         private readonly string _dbPath;
+        private readonly SemaphoreSlim _initLock = new(1, 1);
 
         public POIRepository()
         {
@@ -26,30 +27,38 @@ namespace FoodStreetApp.Data
 
         // Increment this whenever seed data changes so all devices get the updated POIs on next launch.
         private const string SeedVersionKey = "poi_seed_version";
-        private const int CurrentSeedVersion = 10; // v10: updated ratings and other UI requests
+        private const int CurrentSeedVersion = 11; // v11: Fixed duplication issue with thread-safe init
         private const string LastSyncUtcKey = "poi_last_sync_utc";
 
         public async Task InitializeAsync()
         {
-            var db = await GetDatabaseAsync();
-            System.Diagnostics.Debug.WriteLine($"Database initialized at: {_dbPath}");
-
-            var storedVersion = Preferences.Get(SeedVersionKey, 0);
-            if (storedVersion < CurrentSeedVersion)
+            await _initLock.WaitAsync();
+            try
             {
-                System.Diagnostics.Debug.WriteLine(
-                    $"[DB] Seed v{storedVersion} \u2192 v{CurrentSeedVersion} — wiping and re-seeding POIs");
-                await db.DeleteAllAsync<POI>();
-                await SeedDataAsync();
-                Preferences.Set(SeedVersionKey, CurrentSeedVersion);
-                return;
+                var db = await GetDatabaseAsync();
+                System.Diagnostics.Debug.WriteLine($"Database initialized at: {_dbPath}");
+
+                var storedVersion = Preferences.Get(SeedVersionKey, 0);
+                if (storedVersion < CurrentSeedVersion)
+                {
+                    System.Diagnostics.Debug.WriteLine(
+                        $"[DB] Seed v{storedVersion} \u2192 v{CurrentSeedVersion} — wiping and re-seeding POIs");
+                    await db.DeleteAllAsync<POI>();
+                    await SeedDataAsync();
+                    Preferences.Set(SeedVersionKey, CurrentSeedVersion);
+                    return;
+                }
+
+                var count = await db.Table<POI>().CountAsync();
+                if (count == 0)
+                {
+                    await SeedDataAsync();
+                    Preferences.Set(SeedVersionKey, CurrentSeedVersion);
+                }
             }
-
-            var count = await db.Table<POI>().CountAsync();
-            if (count == 0)
+            finally
             {
-                await SeedDataAsync();
-                Preferences.Set(SeedVersionKey, CurrentSeedVersion);
+                _initLock.Release();
             }
         }
 
