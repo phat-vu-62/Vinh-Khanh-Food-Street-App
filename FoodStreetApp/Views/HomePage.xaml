@@ -69,7 +69,6 @@
 
                                         <VerticalStackLayout Grid.Row="1" Padding="15" Spacing="4">
                                             <Label Text="{Binding Name}" FontSize="16" FontAttributes="Bold" />
-                                            <Label Text="{Binding Rating, StringFormat='⭐ {0:F1}'}" FontSize="14" TextColor="#FF9800" FontAttributes="Bold" />
                                             <Label Text="{Binding Description}" FontSize="12" TextColor="Gray" MaxLines="2" LineBreakMode="TailTruncation" />
                                         </VerticalStackLayout>
                                     </Grid>
@@ -81,7 +80,7 @@
 
                 <!-- Popular Spots Section (2 Column Grid) -->
                 <VerticalStackLayout Spacing="10">
-                    <Label Text="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[⭐ Popular Seafood]}" 
+                    <Label Text="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[Popular Seafood]}" 
                            FontSize="20" 
                            FontAttributes="Bold" />
 
@@ -107,7 +106,6 @@
 
                                         <VerticalStackLayout Grid.Row="1" Padding="12" Spacing="4">
                                             <Label Text="{Binding Name}" FontSize="14" FontAttributes="Bold" LineBreakMode="TailTruncation" />
-                                            <Label Text="{Binding Rating, StringFormat='⭐ {0:F1}'}" FontSize="12" TextColor="#FF9800" FontAttributes="Bold" />
                                             <HorizontalStackLayout Spacing="4">
                                                 <Label Text="📍" FontSize="10" VerticalOptions="Center" />
                                                 <Label Text="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[Vinh Khanh Street]}" FontSize="10" TextColor="Gray" VerticalOptions="Center" LineBreakMode="TailTruncation" />
@@ -150,7 +148,6 @@
                                         <!-- Details -->
                                         <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="4">
                                             <Label Text="{Binding Name}" FontSize="16" FontAttributes="Bold" TextColor="{AppThemeBinding Light=Black, Dark=White}" />
-                                            <Label Text="{Binding Rating, StringFormat='⭐ {0:F1}'}" FontSize="12" TextColor="#FF9800" FontAttributes="Bold" />
                                             <Label Text="{Binding Description}" FontSize="12" TextColor="Gray" MaxLines="2" LineBreakMode="TailTruncation" />
                                         </VerticalStackLayout>
                                     </Grid>

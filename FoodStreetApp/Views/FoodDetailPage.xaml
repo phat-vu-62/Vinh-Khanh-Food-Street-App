@@ -16,7 +16,6 @@
 
             <VerticalStackLayout Padding="20" Spacing="15">
                 <Label Text="{Binding Place.Name}" FontSize="28" FontAttributes="Bold" />
-                <Label Text="{Binding Place.Rating, StringFormat='⭐ {0:F1}'}" FontSize="18" TextColor="Orange" FontAttributes="Bold" />
 
                 <!-- Audio Player Section -->
                 <Border StrokeShape="RoundRectangle 12" StrokeThickness="1" Stroke="#E0E0E0" Background="{AppThemeBinding Light=#F9F9F9, Dark=#2C2C2C}" Padding="15">

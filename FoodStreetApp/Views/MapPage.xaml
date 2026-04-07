@@ -49,11 +49,6 @@
 
                 <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
                     <Label x:Name="MarkerTitleLabel" FontSize="18" TextColor="Black" FontAttributes="Bold" />
-                    <HorizontalStackLayout Spacing="4" VerticalOptions="Center">
-                        <Label x:Name="MarkerRatingLabel" Text="4.5" FontSize="13" TextColor="#555" VerticalTextAlignment="Center" />
-                        <Label Text="⭐" FontSize="11" VerticalTextAlignment="Center" Margin="0,1,0,0" TextColor="#FFD700" />
-                        <Label x:Name="MarkerReviewCountLabel" Text="(99+)" FontSize="13" TextColor="#777" VerticalTextAlignment="Center" />
-                    </HorizontalStackLayout>
                     <Label x:Name="MarkerDescLabel" FontSize="14" TextColor="#777" MaxLines="2" LineBreakMode="TailTruncation" />
                 </VerticalStackLayout>
 

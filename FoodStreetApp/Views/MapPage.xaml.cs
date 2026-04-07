@@ -274,8 +274,6 @@ namespace FoodStreetApp.Views
                             {
                                 MarkerTitleLabel.Text = poi.Name;
                                 MarkerDescLabel.Text = FoodStreetApp.Services.LocalizationResourceManager.Instance[poi.Description];
-                                MarkerRatingLabel.Text = poi.Rating.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
-                                MarkerReviewCountLabel.Text = $"({poi.ReviewCount}+)";
                                 MarkerInfoCard.IsVisible = true;
 
                                 _targetPin = new Pin
@@ -343,13 +341,6 @@ namespace FoodStreetApp.Views
 
                 MainThread.BeginInvokeOnMainThread(async () =>
                 {
-                    var poi = await _viewModel.GetPOIByNameAsync(pin.Label);
-                    if (poi != null)
-                    {
-                        MarkerRatingLabel.Text = poi.Rating.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
-                        MarkerReviewCountLabel.Text = $"({poi.ReviewCount}+)";
-                    }
-
                     MarkerInfoCard.IsVisible = true;
                 });
             }
