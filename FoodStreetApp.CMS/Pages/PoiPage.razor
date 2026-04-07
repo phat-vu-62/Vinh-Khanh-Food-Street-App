@@ -554,35 +554,17 @@ else if (!_isLoading)
             return;
         }
 
-        Toasts.Info("Đang khởi tạo giọng đọc AI... 🎙️");
+        Toasts.Info("Đang khởi tạo giọng đọc Google... 🎙️");
         
-        // Robust Native TTS (Polling for voices)
+        // Final Fix: Official Google Translate Experience (1-stage, high clarity)
         var script = @"
             (function(text) {
-                var synth = window.speechSynthesis;
-                
-                function speak() {
-                    var voices = synth.getVoices();
-                    if (voices.length === 0) {
-                        setTimeout(speak, 100); // Poll for voices
-                        return;
-                    }
-                    
-                    var viVoice = voices.find(v => (v.lang.includes('vi') || v.name.toLowerCase().includes('vietnam')) && v.name.toLowerCase().includes('natural')) 
-                               || voices.find(v => v.lang.includes('vi') || v.name.toLowerCase().includes('vietnam')) 
-                               || voices[0];
-                    
-                    var msg = new SpeechSynthesisUtterance(text);
-                    if (viVoice) {
-                        msg.voice = viVoice;
-                    }
-                    msg.lang = 'vi-VN';
-                    msg.rate = 0.95;
-                    synth.cancel();
-                    synth.speak(msg);
-                }
-                
-                speak();
+                var url = 'https://translate.google.com/translate_tts?ie=UTF-8&q=' + encodeURIComponent(text) + '&tl=vi&client=tw-ob';
+                var audio = new Audio(url);
+                audio.play().catch(e => {
+                    console.error('Audio play failed:', e);
+                    alert('Trình duyệt của bạn đang chặn tự động phát âm thanh. Vui lòng thử lại.');
+                });
             })";
             
         await JS.InvokeVoidAsync("eval", $"{script}('{_form.TextContent.Replace("'", "\\'").Replace("\n", " ")}')");
