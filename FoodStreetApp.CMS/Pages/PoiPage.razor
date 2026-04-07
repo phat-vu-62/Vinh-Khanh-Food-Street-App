@@ -150,6 +150,7 @@ else if (!_isLoading)
     <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px);">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" style="max-width: 900px;">
             <EditForm Model="_form" OnValidSubmit="SaveAsync" class="h-100 w-100">
+                <audio id="tts-audio-element" hidden></audio>
                 <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden; height: auto; max-height: 90vh;">
                     <DataAnnotationsValidator />
                     
@@ -795,11 +796,27 @@ else if (!_isLoading)
         var text = textarea.value;
         var url = 'https://translate.google.com/translate_tts?ie=UTF-8&q=' + encodeURIComponent(text) + '&tl=vi&client=tw-ob';
         
-        console.log('Playing TTS:', url);
-        var audio = new Audio(url);
+        console.log('Attempting High-Quality Cloud TTS...');
+        var audio = document.getElementById('tts-audio-element');
+        
+        // 1. Try Google High Quality Voice
+        audio.src = url;
         audio.play().catch(function(e) {
-            console.error('Audio play failed:', e);
-            alert('Trình duyệt của bạn đang chặn tự động phát âm thanh. Vui lòng nhấn vào trang web một lần rồi thử lại.');
+            console.warn('Cloud TTS Blocked/Failed. Falling back to Native System Voice...', e);
+            
+            // 2. IMMEDIATE FALLBACK: System Native Vietnamese Voice (Guaranteed locally)
+            var synth = window.speechSynthesis;
+            var voices = synth.getVoices();
+            var viVoice = voices.find(v => (v.lang.includes('vi') || v.name.toLowerCase().includes('vietnam')) && v.name.toLowerCase().includes('natural')) 
+                       || voices.find(v => v.lang.includes('vi') || v.name.toLowerCase().includes('vietnam')) 
+                       || voices[0];
+            
+            var msg = new SpeechSynthesisUtterance(text);
+            if (viVoice) msg.voice = viVoice;
+            msg.lang = 'vi-VN';
+            msg.rate = 0.95;
+            synth.cancel();
+            synth.speak(msg);
         });
     }
 </script>
