@@ -478,6 +478,12 @@ else if (!_isLoading)
         _isEditorOpen = true;
     }
 
+    private void ShowQrCode(POI poi)
+    {
+        _selectedPoiForQr = poi;
+        _qrModalVisible = true;
+    }
+
     private void HandleMapClick()
     {
         // Mock map interaction: Assigning a random nearby coordinate if empty
