@@ -54,7 +54,7 @@ else if (!_isLoading)
                         <tr>
                             <td>
                                 <div class="d-flex align-items-center gap-3">
-                                    <div class="bg-orange p-2 rounded-2 text-white d-flex" style="background-color: var(--primary-color);">
+                                    <div class="bg-primary p-2 rounded-2 text-white d-flex" style="background-color: var(--primary-color);">
                                         <i class="bi bi-play-fill fs-5"></i>
                                     </div>
                                     <div class="d-flex flex-column">
@@ -141,12 +141,12 @@ else if (!_isLoading)
                                 <label class="form-label fw-bold d-block mb-3">Phương thức nhập âm thanh</label>
                                 <div class="btn-group w-100 p-1 bg-light rounded-4" role="group">
                                     <input type="radio" class="btn-check" name="audioMode" id="modeUpload" autocomplete="off" checked="@(_audioMode == "Upload")" @onchange="@(() => _audioMode = "Upload")">
-                                    <label class="btn btn-modern @(_audioMode == "Upload" ? "btn-primary-f&b shadow-sm" : "btn-light border-0") w-50" for="modeUpload">
+                                    <label class="btn btn-saas @(_audioMode == "Upload" ? "btn-saas-primary shadow-sm" : "btn-light border-0") w-50" for="modeUpload">
                                         <i class="bi bi-upload me-2"></i> Tải file lên (.mp3, .wav)
                                     </label>
 
                                     <input type="radio" class="btn-check" name="audioMode" id="modeTTS" autocomplete="off" checked="@(_audioMode == "TTS")" @onchange="@(() => _audioMode = "TTS")">
-                                    <label class="btn btn-modern @(_audioMode == "TTS" ? "btn-primary-f&b shadow-sm" : "btn-light border-0") w-50" for="modeTTS">
+                                    <label class="btn btn-saas @(_audioMode == "TTS" ? "btn-saas-primary shadow-sm" : "btn-light border-0") w-50" for="modeTTS">
                                         <i class="bi bi-mic me-2"></i> Chuyển văn bản thành giọng nói (TTS)
                                     </label>
                                 </div>
@@ -157,8 +157,8 @@ else if (!_isLoading)
                                 <div class="col-12">
                                     <div class="p-3 rounded-4 border" style="background-color: #fffaf0;">
                                         <div class="d-flex justify-content-between align-items-center mb-3">
-                                            <span class="badge badge-pill badge-orange"><i class="bi bi-stars me-1"></i> AI Voice Generator</span>
-                                            <button type="button" class="btn btn-sm btn-modern btn-primary-f&b" @onclick="GenerateTtsUrl">
+                                            <span class="badge badge-pill bg-primary bg-opacity-10 text-primary"><i class="bi bi-stars me-1"></i> AI Voice Generator</span>
+                                            <button type="button" class="btn btn-sm btn-saas btn-saas-primary px-3" @onclick="GenerateTtsUrl">
                                                 Tạo bản nghe thử
                                             </button>
                                         </div>
@@ -197,8 +197,8 @@ else if (!_isLoading)
                             @if (!string.IsNullOrWhiteSpace(_form.Url) || !string.IsNullOrWhiteSpace(_uploadedPreviewUrl))
                             {
                                 <div class="col-12 mt-3">
-                                    <div class="food-card p-3 bg-white border border-orange border-opacity-25 rounded-4 shadow-sm text-center">
-                                        <small class="text-orange fw-bold d-block mb-2"><i class="bi bi-play-circle me-1"></i> Trình phát thử nghiệm</small>
+                                    <div class="saas-card p-3 bg-white border border-primary border-opacity-25 rounded-4 shadow-sm text-center">
+                                        <small class="text-primary fw-bold d-block mb-2"><i class="bi bi-play-circle me-1"></i> Trình phát thử nghiệm</small>
                                         <audio controls class="w-100 rounded-pill">
                                             <source src="@(!string.IsNullOrWhiteSpace(_uploadedPreviewUrl) ? _uploadedPreviewUrl : _form.Url)" />
                                         </audio>
@@ -215,8 +215,8 @@ else if (!_isLoading)
                         </div>
                     </div>
                     <div class="modal-footer border-0 p-4 pt-0">
-                        <button type="button" class="btn btn-modern btn-light" @onclick="CloseEditor">Hủy</button>
-                        <button type="submit" class="btn btn-modern btn-primary-f&b px-4">Lưu âm thanh</button>
+                        <button type="button" class="btn btn-saas btn-saas-secondary" @onclick="CloseEditor">Hủy</button>
+                        <button type="submit" class="btn btn-saas btn-saas-primary px-4">Lưu âm thanh</button>
                     </div>
                 </EditForm>
             </div>

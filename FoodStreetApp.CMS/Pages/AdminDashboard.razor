@@ -30,7 +30,7 @@
                     <span class="text-success small fw-bold">+@(Pois.Count > 0 ? (Pois.Count/5 + 1) : 0)%</span>
                 </div>
                 <div class="progress mt-3" style="height: 4px;">
-                    <div class="progress-bar bg-orange" style="width: 70%; background-color: var(--primary-color);"></div>
+                    <div class="progress-bar bg-primary" style="width: 70%; background-color: var(--primary-color);"></div>
                 </div>
             </div>
         </div>
@@ -124,7 +124,7 @@
                                 <span class="text-muted">@p.Count lượt</span>
                             </div>
                             <div class="progress" style="height: 8px;">
-                                <div class="progress-bar bg-orange rounded-pill" 
+                                <div class="progress-bar bg-primary rounded-pill" 
                                      style="width: @(Math.Min(100, (p.Count * 100 / (TopPois.FirstOrDefault()?.Count ?? 1))))%; background-color: var(--primary-color);"></div>
                             </div>
                         </div>

@@ -46,7 +46,7 @@
                             <span>@((_history.Average(h => h.DurationSeconds ?? 0) * 100 / 120).ToString("0"))%</span>
                         </div>
                         <div class="progress" style="height: 6px;">
-                            <div class="progress-bar bg-orange" style="width: @(Math.Min(100, _history.Average(h => h.DurationSeconds ?? 0) * 100 / 120))%; background-color: var(--primary-color);"></div>
+                            <div class="progress-bar bg-primary" style="width: @(Math.Min(100, _history.Average(h => h.DurationSeconds ?? 0) * 100 / 120))%; background-color: var(--primary-color);"></div>
                         </div>
                     </div>
                 </div>

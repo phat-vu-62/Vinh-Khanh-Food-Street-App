@@ -76,7 +76,7 @@
                                 {
                                     <div class="bg-white rounded-circle border d-flex align-items-center justify-content-center shadow-sm" 
                                          style="width: 28px; height: 28px; margin-left: -8px;" title="@FindPoiName(poiId)">
-                                        <i class="bi bi-geo-alt-fill text-orange" style="font-size: 0.7rem; color: var(--primary-color);"></i>
+                                        <i class="bi bi-geo-alt-fill text-primary" style="font-size: 0.7rem; color: var(--primary-color);"></i>
                                     </div>
                                 }
                             </div>
@@ -123,7 +123,7 @@
                                         <option value="@poi.Id">@poi.Name</option>
                                     }
                                 </select>
-                                <button type="button" class="btn btn-modern btn-outline-primary w-100 mt-3" @onclick="AddPoiToTour">
+                                <button type="button" class="btn btn-saas btn-saas-secondary w-100 mt-3" @onclick="AddPoiToTour">
                                     <i class="bi bi-plus-circle me-1"></i> Thêm vào chuỗi
                                 </button>
                             </div>
@@ -149,7 +149,7 @@
                                                 @ondrop="@(() => Drop(currentIndex))"
                                                 style="cursor: grab;">
                                                 <div class="d-flex align-items-center">
-                                                    <span class="badge bg-orange text-white rounded-circle me-3" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">@(i + 1)</span>
+                                                    <span class="badge bg-primary text-white rounded-circle me-3" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">@(i + 1)</span>
                                                     <span class="fw-semibold">@FindPoiName(poiId)</span>
                                                 </div>
                                                 <button type="button" class="btn btn-link text-danger p-1" @onclick="() => RemovePoi(currentIndex)">
@@ -163,8 +163,8 @@
                         </div>
                     </div>
                     <div class="modal-footer border-0 p-4 pt-0">
-                        <button type="button" class="btn btn-modern btn-light" @onclick="CloseEditor">Đóng</button>
-                        <button type="submit" class="btn btn-modern btn-primary-f&b px-4">Lưu lộ trình</button>
+                        <button type="button" class="btn btn-saas btn-saas-secondary" @onclick="CloseEditor">Đóng</button>
+                        <button type="submit" class="btn btn-saas btn-saas-primary px-4">Lưu lộ trình</button>
                     </div>
                 </EditForm>
             </div>

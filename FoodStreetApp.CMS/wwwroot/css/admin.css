@@ -1,8 +1,8 @@
 :root {
     /* SaaS Minimalist Palette */
-    --primary-color: #f97316; /* Vibrant Orange accent */
-    --primary-hover: #ea580c;
-    --primary-soft: rgba(249, 115, 22, 0.1);
+    --primary-color: #0066CC; /* Royal Blue to match mobile app */
+    --primary-hover: #0052a3;
+    --primary-soft: rgba(0, 102, 204, 0.1);
     
     --bg-main: #f9fafb; /* Light neutral gray */
     --bg-white: #ffffff;
