@@ -3,6 +3,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>b2d0070b-7643-4ee1-9b2d-687e10751c04</UserSecretsId>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="Properties\launchSettings.json" />
