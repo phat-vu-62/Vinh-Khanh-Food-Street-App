@@ -527,6 +527,7 @@ namespace FoodStreetApp.Data
             public bool UseTts { get; set; }
             public int CooldownSeconds { get; set; }
             public bool IsActive { get; set; }
+            public string? ImageUrl { get; set; }
         }
 
         private class RemotePoiActionDto

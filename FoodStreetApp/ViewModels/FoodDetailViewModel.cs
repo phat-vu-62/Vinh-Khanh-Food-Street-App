@@ -7,11 +7,15 @@ using System.Runtime.CompilerServices;
 namespace FoodStreetApp.ViewModels
 {
     [QueryProperty(nameof(Place), "FoodPlace")]
+    [QueryProperty(nameof(AutoPlay), "AutoPlay")]
+    [QueryProperty(nameof(SkipGps), "SkipGps")]
     public class FoodDetailViewModel : INotifyPropertyChanged
     {
         private readonly INarrationService _narrationService;
         private FoodPlace? _place;
         private string _playStatus = "Play";
+        private string? _autoPlay;
+        private string? _skipGps;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -23,8 +27,24 @@ namespace FoodStreetApp.ViewModels
                 _place = value;
                 PlayStatus = LocalizationResourceManager.Instance["Play"];
                 OnPropertyChanged();
+
+                // If arriving from QR with AutoPlay=true, start playback immediately
+                if (_autoPlay == "True" || _autoPlay == "true")
+                {
+                    // Reset to avoid loops if property is reset
+                    _autoPlay = "false";
+                    
+                    MainThread.BeginInvokeOnMainThread(() =>
+                    {
+                        if (ToggleNarrationCommand.CanExecute(null))
+                            ToggleNarrationCommand.Execute(null);
+                    });
+                }
             }
         }
+
+        public string? AutoPlay { get => _autoPlay; set { _autoPlay = value; OnPropertyChanged(); } }
+        public string? SkipGps { get => _skipGps; set { _skipGps = value; OnPropertyChanged(); } }
 
         public string PlayStatus
         {

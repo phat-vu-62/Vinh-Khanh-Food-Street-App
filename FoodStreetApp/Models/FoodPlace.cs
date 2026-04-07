@@ -9,6 +9,7 @@ namespace FoodStreetApp.Models
 
         public string Name { get; set; } = string.Empty;
         public string Image { get; set; } = string.Empty;
+        public string? ImageUrl { get; set; }
         public double Rating { get; set; }
 
         public string Description 
