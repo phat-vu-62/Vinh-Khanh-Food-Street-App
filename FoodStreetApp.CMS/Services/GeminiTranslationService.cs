@@ -39,7 +39,7 @@ public class GeminiTranslationService : IGeminiTranslationService
             var apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY")
                          ?? _configuration["Gemini:ApiKey"];
 
-            var model = _configuration["Gemini:Model"] ?? "gemini-1.5-flash";
+            var model = _configuration["Gemini:Model"] ?? "gemini-pro";
 
             if (string.IsNullOrWhiteSpace(apiKey))
             {

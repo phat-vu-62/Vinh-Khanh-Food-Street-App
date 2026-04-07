@@ -556,22 +556,35 @@ else if (!_isLoading)
 
         Toasts.Info("Đang khởi tạo giọng đọc AI... 🎙️");
         
-        // Advanced JS to find native Vietnamese voice
+        // Advanced JS to find native Vietnamese voice with polling for voices list populating
         var script = @"
             (function(text) {
                 var synth = window.speechSynthesis;
-                var voices = synth.getVoices();
                 
-                // Attempt to find a native Vietnamese voice
-                var viVoice = voices.find(v => v.lang.includes('vi') || v.name.toLowerCase().includes('vietnam'));
-                
-                var msg = new SpeechSynthesisUtterance(text);
-                if (viVoice) {
-                    msg.voice = viVoice;
+                function speak() {
+                    var voices = synth.getVoices();
+                    if (voices.length === 0) {
+                        // Retry matching if the array is initially empty (common in some browsers)
+                        setTimeout(speak, 50);
+                        return;
+                    }
+                    
+                    var viVoice = voices.find(v => (v.lang.includes('vi') || v.name.toLowerCase().includes('vietnam')) && v.name.toLowerCase().includes('natural') ) 
+                               || voices.find(v => v.lang.includes('vi') || v.name.toLowerCase().includes('vietnam')) 
+                               || voices[0];
+                    
+                    var msg = new SpeechSynthesisUtterance(text);
+                    if (viVoice) {
+                        msg.voice = viVoice;
+                        console.log('Selected voice:', viVoice.name);
+                    }
+                    msg.lang = 'vi-VN';
+                    msg.rate = 0.9;
+                    synth.cancel(); // Stop any pending speech
+                    synth.speak(msg);
                 }
-                msg.lang = 'vi-VN';
-                msg.rate = 0.9; // Slightly slower for better clarity
-                synth.speak(msg);
+                
+                speak();
             })";
             
         await JS.InvokeVoidAsync("eval", $"{script}('{_form.TextContent.Replace("'", "\\'").Replace("\n", " ")}')");
