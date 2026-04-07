@@ -268,16 +268,22 @@ else if (!_isLoading)
                                 <div class="col-md-4">
                                     <div class="mb-3">
                                         <label class="form-label-saas">Vĩ độ (Latitude)</label>
-                                        <InputNumber class="form-control form-control-saas bg-light" @bind-Value="_form.Latitude" step="any" readonly />
+                                        <div class="input-group">
+                                            <InputNumber class="form-control form-control-saas bg-white" @bind-Value="_form.Latitude" step="any" @bind-Value:after="SyncManualCoordinatesToMap" />
+                                            <button class="btn btn-outline-secondary btn-sm border-start-0" type="button" @onclick="SyncManualCoordinatesToMap" title="Cập nhật bản đồ"><i class="bi bi-arrow-repeat"></i></button>
+                                        </div>
                                         <ValidationMessage For="@(() => _form.Latitude)" class="text-danger small mt-1" />
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label-saas">Kinh độ (Longitude)</label>
-                                        <InputNumber class="form-control form-control-saas bg-light" @bind-Value="_form.Longitude" step="any" readonly />
+                                        <div class="input-group">
+                                            <InputNumber class="form-control form-control-saas bg-white" @bind-Value="_form.Longitude" step="any" @bind-Value:after="SyncManualCoordinatesToMap" />
+                                            <button class="btn btn-outline-secondary btn-sm border-start-0" type="button" @onclick="SyncManualCoordinatesToMap" title="Cập nhật bản đồ"><i class="bi bi-arrow-repeat"></i></button>
+                                        </div>
                                         <ValidationMessage For="@(() => _form.Longitude)" class="text-danger small mt-1" />
                                     </div>
                                     <div class="p-3 bg-secondary bg-opacity-10 rounded-3">
-                                        <p class="x-small text-muted mb-0"><b>Gợi ý:</b> Nhấp vào bản đồ để chọn tọa độ chính xác. Marker sẽ tự động cập nhật vị trí.</p>
+                                        <p class="x-small text-muted mb-0"><b>Gợi ý:</b> Nhấp vào bản đồ để chọn tọa độ chính xác, hoặc nhập tay và nhấn biểu tượng xoay để đồng bộ.</p>
                                     </div>
                                 </div>
                             </div>
@@ -521,6 +527,11 @@ else if (!_isLoading)
         _form.Latitude = Math.Round(lat, 6);
         _form.Longitude = Math.Round(lng, 6);
         StateHasChanged();
+    }
+
+    private async Task SyncManualCoordinatesToMap()
+    {
+        await JS.InvokeVoidAsync("setMapLocation", _form.Latitude, _form.Longitude);
     }
 
     private void ShowQrCode(POI poi)
