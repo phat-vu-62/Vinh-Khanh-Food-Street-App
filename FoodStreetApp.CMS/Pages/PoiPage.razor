@@ -1,6 +1,10 @@
 @page "/poi"
 @inject IAdminDataService DataService
 @inject ToastService Toasts
+@inject IJSRuntime JS
+@using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components.Forms
+@using System.IO
 
 <div class="d-flex justify-content-between align-items-center mb-5">
     <div>
@@ -247,10 +251,10 @@ else if (!_isLoading)
                             {
                                 <div class="p-4 border rounded-3 bg-light">
                                     <label class="form-label small fw-bold text-muted mb-1">Nội dung thuyết minh (Tiếng Việt)</label>
-                                    <InputTextArea class="form-control form-control-sm" rows="3" @bind-Value="_form.TextContent" placeholder="Nhập nội dung để AI tự động chuyển thành giọng nói..." />
+                                    <InputTextArea id="narration-text" class="form-control form-control-sm" rows="3" @bind-Value="_form.TextContent" placeholder="Nhập nội dung để AI tự động chuyển thành giọng nói..." />
                                     <div class="mt-2 d-flex justify-content-between align-items-center">
                                         <div class="x-small text-muted"><i class="bi bi-stars me-1"></i> Giọng đọc: Nam/Nữ miền Nam</div>
-                                        <button type="button" class="btn btn-link p-0 text-decoration-none x-small fw-bold" @onclick="PreviewTtsAsync">Nghe thử với AI</button>
+                                        <button type="button" class="btn btn-link p-0 text-decoration-none x-small fw-bold" onclick="playGoogleTts()">Nghe thử với AI</button>
                                     </div>
                                 </div>
                             }
@@ -391,11 +395,6 @@ else if (!_isLoading)
               Message="Hành động này không thể hoàn tác. Bạn có chắc chắn muốn xóa vĩnh viễn địa điểm này?"
               OnConfirm="DeleteConfirmedAsync"
               OnCancel="CancelDelete" />
-
-@inject IJSRuntime JS
-@using Microsoft.JSInterop
-@using Microsoft.AspNetCore.Components.Forms
-@using System.IO
 
 @code {
     private readonly List<POI> _pois = [];
@@ -783,5 +782,24 @@ else if (!_isLoading)
         _isEditorOpen = false;
         _mapInitialized = false;
     }
-
 }
+
+<script>
+    function playGoogleTts() {
+        var textarea = document.getElementById('narration-text');
+        if (!textarea || !textarea.value || textarea.value.trim() === '') {
+            alert('Vui lòng nhập nội dung để nghe thử.');
+            return;
+        }
+        
+        var text = textarea.value;
+        var url = 'https://translate.google.com/translate_tts?ie=UTF-8&q=' + encodeURIComponent(text) + '&tl=vi&client=tw-ob';
+        
+        console.log('Playing TTS:', url);
+        var audio = new Audio(url);
+        audio.play().catch(function(e) {
+            console.error('Audio play failed:', e);
+            alert('Trình duyệt của bạn đang chặn tự động phát âm thanh. Vui lòng nhấn vào trang web một lần rồi thử lại.');
+        });
+    }
+</script>
