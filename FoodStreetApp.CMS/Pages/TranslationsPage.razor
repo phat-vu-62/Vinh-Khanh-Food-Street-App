@@ -44,57 +44,94 @@
     }
     else
     {
-        <div class="saas-card overflow-hidden shadow-sm">
-            <div class="table-responsive">
-                <table class="saas-table align-middle">
-                    <thead>
-                        <tr>
-                            <th style="width: 35%;">Nội dung gốc (Tiếng Việt)</th>
-                            <th style="width: 50%;">Bản dịch (@_selectedLanguage.ToUpper())</th>
-                            <th class="text-end">Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var poi in _pois.OrderBy(x => x.Name))
-                        {
-                            <tr class="align-top">
-                                <td class="py-4">
-                                    <div class="fw-bold text-dark mb-1">@poi.Name</div>
-                                    <div class="text-muted small" style="line-height: 1.5;">@poi.Description</div>
-                                    <div class="mt-2 text-primary small italic">#Original</div>
-                                </td>
-                                <td class="py-4">
-                                    <div class="d-flex flex-column gap-3">
-                                        <input type="text" class="form-control border-subtle bg-light small" 
-                                               placeholder="Tên địa điểm..."
+        <div class="d-flex flex-column gap-4">
+            @foreach (var poi in _pois.OrderBy(x => x.Name))
+            {
+                <div class="saas-card border-0 shadow-sm overflow-hidden">
+                    <div class="card-header bg-white border-bottom-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-primary-soft text-primary p-2 rounded-3">
+                                <i class="bi bi-geo-alt-fill"></i>
+                            </div>
+                            <h5 class="fw-bold m-0 text-dark">@poi.Name</h5>
+                        </div>
+                        <div class="d-flex align-items-center gap-2">
+                            @if (IsFullyTranslated(poi))
+                            {
+                                <span class="saas-badge badge-active"><i class="bi bi-check-circle-fill me-1"></i> Đã hoàn tất</span>
+                            }
+                            else
+                            {
+                                <span class="saas-badge badge-highlight"><i class="bi bi-exclamation-circle-fill me-1"></i> Cần bổ sung</span>
+                            }
+                            <button class="btn btn-saas btn-saas-primary btn-sm ms-3" @onclick="() => SavePoiAsync(poi)">
+                                <i class="bi bi-save me-1"></i> Lưu bản dịch
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-4">
+                            <!-- Cột Gốc (Tiếng Việt) -->
+                            <div class="col-lg-5">
+                                <div class="p-3 bg-light rounded-4 h-100">
+                                    <div class="small text-uppercase fw-bold text-muted mb-3"><i class="bi bi-chat-left-dots me-1"></i> Nội dung gốc (VI)</div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold text-dark opacity-50">Tên hiển thị</label>
+                                        <div class="p-2 bg-white border rounded-2 small">@poi.Name</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label small fw-bold text-dark opacity-50">Mô tả ngắn</label>
+                                        <div class="p-2 bg-white border rounded-2 small">@poi.Description</div>
+                                    </div>
+
+                                    <div>
+                                        <label class="form-label small fw-bold text-dark opacity-50">Bài thuyết minh (Narrator Script)</label>
+                                        <div class="p-2 bg-white border rounded-2 small" style="min-height: 80px; white-space: pre-wrap;">@poi.TextContent</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Mũi tên chuyển đổi -->
+                            <div class="col-lg-1 d-none d-lg-flex align-items-center justify-content-center">
+                                <i class="bi bi-arrow-right-circle-fill text-primary" style="font-size: 1.5rem;"></i>
+                            </div>
+
+                            <!-- Cột Bản dịch -->
+                            <div class="col-lg-6">
+                                <div class="p-3 border border-primary-soft rounded-4 h-100 bg-white shadow-inner-sm">
+                                    <div class="small text-uppercase fw-bold text-primary mb-3"><i class="bi bi-translate me-1"></i> Bản dịch (@_selectedLanguage.ToUpper())</div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label-saas small">Tên địa điểm</label>
+                                        <input type="text" class="form-control form-control-saas" 
+                                               placeholder="Nhập tên..."
                                                value="@GetNameTranslation(poi, _selectedLanguage)" 
                                                @onchange="@(e => SetNameTranslation(poi, _selectedLanguage, e.Value?.ToString()))" />
-                                        
-                                        <textarea class="form-control border-subtle bg-light small" rows="2"
-                                               placeholder="Mô tả cho khách du lịch..."
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label-saas small">Mô tả du lịch</label>
+                                        <textarea class="form-control form-control-saas" rows="2"
+                                               placeholder="Nhập mô tả..."
                                                value="@GetDescriptionTranslation(poi, _selectedLanguage)" 
                                                @onchange="@(e => SetDescriptionTranslation(poi, _selectedLanguage, e.Value?.ToString()))"></textarea>
                                     </div>
-                                    <div class="mt-2">
-                                        @if (string.IsNullOrEmpty(GetNameTranslation(poi, _selectedLanguage)))
-                                        {
-                                            <span class="saas-badge badge-highlight">Chưa hoàn tất</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="saas-badge badge-active">Đã dịch</span>
-                                        }
+
+                                    <div>
+                                        <label class="form-label-saas small">Bài thuyết minh (Narrator Script)</label>
+                                        <textarea class="form-control form-control-saas" rows="3"
+                                               placeholder="Dịch bài thuyết minh..."
+                                               value="@GetTextContentTranslation(poi, _selectedLanguage)" 
+                                               @onchange="@(e => SetTextContentTranslation(poi, _selectedLanguage, e.Value?.ToString()))"></textarea>
                                     </div>
-                                </td>
-                                <td class="text-end py-4">
-                                    <button class="btn btn-saas btn-saas-secondary btn-sm w-100 mb-2" @onclick="() => SavePoiAsync(poi)">Lưu</button>
-                                    <button class="btn btn-link link-muted p-0" title="Dịch AI riêng POI này"><i class="bi bi-stars"></i></button>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
     }
 }
@@ -140,12 +177,19 @@
         try
         {
             DataService.UpdatePoi(poi);
-            Toasts.Success("Đã lưu bản dịch thành công.");
+            Toasts.Success($"Đã lưu bản dịch cho {poi.Name} thành công!");
         }
         catch
         {
             Toasts.Error("Không thể lưu bản dịch.");
         }
+    }
+
+    private bool IsFullyTranslated(POI poi)
+    {
+        return !string.IsNullOrEmpty(GetNameTranslation(poi, _selectedLanguage)) &&
+               !string.IsNullOrEmpty(GetDescriptionTranslation(poi, _selectedLanguage)) &&
+               !string.IsNullOrEmpty(GetTextContentTranslation(poi, _selectedLanguage));
     }
 
     private async Task TranslateAllAsync()
@@ -190,6 +234,16 @@
         _ => poi.DescriptionEn
     };
 
+    private static string? GetTextContentTranslation(POI poi, string language) => language switch
+    {
+        "vi" => poi.TextContentVi,
+        "en" => poi.TextContentEn,
+        "zh" => poi.TextContentZh,
+        "ko" => poi.TextContentKo,
+        "ja" => poi.TextContentJa,
+        _ => poi.TextContentEn
+    };
+
     private static void SetNameTranslation(POI poi, string language, string? value)
     {
         switch (language)
@@ -211,6 +265,18 @@
             case "zh": poi.DescriptionZh = value; break;
             case "ko": poi.DescriptionKo = value; break;
             case "ja": poi.DescriptionJa = value; break;
+        }
+    }
+
+    private static void SetTextContentTranslation(POI poi, string language, string? value)
+    {
+        switch (language)
+        {
+            case "vi": poi.TextContentVi = value; break;
+            case "en": poi.TextContentEn = value; break;
+            case "zh": poi.TextContentZh = value; break;
+            case "ko": poi.TextContentKo = value; break;
+            case "ja": poi.TextContentJa = value; break;
         }
     }
 }
