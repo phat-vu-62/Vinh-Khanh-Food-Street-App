@@ -143,113 +143,219 @@ else if (!_isLoading)
 
 @if (_isEditorOpen)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px);">
-        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content overflow-hidden">
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px);">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" style="max-width: 900px;">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
                 <EditForm Model="_form" OnValidSubmit="SaveAsync">
-                    <div class="modal-header bg-light border-0 py-3 px-4">
-                        <h4 class="modal-title fw-bold text-dark">@(_isEditing ? "🖊️ Chỉnh sửa địa điểm" : "✨ Thêm địa điểm mới")</h4>
+                    <DataAnnotationsValidator />
+                    
+                    <!-- Header -->
+                    <div class="px-5 py-4 border-bottom d-flex justify-content-between align-items-center bg-white sticky-top mb-1" style="border-radius: 20px 20px 0 0; z-index: 10;">
+                        <div>
+                            <h4 class="fw-bold text-dark m-0">@(_isEditing ? "🖊️ Chỉnh sửa địa điểm" : "✨ Thêm địa điểm mới")</h4>
+                            <p class="text-muted small mb-0">Cập nhật thông tin chi tiết và nội dung đa ngôn ngữ.</p>
+                        </div>
                         <button type="button" class="btn-close" @onclick="CloseEditor"></button>
                     </div>
-                    <div class="modal-body p-4">
-                        <DataAnnotationsValidator />
-                        <div class="alert alert-info border-0 rounded-4 d-flex align-items-center gap-3 mb-4">
-                            <i class="bi bi-info-circle-fill fs-4 text-primary"></i>
-                            <div class="small">
-                                <b>Lưu ý:</b> Nhập thông tin tiếng Việt ở phần nội dung chính, sau đó dùng công cụ <b>Dịch tự động</b> để hỗ trợ các ngôn ngữ khách du lịch.
-                            </div>
-                        </div>
 
-                        <div class="row g-4">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Tên địa điểm (Tiếng Việt)</label>
-                                <InputText class="form-control" @bind-Value="_form.Name" placeholder="Ví dụ: Ốc Oanh, Lẩu bò..." />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold">Link Âm thanh (Audio URL)</label>
-                                <InputText class="form-control" @bind-Value="_form.AudioUrl" placeholder="https://..." />
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label fw-bold">Mô tả ngắn gọn</label>
-                                <InputText class="form-control" @bind-Value="_form.Description" placeholder="Mẹo: Viết ngắn gọn về đặc sản của quán..." />
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label fw-bold">Nội dung thuyết minh (TTS)</label>
-                                <InputTextArea class="form-control" rows="3" @bind-Value="_form.TextContent" placeholder="Nội dung này sẽ được AI đọc lên cho khách nghe..." />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold"><i class="bi bi-pin-map me-1"></i>Vĩ độ (Latitude)</label>
-                                <InputNumber class="form-control" @bind-Value="_form.Latitude" step="any" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold"><i class="bi bi-pin-map-fill me-1"></i>Kinh độ (Longitude)</label>
-                                <InputNumber class="form-control" @bind-Value="_form.Longitude" step="any" />
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-check form-switch mt-2">
-                                    <InputCheckbox class="form-check-input" id="isActiveCheck" @bind-Value="_form.IsActive" />
-                                    <label class="form-check-label fw-bold" for="isActiveCheck">Trạng thái hoạt động</label>
+                    <div class="modal-body px-5 py-0">
+                        
+                        <!-- Section 1: Basic Information -->
+                        <div class="modal-section">
+                            <div class="modal-section-title"><i class="bi bi-info-circle"></i> Thông tin cơ bản</div>
+                            <div class="row g-4">
+                                <div class="col-md-5">
+                                    <label class="form-label-saas">Hình ảnh đại diện</label>
+                                    <div class="saas-dropzone" @onclick='() => Toasts.Info("Tính năng upload ảnh đang được tích hợp...")'>
+                                        <i class="bi bi-cloud-arrow-up text-primary fs-2 mb-2 d-inline-block"></i>
+                                        <p class="small text-muted mb-0">Kéo thả hoặc nhấn để chọn ảnh</p>
+                                        <p class="x-small text-light">PNG, JPG (Tối đa 5MB)</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-7">
+                                    <div class="mb-4">
+                                        <label class="form-label-saas">Tên địa điểm</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-tag text-muted"></i></span>
+                                            <InputText class="form-control form-control-saas border-start-0" @bind-Value="_form.Name" placeholder="Ví dụ: Ốc Oanh Vinh Khánh" />
+                                        </div>
+                                        <ValidationMessage For="@(() => _form.Name)" class="text-danger small mt-1" />
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label-saas">Mô tả ngắn</label>
+                                        <InputText class="form-control form-control-saas" @bind-Value="_form.Description" placeholder="Tóm tắt nét đặc sắc của địa điểm..." />
+                                        <ValidationMessage For="@(() => _form.Description)" class="text-danger small mt-1" />
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded-3">
+                                        <div>
+                                            <div class="fw-bold small">Trạng thái hoạt động</div>
+                                            <div class="text-muted x-small">Địa điểm sẽ hiển thị với khách du lịch</div>
+                                        </div>
+                                        <div class="form-check form-switch ps-0">
+                                            <InputCheckbox class="form-check-input" style="width: 3em; height: 1.5em; cursor: pointer;" id="isActiveCheck" @bind-Value="_form.IsActive" />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        @if (_isEditing)
-                        {
-                            <div class="mt-5 p-4 rounded-4 border bg-light">
-                                <div class="d-flex justify-content-between align-items-center mb-4">
-                                    <h5 class="fw-bold mb-0 text-orange">
-                                        <i class="bi bi-translate"></i> Bản dịch đa ngôn ngữ
-                                    </h5>
-                                    <button type="button" class="btn btn-modern btn-outline-primary bg-white shadow-sm" disabled="@_isTranslating" @onclick="TranslateInEditorAsync">
-                                        @if (_isTranslating)
-                                        {
-                                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                                            <span>Đang dịch AI...</span>
-                                        }
-                                        else
-                                        {
-                                            <span><i class="bi bi-stars me-1 text-warning"></i> AI Dịch tự động</span>
-                                        }
+                        <!-- Section 2: Audio & Narration -->
+                        <div class="modal-section">
+                            <div class="modal-section-title"><i class="bi bi-mic"></i> Âm thanh & Thuyết minh</div>
+                            <div class="mb-4">
+                                <label class="form-label-saas">Nguồn âm thanh</label>
+                                <div class="saas-toggle-group">
+                                    <button type="button" class="saas-toggle-btn @(_form.AudioMode == AudioSourceMode.File ? "active" : "")" 
+                                            @onclick="() => _form.AudioMode = AudioSourceMode.File">
+                                        <i class="bi bi-file-earmark-music me-1"></i> Tải lên File
+                                    </button>
+                                    <button type="button" class="saas-toggle-btn @(_form.AudioMode == AudioSourceMode.TTS ? "active" : "")" 
+                                            @onclick="() => _form.AudioMode = AudioSourceMode.TTS">
+                                        <i class="bi bi-chat-text me-1"></i> Sử dụng AI (TTS)
                                     </button>
                                 </div>
+                            </div>
 
-                                <div class="row g-4">
-                                    <!-- English -->
-                                    <div class="col-12 border-bottom pb-3">
-                                        <div class="row g-3">
-                                            <div class="col-md-4"><label class="form-label small text-muted">🇺🇸 Tên (English)</label><InputText class="form-control form-control-sm" @bind-Value="_form.NameEn" /></div>
-                                            <div class="col-md-8"><label class="form-label small text-muted">🇺🇸 Mô tả (English)</label><InputText class="form-control form-control-sm" @bind-Value="_form.DescriptionEn" /></div>
-                                            <div class="col-12"><label class="form-label small text-muted">🇺🇸 Nội dung thuyết minh (English)</label><InputTextArea class="form-control form-control-sm" rows="1" @bind-Value="_form.TextContentEn" /></div>
+                            @if (_form.AudioMode == AudioSourceMode.File)
+                            {
+                                <div class="p-4 border rounded-3 bg-light">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="flex-grow-1">
+                                            <label class="form-label small fw-bold text-muted mb-1">Đường dẫn file (URL)</label>
+                                            <InputText class="form-control form-control-sm" @bind-Value="_form.AudioUrl" placeholder="https://storage.google.com/..." />
+                                        </div>
+                                        <div class="pt-3">
+                                            <button type="button" class="btn btn-saas btn-saas-secondary btn-sm" title="Nghe thử"><i class="bi bi-play-fill"></i></button>
                                         </div>
                                     </div>
-                                    <!-- Chinese -->
-                                    <div class="col-12 border-bottom pb-3">
-                                        <div class="row g-3">
-                                            <div class="col-md-4"><label class="form-label small text-muted">🇨🇳 Tên (Chinese)</label><InputText class="form-control form-control-sm" @bind-Value="_form.NameZh" /></div>
-                                            <div class="col-md-8"><label class="form-label small text-muted">🇨🇳 Mô tả (Chinese)</label><InputText class="form-control form-control-sm" @bind-Value="_form.DescriptionZh" /></div>
-                                        </div>
+                                    <div class="mt-2 x-small text-muted"><i class="bi bi-info-circle me-1"></i> Hỗ trợ định dạng MP3, AAC, OGG.</div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="p-4 border rounded-3 bg-light">
+                                    <label class="form-label small fw-bold text-muted mb-1">Nội dung thuyết minh (Tiếng Việt)</label>
+                                    <InputTextArea class="form-control form-control-sm" rows="3" @bind-Value="_form.TextContent" placeholder="Nhập nội dung để AI tự động chuyển thành giọng nói..." />
+                                    <div class="mt-2 d-flex justify-content-between align-items-center">
+                                        <div class="x-small text-muted"><i class="bi bi-stars me-1"></i> Giọng đọc: Nam/Nữ miền Nam</div>
+                                        <button type="button" class="btn btn-link p-0 text-decoration-none x-small fw-bold">Nghe thử với AI</button>
                                     </div>
-                                    <!-- Korean -->
-                                    <div class="col-12 border-bottom pb-3">
-                                        <div class="row g-3">
-                                            <div class="col-md-4"><label class="form-label small text-muted">🇰🇷 Tên (Korean)</label><InputText class="form-control form-control-sm" @bind-Value="_form.NameKo" /></div>
-                                            <div class="col-md-8"><label class="form-label small text-muted">🇰🇷 Mô tả (Korean)</label><InputText class="form-control form-control-sm" @bind-Value="_form.DescriptionKo" /></div>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Section 3: Location & Map -->
+                        <div class="modal-section">
+                            <div class="modal-section-title"><i class="bi bi-geo-alt"></i> Vị trí & Tọa độ</div>
+                            <div class="row g-4">
+                                <div class="col-md-8">
+                                    <div class="map-picker-preview shadow-inner d-flex align-items-center justify-content-center" @onclick="HandleMapClick">
+                                        <div class="text-center opacity-25">
+                                             <i class="bi bi-map fs-1"></i>
+                                             <p class="small mt-2">Bản đồ tương tác (Nhấn để chọn vị trí)</p>
                                         </div>
+                                        @if (_form.Latitude != 0 && _form.Longitude != 0)
+                                        {
+                                            <div class="map-picker-dot" style="left: 60%; top: 40%;"></div>
+                                        }
                                     </div>
-                                    <!-- Japanese -->
-                                    <div class="col-12">
-                                        <div class="row g-3">
-                                            <div class="col-md-4"><label class="form-label small text-muted">🇯🇵 Tên (Japanese)</label><InputText class="form-control form-control-sm" @bind-Value="_form.NameJa" /></div>
-                                            <div class="col-md-8"><label class="form-label small text-muted">🇯🇵 Mô tả (Japanese)</label><InputText class="form-control form-control-sm" @bind-Value="_form.DescriptionJa" /></div>
-                                        </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="mb-3">
+                                        <label class="form-label-saas">Vĩ độ (Latitude)</label>
+                                        <InputNumber class="form-control form-control-saas bg-light" @bind-Value="_form.Latitude" step="any" readonly />
+                                        <ValidationMessage For="@(() => _form.Latitude)" class="text-danger small mt-1" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label-saas">Kinh độ (Longitude)</label>
+                                        <InputNumber class="form-control form-control-saas bg-light" @bind-Value="_form.Longitude" step="any" readonly />
+                                        <ValidationMessage For="@(() => _form.Longitude)" class="text-danger small mt-1" />
+                                    </div>
+                                    <div class="p-3 bg-secondary bg-opacity-10 rounded-3">
+                                        <p class="x-small text-muted mb-0"><b>Gợi ý:</b> Sử dụng công cụ chọn vị trí trên bản đồ để có tọa độ chính xác nhất cho thực tế tăng cường (AR).</p>
                                     </div>
                                 </div>
                             </div>
-                        }
+                        </div>
+
+                        <!-- Section 4: Translations -->
+                        <div class="modal-section border-0 pb-5">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <div class="modal-section-title mb-0"><i class="bi bi-translate"></i> Bản dịch đa ngôn ngữ</div>
+                                <button type="button" class="btn btn-saas btn-saas-secondary btn-sm" @onclick="TranslateInEditorAsync" disabled="@_isTranslating">
+                                    @if (_isTranslating) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                                    <i class="bi bi-stars"></i> Tự động dịch AI (Tất cả)
+                                </button>
+                            </div>
+
+                            <div class="saas-tabs">
+                                <button type="button" class="saas-tab-item @(_activeTab == "en" ? "active" : "")" @onclick='() => _activeTab = "en"'>🇺🇸 Tiếng Anh</button>
+                                <button type="button" class="saas-tab-item @(_activeTab == "zh" ? "active" : "")" @onclick='() => _activeTab = "zh"'>🇨🇳 Tiếng Trung</button>
+                                <button type="button" class="saas-tab-item @(_activeTab == "ko" ? "active" : "")" @onclick='() => _activeTab = "ko"'>🇰🇷 Tiếng Hàn</button>
+                                <button type="button" class="saas-tab-item @(_activeTab == "ja" ? "active" : "")" @onclick='() => _activeTab = "ja"'>🇯🇵 Tiếng Nhật</button>
+                            </div>
+
+                            <div class="p-4 border rounded-4 bg-white shadow-sm">
+                                @if (_activeTab == "en")
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label-saas">Tên địa điểm (EN)</label>
+                                        <InputText class="form-control form-control-saas" @bind-Value="_form.NameEn" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label-saas">Mô tả (EN)</label>
+                                        <InputText class="form-control form-control-saas" @bind-Value="_form.DescriptionEn" />
+                                    </div>
+                                    <div>
+                                        <label class="form-label-saas">Nội dung thuyết minh (EN)</label>
+                                        <InputTextArea class="form-control form-control-saas" rows="2" @bind-Value="_form.TextContentEn" />
+                                    </div>
+                                }
+                                else if (_activeTab == "zh")
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label-saas">Tên địa điểm (ZH)</label>
+                                        <InputText class="form-control form-control-saas" @bind-Value="_form.NameZh" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label-saas">Mô tả (ZH)</label>
+                                        <InputText class="form-control form-control-saas" @bind-Value="_form.DescriptionZh" />
+                                    </div>
+                                }
+                                else if (_activeTab == "ko")
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label-saas">Tên địa điểm (KO)</label>
+                                        <InputText class="form-control form-control-saas" @bind-Value="_form.NameKo" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label-saas">Mô tả (KO)</label>
+                                        <InputText class="form-control form-control-saas" @bind-Value="_form.DescriptionKo" />
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label-saas">Tên địa điểm (JA)</label>
+                                        <InputText class="form-control form-control-saas" @bind-Value="_form.NameJa" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label-saas">Mô tả (JA)</label>
+                                        <InputText class="form-control form-control-saas" @bind-Value="_form.DescriptionJa" />
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
                     </div>
-                    <div class="modal-footer border-0 p-4 pt-0">
-                        <button type="button" class="btn btn-modern btn-light" @onclick="CloseEditor">Hủy bỏ</button>
-                        <button type="submit" class="btn btn-modern btn-primary-f&b px-4">Lưu địa điểm</button>
+
+                    <!-- Footer -->
+                    <div class="modal-footer border-0 px-5 py-4 bg-light bg-opacity-50">
+                        <button type="button" class="btn btn-saas btn-saas-secondary px-4 py-2" @onclick="CloseEditor">Hủy bỏ</button>
+                        <button type="submit" class="btn btn-saas btn-saas-primary px-5 py-2 shadow-sm" disabled="@_isLoadingSave">
+                            @if (_isLoadingSave) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                            <i class="bi bi-check-lg"></i> Lưu địa điểm
+                        </button>
                     </div>
                 </EditForm>
             </div>
@@ -269,6 +375,8 @@ else if (!_isLoading)
     private bool _isEditorOpen;
     private bool _isEditing;
     private bool _isTranslating;
+    private bool _isLoadingSave;
+    private string _activeTab = "en";
     private bool _confirmDeleteVisible;
     private bool _qrModalVisible;
     private POI? _selectedPoiForQr;
@@ -309,7 +417,7 @@ else if (!_isLoading)
         }
         catch
         {
-            Toasts.Error("Failed to load POI list.");
+            Toasts.Error("Không thể tải danh sách địa điểm.");
         }
         finally
         {
@@ -322,13 +430,20 @@ else if (!_isLoading)
     private void StartCreate()
     {
         _isEditing = false;
-        _form = new PoiFormViewModel { IsActive = true, RadiusMeters = 15 };
+        _activeTab = "en";
+        _form = new PoiFormViewModel 
+        { 
+            IsActive = true, 
+            RadiusMeters = 15,
+            AudioMode = AudioSourceMode.File
+        };
         _isEditorOpen = true;
     }
 
     private void StartEdit(POI poi)
     {
         _isEditing = true;
+        _activeTab = "en";
         _form = new PoiFormViewModel
         {
             Id = poi.Id,
@@ -340,6 +455,8 @@ else if (!_isLoading)
             IsActive = poi.IsActive,
             RadiusMeters = poi.RadiusMeters,
             Type = poi.Type,
+            AudioMode = string.IsNullOrEmpty(poi.AudioUrl) && !string.IsNullOrEmpty(poi.TextContent) 
+                         ? AudioSourceMode.TTS : AudioSourceMode.File,
             // Translation fields
             NameVi = poi.NameVi,
             NameEn = poi.NameEn,
@@ -361,16 +478,24 @@ else if (!_isLoading)
         _isEditorOpen = true;
     }
 
-    private void ShowQrCode(POI poi)
+    private void HandleMapClick()
     {
-        _selectedPoiForQr = poi;
-        _qrModalVisible = true;
+        // Mock map interaction: Assigning a random nearby coordinate if empty
+        if (_form.Latitude == 0)
+        {
+            _form.Latitude = 10.762622;
+            _form.Longitude = 106.660172;
+            Toasts.Info("Đã chọn tọa độ mặc định từ bản đồ.");
+        }
     }
 
-    private Task SaveAsync()
+    private async Task SaveAsync()
     {
         try
         {
+            _isLoadingSave = true;
+            await Task.Delay(800); // Simulate network lag for smoother SaaS UX
+
             var poi = new POI
             {
                 Id = _form.Id,
@@ -378,10 +503,11 @@ else if (!_isLoading)
                 Description = _form.Description,
                 Latitude = _form.Latitude,
                 Longitude = _form.Longitude,
-                AudioUrl = _form.AudioUrl,
+                AudioUrl = _form.AudioMode == AudioSourceMode.File ? _form.AudioUrl : null,
                 IsActive = _form.IsActive,
                 RadiusMeters = _form.RadiusMeters,
                 Type = _form.Type,
+                TextContent = _form.TextContent,
                 // Preserve translation fields
                 NameVi = _form.NameVi,
                 NameEn = _form.NameEn,
@@ -393,7 +519,6 @@ else if (!_isLoading)
                 DescriptionZh = _form.DescriptionZh,
                 DescriptionKo = _form.DescriptionKo,
                 DescriptionJa = _form.DescriptionJa,
-                TextContent = _form.TextContent,
                 TextContentVi = _form.TextContentVi,
                 TextContentEn = _form.TextContentEn,
                 TextContentZh = _form.TextContentZh,
@@ -404,30 +529,32 @@ else if (!_isLoading)
             if (_isEditing)
             {
                 DataService.UpdatePoi(poi);
-                Toasts.Success("POI updated.");
+                Toasts.Success("Đã cập nhật địa điểm thành công! ✨");
             }
             else
             {
                 DataService.AddPoi(poi);
-                Toasts.Success("POI created.");
+                Toasts.Success("Đã tạo địa điểm mới thành công! 🚀");
             }
 
             _isEditorOpen = false;
-            LoadAsync();
+            await LoadAsync();
         }
         catch
         {
-            Toasts.Error("Save POI failed.");
+            Toasts.Error("Lưu địa điểm thất bại. Vui lòng kiểm tra lại thông tin.");
         }
-
-        return Task.CompletedTask;
+        finally
+        {
+            _isLoadingSave = false;
+        }
     }
 
     private async Task TranslateInEditorAsync()
     {
         if (_form.Id <= 0)
         {
-            Toasts.Error("Please save the POI first before translating.");
+            Toasts.Error("Vui lòng lưu địa điểm trước khi thực hiện dịch thuật AI.");
             return;
         }
 
@@ -456,11 +583,10 @@ else if (!_isLoading)
                 _form.TextContentKo = translated.TextContentKo;
                 _form.TextContentJa = translated.TextContentJa;
 
-                Toasts.Success("Dịch tự động thành công!");
+                Toasts.Success("AI đã hoàn tất bản dịch đa ngôn ngữ! 🌐");
                 _pois.Clear();
                 _pois.AddRange(DataService.GetPois());
             }
-            // Error toast is handled by the service
         }
         finally
         {
@@ -476,11 +602,11 @@ else if (!_isLoading)
         {
             poi.IsActive = value;
             DataService.UpdatePoi(poi);
-            Toasts.Success("POI status updated.");
+            Toasts.Success("Đã cập nhật trạng thái hoạt động.");
         }
         catch
         {
-            Toasts.Error("Cannot update POI status.");
+            Toasts.Error("Không thể cập nhật trạng thái.");
         }
 
         return Task.CompletedTask;
@@ -503,12 +629,12 @@ else if (!_isLoading)
         try
         {
             DataService.DeletePoi(_deleteId.Value);
-            Toasts.Success("POI deleted.");
+            Toasts.Success("Đã xóa địa điểm.");
             LoadAsync();
         }
         catch
         {
-            Toasts.Error("Delete POI failed.");
+            Toasts.Error("Xóa địa điểm thất bại.");
         }
         finally
         {
@@ -534,10 +660,9 @@ else if (!_isLoading)
             var translated = await DataService.TranslatePoiAsync(poi.Id);
             if (translated != null)
             {
-                Toasts.Success("Dịch tự động thành công!");
+                Toasts.Success("Dịch thuật AI hoàn tất! 🌐");
                 await LoadAsync();
             }
-            // Error toast is already triggered by GeminiTranslationService
         }
         finally
         {

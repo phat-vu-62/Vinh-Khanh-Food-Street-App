@@ -244,20 +244,138 @@ body {
     color: var(--text-light);
 }
 
-/* Badges */
-.saas-badge {
-    padding: 0.25rem 0.625rem;
-    border-radius: 99px;
-    font-size: 0.75rem;
-    font-weight: 600;
+/* SaaS Modal Redesign Styles */
+.modal-section {
+    padding: 2rem 0;
+    border-bottom: 1px solid var(--border-soft);
 }
 
-.badge-active { background: #dcfce7; color: #15803d; }
-.badge-inactive { background: #f1f5f9; color: #64748b; }
-.badge-highlight { background: #ffedd5; color: #9a3412; }
+.modal-section:last-child {
+    border-bottom: none;
+}
 
-/* Responsive adjustments */
-@media (max-width: 1024px) {
-    .sidebar { transform: translateX(-100%); }
-    .main-container { margin-left: 0; }
+.modal-section-title {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.saas-dropzone {
+    border: 2px dashed var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 2.5rem;
+    text-align: center;
+    background-color: var(--bg-main);
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.saas-dropzone:hover {
+    border-color: var(--primary-color);
+    background-color: var(--primary-soft);
+}
+
+.saas-tabs {
+    display: flex;
+    gap: 1.5rem;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 2rem;
+}
+
+.saas-tab-item {
+    padding: 0.75rem 0.25rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+}
+
+.saas-tab-item:hover {
+    color: var(--text-main);
+}
+
+.saas-tab-item.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
+.map-picker-preview {
+    height: 300px;
+    background-color: #f1f5f9;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+    position: relative;
+    overflow: hidden;
+    cursor: crosshair;
+}
+
+.map-picker-dot {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    background-color: var(--primary-color);
+    border: 3px solid white;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: var(--shadow-md);
+    pointer-events: none;
+}
+
+.form-label-saas {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-main);
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.form-control-saas {
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    padding: 0.625rem 0.75rem;
+    font-size: 0.9375rem;
+    width: 100%;
+}
+
+.form-control-saas:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.saas-toggle-group {
+    background-color: #f1f5f9;
+    padding: 0.25rem;
+    border-radius: var(--radius-sm);
+    display: inline-flex;
+}
+
+.saas-toggle-btn {
+    padding: 0.5rem 1rem;
+    border-radius: calc(var(--radius-sm) - 2px);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border: none;
+    background: none;
+    transition: all 0.1s;
+}
+
+.saas-toggle-btn.active {
+    background-color: white;
+    color: var(--text-main);
+    box-shadow: var(--shadow-sm);
 }
