@@ -263,7 +263,12 @@ public class AdminDataService : IAdminDataService
                         _dbContext.SaveChanges();
                         TrackPoiAction(poi.Id, "Updated");
                         translatedCount++;
-                        await Task.Delay(300); // Rate limit
+                        await Task.Delay(4000); // Rate limit for Gemini Free Tier (15 RPM -> 4s per item)
+                    }
+                    else 
+                    {
+                        // If it failed (likely 429), wait longer before trying the next POI
+                        await Task.Delay(10000); 
                     }
                 }
                 catch (Exception ex)

@@ -117,7 +117,7 @@ public class GeminiTranslationService : IGeminiTranslationService
                 // On rate limit, wait and retry
                 if (response.StatusCode == (System.Net.HttpStatusCode)429 && attempt < 3)
                 {
-                    var waitSeconds = attempt * 5; // 5s, 10s
+                    var waitSeconds = attempt * 15; // 15s then 30s to clear Quota locks
                     _logger.LogWarning("Rate limited (429). Waiting {Wait}s before retry...", waitSeconds);
                     await Task.Delay(waitSeconds * 1000);
                     continue;
