@@ -32,6 +32,7 @@ public class PoiFormViewModel
     // SaaS Enhancements
     public AudioSourceMode AudioMode { get; set; } = AudioSourceMode.File;
     public string? ImageUrl { get; set; }
+    public string? ImageBase64 { get; set; }
 
     // Translation fields
     public string? NameVi { get; set; }

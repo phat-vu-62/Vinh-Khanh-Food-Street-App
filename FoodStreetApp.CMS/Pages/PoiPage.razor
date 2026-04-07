@@ -166,10 +166,22 @@ else if (!_isLoading)
                             <div class="row g-4">
                                 <div class="col-md-5">
                                     <label class="form-label-saas">Hình ảnh đại diện</label>
-                                    <div class="saas-dropzone" @onclick='() => Toasts.Info("Tính năng upload ảnh đang được tích hợp...")'>
-                                        <i class="bi bi-cloud-arrow-up text-primary fs-2 mb-2 d-inline-block"></i>
-                                        <p class="small text-muted mb-0">Kéo thả hoặc nhấn để chọn ảnh</p>
-                                        <p class="x-small text-light">PNG, JPG (Tối đa 5MB)</p>
+                                    <div class="saas-dropzone position-relative overflow-hidden" style="height: 160px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                                        <InputFile OnChange="HandleImageSelected" class="position-absolute w-100 h-100 opacity-0" style="cursor: pointer; z-index: 2;" accept="image/*" />
+                                        @if (!string.IsNullOrEmpty(_form.ImageBase64))
+                                        {
+                                            <img src="@_form.ImageBase64" class="position-absolute w-100 h-100" style="object-fit: cover; z-index: 1;" />
+                                        }
+                                        else if (!string.IsNullOrEmpty(_form.ImageUrl))
+                                        {
+                                            <img src="@_form.ImageUrl" class="position-absolute w-100 h-100" style="object-fit: cover; z-index: 1;" />
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-cloud-arrow-up text-primary fs-2 mb-2 d-inline-block"></i>
+                                            <p class="small text-muted mb-0">Nhấn để chọn ảnh</p>
+                                            <p class="x-small text-light">PNG, JPG (Tối đa 5MB)</p>
+                                        }
                                     </div>
                                 </div>
                                 <div class="col-md-7">
@@ -249,15 +261,8 @@ else if (!_isLoading)
                             <div class="modal-section-title"><i class="bi bi-geo-alt"></i> Vị trí & Tọa độ</div>
                             <div class="row g-4">
                                 <div class="col-md-8">
-                                    <div class="map-picker-preview shadow-inner d-flex align-items-center justify-content-center" @onclick="HandleMapClick">
-                                        <div class="text-center opacity-25">
-                                             <i class="bi bi-map fs-1"></i>
-                                             <p class="small mt-2">Bản đồ tương tác (Nhấn để chọn vị trí)</p>
-                                        </div>
-                                        @if (_form.Latitude != 0 && _form.Longitude != 0)
-                                        {
-                                            <div class="map-picker-dot" style="left: 60%; top: 40%;"></div>
-                                        }
+                                    <div id="map-picker-container" class="shadow-inner rounded-3 border" style="height: 300px; z-index: 1;">
+                                        <!-- Leaflet map will be initialized here -->
                                     </div>
                                 </div>
                                 <div class="col-md-4">
@@ -272,7 +277,7 @@ else if (!_isLoading)
                                         <ValidationMessage For="@(() => _form.Longitude)" class="text-danger small mt-1" />
                                     </div>
                                     <div class="p-3 bg-secondary bg-opacity-10 rounded-3">
-                                        <p class="x-small text-muted mb-0"><b>Gợi ý:</b> Sử dụng công cụ chọn vị trí trên bản đồ để có tọa độ chính xác nhất cho thực tế tăng cường (AR).</p>
+                                        <p class="x-small text-muted mb-0"><b>Gợi ý:</b> Nhấp vào bản đồ để chọn tọa độ chính xác. Marker sẽ tự động cập nhật vị trí.</p>
                                     </div>
                                 </div>
                             </div>
@@ -369,6 +374,11 @@ else if (!_isLoading)
               OnConfirm="DeleteConfirmedAsync"
               OnCancel="CancelDelete" />
 
+@inject IJSRuntime JS
+@using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components.Forms
+@using System.IO
+
 @code {
     private readonly List<POI> _pois = [];
     private bool _isLoading;
@@ -385,6 +395,7 @@ else if (!_isLoading)
     private string _searchTerm = string.Empty;
     private int _currentPage = 1;
     private int _pageSize = 10;
+    private bool _mapInitialized;
 
     private IEnumerable<POI> GetFilteredPois()
     {
@@ -405,6 +416,16 @@ else if (!_isLoading)
     protected override async Task OnInitializedAsync()
     {
         await LoadAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_isEditorOpen && !_mapInitialized)
+        {
+            _mapInitialized = true;
+            await Task.Delay(500); // Wait for modal animation
+            await JS.InvokeVoidAsync("initMapPicker", DotNetObjectReference.Create(this), _form.Latitude, _form.Longitude);
+        }
     }
 
     private Task LoadAsync()
@@ -431,6 +452,7 @@ else if (!_isLoading)
     {
         _isEditing = false;
         _activeTab = "en";
+        _mapInitialized = false;
         _form = new PoiFormViewModel 
         { 
             IsActive = true, 
@@ -444,6 +466,7 @@ else if (!_isLoading)
     {
         _isEditing = true;
         _activeTab = "en";
+        _mapInitialized = false;
         _form = new PoiFormViewModel
         {
             Id = poi.Id,
@@ -478,21 +501,32 @@ else if (!_isLoading)
         _isEditorOpen = true;
     }
 
+    private async Task HandleImageSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            var format = "image/png";
+            var resizedImage = await file.RequestImageFileAsync(format, 400, 400);
+            var buffer = new byte[resizedImage.Size];
+            await resizedImage.OpenReadStream().ReadAsync(buffer);
+            _form.ImageBase64 = $"data:{format};base64,{Convert.ToBase64String(buffer)}";
+            Toasts.Success("Đã chọn ảnh thành công!");
+        }
+    }
+
+    [JSInvokable]
+    public void UpdateCoordinates(double lat, double lng)
+    {
+        _form.Latitude = Math.Round(lat, 6);
+        _form.Longitude = Math.Round(lng, 6);
+        StateHasChanged();
+    }
+
     private void ShowQrCode(POI poi)
     {
         _selectedPoiForQr = poi;
         _qrModalVisible = true;
-    }
-
-    private void HandleMapClick()
-    {
-        // Mock map interaction: Assigning a random nearby coordinate if empty
-        if (_form.Latitude == 0)
-        {
-            _form.Latitude = 10.762622;
-            _form.Longitude = 106.660172;
-            Toasts.Info("Đã chọn tọa độ mặc định từ bản đồ.");
-        }
     }
 
     private async Task SaveAsync()
@@ -683,6 +717,10 @@ else if (!_isLoading)
         return Math.Max(0, translated - 1);
     }
 
-    private void CloseEditor() => _isEditorOpen = false;
+    private void CloseEditor()
+    {
+        _isEditorOpen = false;
+        _mapInitialized = false;
+    }
 
 }
