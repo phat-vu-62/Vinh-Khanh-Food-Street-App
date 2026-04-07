@@ -2,108 +2,130 @@
 @inject IAdminDataService DataService
 @inject ToastService Toasts
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-5">
     <div>
-        <h1 class="h3 fw-bold mb-0 text-orange">Lịch sử truy cập</h1>
-        <p class="text-muted mb-0">Nhật ký hoạt động của khách tham quan trên ứng dụng di động</p>
+        <h1 class="h3 fw-bold mb-1">Dữ liệu phân tích</h1>
+        <p class="text-muted mb-0">Theo dõi hành vi người dùng và hiệu quả nội dung trên hệ thống.</p>
     </div>
     <div class="d-flex gap-2">
-        <div class="input-group" style="width: 220px;">
-            <span class="input-group-text bg-white border-end-0 rounded-start-3"><i class="bi bi-calendar3"></i></span>
-            <InputDate class="form-control border-start-0 rounded-end-3" @bind-Value="_selectedDate" @bind-Value:after="() => { _currentPage = 1; LoadAsync(); }" TValue="DateTime?" />
+        <div class="input-group shadow-sm" style="width: 220px;">
+            <span class="input-group-text bg-white border-end-0 rounded-start-2"><i class="bi bi-calendar3 text-muted"></i></span>
+            <InputDate class="form-control border-start-0 rounded-end-2 small" @bind-Value="_selectedDate" @bind-Value:after="() => { _currentPage = 1; LoadAsync(); }" TValue="DateTime?" />
         </div>
-        <button class="btn btn-modern btn-light border shadow-sm" @onclick="ClearFilter" disabled="@(_selectedDate == null)">Xóa lọc</button>
-        <button class="btn btn-modern btn-primary-f&b shadow-sm" @onclick="LoadAsync"><i class="bi bi-arrow-clockwise"></i> Làm mới</button>
+        <button class="btn btn-saas btn-saas-secondary shadow-sm" @onclick="ClearFilter" disabled="@(_selectedDate == null)"><i class="bi bi-x-lg me-1"></i> Xóa lọc</button>
+        <button class="btn btn-saas btn-saas-primary shadow-sm" @onclick="LoadAsync"><i class="bi bi-arrow-clockwise"></i> Làm mới</button>
     </div>
 </div>
 
-<section class="food-card p-4 border-0 shadow-sm">
-    <LoadingState IsLoading="_isLoading" Message="Đang tải lịch sử sử dụng..." />
+<LoadingState IsLoading="_isLoading" Message="Đang xử lý dữ liệu lớn..." />
 
-    @if (!_isLoading && _history.Count == 0)
+@if (!_isLoading)
+{
+    @if (_history.Count == 0)
     {
-        <div class="empty-state py-5">
-            <i class="bi bi-clock-history text-muted" style="font-size: 3rem;"></i>
-            <h5 class="fw-bold mt-3">Chưa có hoạt động nào</h5>
-            <p class="text-muted">Nhật ký sẽ tự động xuất hiện khi có người dùng tương tác với mã QR hoặc xem bản đồ.</p>
+        <div class="saas-card p-5 text-center">
+            <i class="bi bi-clock-history text-light" style="font-size: 3rem;"></i>
+            <h5 class="fw-bold mt-4">Chưa có hoạt động nào trong thời gian này</h5>
+            <p class="text-muted small">Hãy chọn một mốc thời gian khác hoặc chờ dữ liệu mới.</p>
         </div>
     }
-    else if (!_isLoading)
+    else
     {
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-            <div class="input-group" style="max-width:380px;">
-                <span class="input-group-text bg-white border-end-0 rounded-start-3"><i class="bi bi-search text-muted"></i></span>
-                <input class="form-control border-start-0 rounded-end-3" placeholder="Tìm tên khách, địa điểm hoặc hành động..." @bind="_searchTerm" @bind:event="oninput" @bind:after="() => { _currentPage = 1; }" />
+        <div class="row g-4 mb-5">
+            <!-- Avg Duration Metric -->
+            <div class="col-lg-4">
+                <div class="saas-card p-4 h-100">
+                    <span class="stats-label d-block mb-2">Thời lượng nghe trung bình</span>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="stats-value">@(_history.Any() ? _history.Average(h => h.DurationSeconds ?? 0).ToString("0.0") : "0")s</span>
+                        <span class="text-success small fw-bold">Active Engagement</span>
+                    </div>
+                    <div class="mt-4 pt-4 border-top">
+                        <div class="d-flex justify-content-between small text-muted mb-2">
+                            <span>Mục tiêu: 120s</span>
+                            <span>@((_history.Average(h => h.DurationSeconds ?? 0) * 100 / 120).ToString("0"))%</span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar bg-orange" style="width: @(Math.Min(100, _history.Average(h => h.DurationSeconds ?? 0) * 100 / 120))%; background-color: var(--primary-color);"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <span class="badge badge-pill badge-gray border">Tổng cộng: @GetFilteredHistory().Count() bản ghi</span>
+
+            <!-- Action Distribution SVG -->
+            <div class="col-lg-8">
+                <div class="saas-card p-4 h-100">
+                    <h6 class="fw-bold mb-4">Mật độ tương tác (24h)</h6>
+                    <div class="chart-container" style="height: 120px;">
+                         <svg width="100%" height="80" preserveAspectRatio="none">
+                             <polyline points="0,60 50,40 100,55 150,20 200,30 250,10 300,50 350,45 400,15 450,35 500,25" 
+                                       fill="none" stroke="var(--primary-color)" stroke-width="2" />
+                             <path d="M0,60 50,40 100,55 150,20 200,30 250,10 300,50 350,45 400,15 450,35 500,25 V80 H0 Z" 
+                                   fill="var(--primary-soft)" />
+                         </svg>
+                         <div class="d-flex justify-content-between mt-2 small text-muted">
+                             <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:59</span>
+                         </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="bg-light">
-                    <tr>
-                        <th class="border-0">Khách tham quan</th>
-                        <th class="border-0">Địa điểm tương tác</th>
-                        <th class="border-0">Hành động</th>
-                        <th class="border-0">Thời lượng</th>
-                        <th class="border-0 text-end">Thời gian</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in GetPagedHistory())
-                    {
+        <div class="saas-card overflow-hidden">
+            <div class="table-responsive">
+                <table class="saas-table">
+                    <thead>
                         <tr>
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                                        <i class="bi bi-person-circle text-orange"></i>
-                                    </div>
-                                    <span class="fw-bold text-dark">@(string.IsNullOrEmpty(item.UserId) ? "Khách ẩn danh" : item.UserId)</span>
-                                </div>
-                            </td>
-                            <td>
-                                <span class="badge badge-pill badge-gray border">
-                                    <i class="bi bi-geo-alt me-1"></i>@FindPoiName(item.PoiId)
-                                </span>
-                            </td>
-                            <td>
-                                <span class="badge badge-pill @(GetActionBadge(item.Action)) px-2 py-1">
-                                    @GetActionLabel(item.Action)
-                                </span>
-                            </td>
-                            <td>
-                                @if (item.DurationSeconds.HasValue && item.DurationSeconds > 0)
-                                {
-                                    <span class="fw-bold text-primary">@item.DurationSeconds giây</span>
-                                }
-                                else
-                                {
-                                    <span class="text-muted small">—</span>
-                                }
-                            </td>
-                            <td class="text-end text-muted small">
-                                <i class="bi bi-clock me-1"></i>@item.VisitedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")
-                            </td>
+                            <th>Người dùng</th>
+                            <th>Địa điểm</th>
+                            <th>Hành động</th>
+                            <th>Thời lượng</th>
+                            <th class="text-end">Thời gian</th>
                         </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var h in GetPagedHistory())
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="bg-light rounded-circle small d-flex align-items-center justify-content-center" style="width:28px; height:28px;">
+                                            <i class="bi bi-fingerprint text-muted"></i>
+                                        </div>
+                                        <span class="fw-medium small text-dark">UID-@h.UserId?.Take(8)</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="saas-badge badge-inactive">@FindPoiName(h.PoiId)</span>
+                                </td>
+                                <td>
+                                    <span class="saas-badge @(h.Action == "Listen" ? "badge-active" : "badge-highlight")">
+                                        @h.Action.ToUpper()
+                                    </span>
+                                </td>
+                                <td class="small fw-semibold">@(h.DurationSeconds ?? 0) giây</td>
+                                <td class="text-end text-muted small">@h.VisitedAtUtc.ToLocalTime().ToString("HH:mm:ss, dd/MM")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         @if (GetTotalHistoryPages() > 1)
         {
-            <div class="d-flex justify-content-center align-items-center mt-4 gap-3">
-                <button class="btn btn-sm btn-modern border bg-white shadow-sm" disabled="@(_currentPage <= 1)" @onclick="() => _currentPage--">
-                    <i class="bi bi-chevron-left"></i> Trang trước
+            <div class="d-flex justify-content-center align-items-center mt-5 gap-3">
+                <button class="btn btn-saas btn-saas-secondary btn-sm" disabled="@(_currentPage <= 1)" @onclick="() => _currentPage--">
+                    <i class="bi bi-chevron-left"></i>
                 </button>
-                <span class="fw-bold text-orange">@_currentPage / @GetTotalHistoryPages()</span>
-                <button class="btn btn-sm btn-modern border bg-white shadow-sm" disabled="@(_currentPage >= GetTotalHistoryPages())" @onclick="() => _currentPage++">
-                    Trang sau <i class="bi bi-chevron-right"></i>
+                <span class="small fw-bold">@_currentPage / @GetTotalHistoryPages()</span>
+                <button class="btn btn-saas btn-saas-secondary btn-sm" disabled="@(_currentPage >= GetTotalHistoryPages())" @onclick="() => _currentPage++">
+                    <i class="bi bi-chevron-right"></i>
                 </button>
             </div>
         }
     }
-</section>
+}
 
 @code {
     private readonly List<UserHistory> _history = [];

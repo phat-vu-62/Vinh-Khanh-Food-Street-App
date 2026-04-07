@@ -2,73 +2,92 @@
 @inject IAdminDataService DataService
 @inject ToastService Toasts
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-5">
     <div>
-        <h1 class="h3 fw-bold mb-0 text-orange">Quản lý lộ trình</h1>
-        <p class="text-muted mb-0">Xây dựng các tour đi bộ ẩm thực bằng cách kết nối nhiều địa điểm</p>
+        <h1 class="h3 fw-bold mb-1">Thiết kế lộ trình</h1>
+        <p class="text-muted mb-0">Xây dựng các tour tham quan theo chủ đề bằng cách kết nối nhiều địa điểm.</p>
     </div>
-    <button class="btn btn-modern btn-primary-f&b shadow-sm" @onclick="StartCreate">
-        <i class="bi bi-plus-lg"></i> Thêm lộ trình
+    <button class="btn btn-saas btn-saas-primary shadow-sm" @onclick="StartCreate">
+        <i class="bi bi-map-fill"></i> Tạo lộ trình mới
     </button>
 </div>
 
-<section class="food-card p-4 border-0 shadow-sm">
-    <LoadingState IsLoading="_isLoading" Message="Đang tải danh sách lộ trình..." />
+<LoadingState IsLoading="_isLoading" Message="Đang xử lý lộ trình..." />
 
-    @if (!_isLoading && _tours.Count == 0)
+@if (!_isLoading)
+{
+    @if (_tours.Count == 0)
     {
-        <div class="empty-state py-5">
-            <i class="bi bi-map text-muted" style="font-size: 3rem;"></i>
-            <h5 class="fw-bold mt-3">Chưa có lộ trình nào</h5>
-            <p class="text-muted">Kết nối các địa điểm ăn uống thành một tour tham quan hoàn chỉnh.</p>
-            <button class="btn btn-modern btn-primary-f&b mt-2" @onclick="StartCreate"><i class="bi bi-plus-lg"></i> Tạo ngay</button>
+        <div class="saas-card p-5 text-center">
+            <i class="bi bi-signpost-2 text-light" style="font-size: 3rem;"></i>
+            <h5 class="fw-bold mt-4">Chưa có tour tham quan nào</h5>
+            <p class="text-muted small">Ghép các quán ăn thành một lộ trình hấp dẫn cho thực khách.</p>
+            <button class="btn btn-saas btn-saas-primary mt-3" @onclick="StartCreate">Tạo lộ trình đầu tiên</button>
         </div>
     }
-    else if (!_isLoading)
+    else
     {
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="bg-light">
-                    <tr>
-                        <th class="border-0">Tên lộ trình</th>
-                        <th class="border-0">Mô tả</th>
-                        <th class="border-0">Chuỗi địa điểm</th>
-                        <th class="border-0 text-end">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var tour in _tours.OrderByDescending(x => x.Id))
-                    {
-                        <tr>
-                            <td class="fw-bold text-dark">@tour.Name</td>
-                            <td class="text-muted small" style="max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">@tour.Description</td>
-                            <td>
-                                <div class="d-flex flex-wrap gap-1">
-                                    @foreach (var poiId in tour.PoiIds)
-                                    {
-                                        <span class="badge badge-pill badge-gray border">@FindPoiName(poiId)</span>
-                                    }
-                                </div>
-                            </td>
-                            <td class="text-end">
+        <div class="row g-4">
+            @foreach (var tour in _tours.OrderByDescending(x => x.Id))
+            {
+                <div class="col-md-6 col-xl-4">
+                    <div class="saas-card h-100 d-flex flex-column">
+                        <div class="p-4 flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <span class="saas-badge badge-highlight">TOUR #@tour.Id</span>
                                 <div class="dropdown">
-                                    <button class="btn btn-sm btn-light rounded-3" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                        <i class="bi bi-three-dots"></i>
-                                    </button>
+                                    <button class="btn btn-link link-muted p-0" data-bs-toggle="dropdown"><i class="bi bi-three-dots"></i></button>
                                     <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg">
-                                        <li><button class="dropdown-item" @onclick="() => StartEdit(tour)"><i class="bi bi-pencil me-2 text-primary"></i>Sửa lộ trình</button></li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li><button class="dropdown-item text-danger" @onclick="() => DeleteAsync(tour.Id)"><i class="bi bi-trash me-2"></i>Xóa</button></li>
+                                        <li><button class="dropdown-item" @onclick="() => StartEdit(tour)"><i class="bi bi-pencil me-2"></i> Chỉnh sửa</button></li>
+                                        <li><button class="dropdown-item text-danger" @onclick="() => DeleteAsync(tour.Id)"><i class="bi bi-trash me-2"></i> Xóa bỏ</button></li>
                                     </ul>
                                 </div>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                            </div>
+                            
+                            <h5 class="fw-bold text-dark mb-2">@tour.Name</h5>
+                            <p class="text-muted small mb-4" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 3em;">
+                                @tour.Description
+                            </p>
+
+                            <div class="map-placeholder mb-4" style="height: 100px;">
+                                <svg width="100%" height="60" viewBox="0 0 200 60">
+                                    <path d="M20,30 Q60,10 100,30 T180,30" fill="none" stroke="var(--primary-color)" stroke-width="2" stroke-dasharray="4 4" />
+                                    <circle cx="20" cy="30" r="4" fill="var(--primary-color)" />
+                                    <circle cx="100" cy="30" r="4" fill="var(--primary-color)" />
+                                    <circle cx="180" cy="30" r="4" fill="var(--primary-color)" />
+                                </svg>
+                            </div>
+
+                            <div class="d-flex gap-4">
+                                <div>
+                                    <span class="d-block small text-muted mb-1">Số địa điểm</span>
+                                    <span class="fw-bold text-dark">@tour.PoiIds.Count điểm</span>
+                                </div>
+                                <div>
+                                    <span class="d-block small text-muted mb-1">Thời gian</span>
+                                    <span class="fw-bold text-dark">~@(tour.PoiIds.Count * 20) phút</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="p-3 bg-light border-top mt-auto d-flex justify-content-between align-items-center">
+                            <div class="d-flex" style="margin-left: 8px;">
+                                @foreach(var poiId in tour.PoiIds.Take(3))
+                                {
+                                    <div class="bg-white rounded-circle border d-flex align-items-center justify-content-center shadow-sm" 
+                                         style="width: 28px; height: 28px; margin-left: -8px;" title="@FindPoiName(poiId)">
+                                        <i class="bi bi-geo-alt-fill text-orange" style="font-size: 0.7rem; color: var(--primary-color);"></i>
+                                    </div>
+                                }
+                            </div>
+                            <span class="saas-badge badge-active">Active</span>
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
     }
-</section>
+}
 
 @if (_editorOpen)
 {

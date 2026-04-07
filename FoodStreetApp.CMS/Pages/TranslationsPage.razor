@@ -2,98 +2,102 @@
 @inject IAdminDataService DataService
 @inject ToastService Toasts
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-5">
     <div>
-        <h1 class="h3 fw-bold mb-0 text-orange">Bản dịch đa ngôn ngữ</h1>
-        <p class="text-muted mb-0">Quản lý nội dung hiển thị cho khách du lịch quốc tế</p>
+        <h1 class="h3 fw-bold mb-1">Thư viện bản dịch</h1>
+        <p class="text-muted mb-0">Quản lý và cập nhật nội dung đa ngôn ngữ hỗ trợ bởi AI.</p>
     </div>
-    <div class="d-flex gap-3">
-        <div class="input-group" style="width: 200px;">
-            <span class="input-group-text bg-white border-end-0 rounded-start-3"><i class="bi bi-translate text-muted"></i></span>
-            <select class="form-select border-start-0 rounded-end-3 fw-bold" @bind="_selectedLanguage">
+    <div class="d-flex gap-2">
+        <div class="dropdown">
+            <button class="btn btn-saas btn-saas-secondary dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown">
+                <i class="bi bi-translate me-1"></i> @_selectedLanguage.ToUpper()
+            </button>
+            <ul class="dropdown-menu border-0 shadow-lg">
                 @foreach (var language in _languages)
                 {
-                    <option value="@language">@(language == "vi" ? "Tiếng Việt 🇻🇳" : language == "en" ? "English 🇺🇸" : language == "zh" ? "Chinese 🇨🇳" : language == "ko" ? "Korean 🇰🇷" : "Japanese 🇯🇵")</option>
+                    <li><button class="dropdown-item" @onclick='() => { _selectedLanguage = language; StateHasChanged(); }'>
+                        @(language == "vi" ? "Tiếng Việt 🇻🇳" : language == "en" ? "English 🇺🇸" : language == "zh" ? "Chinese 🇨🇳" : language == "ko" ? "Korean 🇰🇷" : "Japanese 🇯🇵")
+                    </button></li>
                 }
-            </select>
+            </ul>
         </div>
-        <button class="btn btn-modern btn-primary-f&b shadow-sm" @onclick="TranslateAllAsync" disabled="@_isTranslatingAll">
+        <button class="btn btn-saas btn-saas-primary shadow-sm" @onclick="TranslateAllAsync" disabled="@_isTranslatingAll">
             @if (_isTranslatingAll)
             {
-                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                <span>Đang xử lý...</span>
+                <span class="spinner-border spinner-border-sm me-2"></span>
             }
-            else
-            {
-                <span><i class="bi bi-stars me-1"></i> Dịch tất cả POI</span>
-            }
+            <i class="bi bi-stars"></i> Dịch AI toàn bộ
         </button>
     </div>
 </div>
 
-<section class="food-card p-4 border-0 shadow-sm">
-    <LoadingState IsLoading="_isLoading" Message="Đang tải bản dịch..." />
+<LoadingState IsLoading="_isLoading" Message="Đang xử lý ngôn ngữ..." />
 
-    @if (!_isLoading && _pois.Count == 0)
+@if (!_isLoading)
+{
+    @if (_pois.Count == 0)
     {
-        <div class="empty-state py-5">
-            <i class="bi bi-translate text-muted" style="font-size: 3rem;"></i>
-            <h5 class="fw-bold mt-3">Chưa có dữ liệu địa điểm</h5>
-            <p class="text-muted">Bạn cần tạo các địa điểm trước khi bắt đầu quản lý bản dịch.</p>
+        <div class="saas-card p-5 text-center">
+            <i class="bi bi-globe-americas text-light" style="font-size: 3rem;"></i>
+            <h5 class="fw-bold mt-3">Chưa có nội dung cần dịch</h5>
         </div>
     }
-    else if (!_isLoading)
+    else
     {
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="bg-light">
-                    <tr>
-                        <th class="border-0" style="width: 20%;">Địa điểm</th>
-                        <th class="border-0" style="width: 35%;">Văn bản gốc (VN)</th>
-                        <th class="border-0" style="width: 35%;">Bản dịch (@_selectedLanguage.ToUpper())</th>
-                        <th class="border-0 text-center" style="width: 10%;">Tác vụ</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var poi in _pois.OrderBy(x => x.Name))
-                    {
-                        <!-- Name Translation Row -->
-                        <tr class="border-bottom-0">
-                            <td>
-                                <div class="fw-bold">@poi.Name</div>
-                                <span class="badge badge-pill badge-gray mt-1">Tên quán</span>
-                            </td>
-                            <td class="text-dark">@poi.Name</td>
-                            <td>
-                                <input type="text" class="form-control form-control-sm rounded-3 border-orange border-opacity-25" 
-                                       placeholder="Chưa có bản dịch..."
-                                       value="@GetNameTranslation(poi, _selectedLanguage)" 
-                                       @onchange="@(e => SetNameTranslation(poi, _selectedLanguage, e.Value?.ToString()))" />
-                            </td>
-                            <td class="text-center" rowspan="2">
-                                <button class="btn btn-modern btn-primary-f&b btn-sm rounded-3 w-100 mb-2" @onclick="() => SavePoiAsync(poi)">Lưu</button>
-                                <button class="btn btn-modern btn-light btn-sm rounded-3 w-100" title="Chi tiết" @onclick="() => SavePoiAsync(poi)"><i class="bi bi-three-dots"></i></button>
-                            </td>
+        <div class="saas-card overflow-hidden shadow-sm">
+            <div class="table-responsive">
+                <table class="saas-table align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 35%;">Nội dung gốc (Tiếng Việt)</th>
+                            <th style="width: 50%;">Bản dịch (@_selectedLanguage.ToUpper())</th>
+                            <th class="text-end">Thao tác</th>
                         </tr>
-                        <!-- Description Translation Row -->
-                        <tr class="table-active-light">
-                            <td class="border-top-0 pt-0">
-                                <span class="badge badge-pill badge-orange mt-1">Mô tả</span>
-                            </td>
-                            <td class="text-muted small border-top-0 pt-0" style="max-width: 300px; white-space: normal;">@poi.Description</td>
-                            <td class="border-top-0 pt-0">
-                                <textarea class="form-control form-control-sm rounded-3 border-orange border-opacity-10" rows="1"
-                                       placeholder="Mô tả cho du khách..."
-                                       value="@GetDescriptionTranslation(poi, _selectedLanguage)" 
-                                       @onchange="@(e => SetDescriptionTranslation(poi, _selectedLanguage, e.Value?.ToString()))"></textarea>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach (var poi in _pois.OrderBy(x => x.Name))
+                        {
+                            <tr class="align-top">
+                                <td class="py-4">
+                                    <div class="fw-bold text-dark mb-1">@poi.Name</div>
+                                    <div class="text-muted small" style="line-height: 1.5;">@poi.Description</div>
+                                    <div class="mt-2 text-primary small italic">#Original</div>
+                                </td>
+                                <td class="py-4">
+                                    <div class="d-flex flex-column gap-3">
+                                        <input type="text" class="form-control border-subtle bg-light small" 
+                                               placeholder="Tên địa điểm..."
+                                               value="@GetNameTranslation(poi, _selectedLanguage)" 
+                                               @onchange="@(e => SetNameTranslation(poi, _selectedLanguage, e.Value?.ToString()))" />
+                                        
+                                        <textarea class="form-control border-subtle bg-light small" rows="2"
+                                               placeholder="Mô tả cho khách du lịch..."
+                                               value="@GetDescriptionTranslation(poi, _selectedLanguage)" 
+                                               @onchange="@(e => SetDescriptionTranslation(poi, _selectedLanguage, e.Value?.ToString()))"></textarea>
+                                    </div>
+                                    <div class="mt-2">
+                                        @if (string.IsNullOrEmpty(GetNameTranslation(poi, _selectedLanguage)))
+                                        {
+                                            <span class="saas-badge badge-highlight">Chưa hoàn tất</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="saas-badge badge-active">Đã dịch</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td class="text-end py-4">
+                                    <button class="btn btn-saas btn-saas-secondary btn-sm w-100 mb-2" @onclick="() => SavePoiAsync(poi)">Lưu</button>
+                                    <button class="btn btn-link link-muted p-0" title="Dịch AI riêng POI này"><i class="bi bi-stars"></i></button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
     }
-</section>
+}
 
 @code {
     private readonly List<POI> _pois = [];

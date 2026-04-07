@@ -2,111 +2,118 @@
 @inject IAdminDataService DataService
 @inject ToastService Toasts
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-5">
     <div>
-        <h1 class="h3 fw-bold mb-0 text-orange">Quản lý địa điểm</h1>
-        <p class="text-muted mb-0">Tạo mới, chỉnh sửa và cấu hình các điểm tham quan ẩm thực</p>
+        <h1 class="h3 fw-bold mb-1">Quản lý địa điểm</h1>
+        <p class="text-muted mb-0">Quản lý nội dung, tọa độ và bản dịch đa ngôn ngữ của các điểm tham quan.</p>
     </div>
-    <button class="btn btn-modern btn-primary-f&b shadow-sm" @onclick="StartCreate">
+    <button class="btn btn-saas btn-saas-primary shadow-sm" @onclick="StartCreate">
         <i class="bi bi-plus-lg"></i> Thêm địa điểm mới
     </button>
 </div>
 
-<div class="module-panel border-0 shadow-none bg-transparent p-0">
-    @if (!_isLoading && _pois.Count == 0)
-    {
-        <div class="food-card p-5 text-center bg-white border-0 shadow-sm rounded-4">
-            <div class="empty-state">
-                <i class="bi bi-geo-alt text-muted" style="font-size: 4rem;"></i>
-                <h4 class="fw-bold mt-3">Chưa có địa điểm nào</h4>
-                <p class="text-muted">Hãy bắt đầu bằng cách tạo điểm tham quan ẩm thực đầu tiên của bạn.</p>
-                <button class="btn btn-modern btn-primary-f&b mt-3" @onclick="StartCreate">
-                    <i class="bi bi-plus-lg"></i> Tạo ngay
-                </button>
-            </div>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-4 mb-5">
+    <div class="input-group" style="max-width:480px;">
+        <span class="input-group-text bg-white border-end-0 rounded-start-2 shadow-sm"><i class="bi bi-search text-muted"></i></span>
+        <input class="form-control border-start-0 rounded-end-2 shadow-sm" 
+               placeholder="Tìm kiếm theo tên hoặc mô tả..." 
+               @bind="_searchTerm" 
+               @bind:event="oninput" 
+               @bind:after="() => { _currentPage = 1; }" />
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        <span class="text-muted small">Hiển thị @GetPagedPois().Count() trên @GetFilteredPois().Count() mục</span>
+        <div class="btn-group shadow-sm rounded-2 overflow-hidden">
+            <button class="btn btn-saas btn-saas-secondary py-1 px-3 active border-0"><i class="bi bi-grid-fill"></i></button>
+            <button class="btn btn-saas btn-saas-secondary py-1 px-3 border-0"><i class="bi bi-list"></i></button>
         </div>
-    }
-    else if (!_isLoading)
-    {
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
-            <div class="input-group" style="max-width:400px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-                <span class="input-group-text bg-white border-end-0 rounded-start-4"><i class="bi bi-search text-muted"></i></span>
-                <input class="form-control border-start-0 rounded-end-4" 
-                       placeholder="Tìm kiếm địa điểm (tên, mô tả...)" 
-                       @bind="_searchTerm" 
-                       @bind:event="oninput" 
-                       @bind:after="() => { _currentPage = 1; }" />
-            </div>
-            <div class="d-flex align-items-center gap-3">
-                <span class="badge badge-pill badge-gray border">Tổng số: @GetFilteredPois().Count() mục</span>
-            </div>
-        </div>
+    </div>
+</div>
 
-        <div class="poi-grid">
-            @foreach (var poi in GetPagedPois())
-            {
-                <div class="food-card">
-                    <!-- Placeholder image based on food category/tags if we had any, otherwise random signature -->
-                    <img class="food-card-img" 
-                         src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=80&sig=@poi.Id" 
-                         alt="@poi.Name" />
+<LoadingState IsLoading="_isLoading" Message="Đang tải danh sách..." />
+
+@if (!_isLoading && _pois.Count == 0)
+{
+    <div class="saas-card p-5 text-center border-0 shadow-sm">
+        <i class="bi bi-geo-alt text-muted" style="font-size: 3rem;"></i>
+        <h5 class="fw-bold mt-3">Chưa có địa điểm nào</h5>
+        <p class="text-muted small">Hãy bắt đầu hành trình của bạn bằng cách tạo địa điểm đầu tiên.</p>
+        <button class="btn btn-saas btn-saas-primary mt-3" @onclick="StartCreate">Bắt đầu ngay</button>
+    </div>
+}
+else if (!_isLoading)
+{
+    <div class="row g-4">
+        @foreach (var poi in GetPagedPois())
+        {
+            <div class="col-md-6 col-xl-4">
+                <div class="saas-card gallery-card h-100 d-flex flex-column">
+                    <div class="position-relative">
+                        <img class="gallery-card-img" 
+                             src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=80&sig=@poi.Id" 
+                             alt="@poi.Name" />
+                        <div class="position-absolute top-0 end-0 p-2">
+                            <span class="saas-badge @(poi.IsActive ? "badge-active" : "badge-inactive") shadow-sm">
+                                @(poi.IsActive ? "● Active" : "○ Hidden")
+                            </span>
+                        </div>
+                    </div>
                     
-                    <div class="food-card-body">
-                        <div class="food-card-title">
-                            <span class="text-truncate" title="@poi.Name">@poi.Name</span>
+                    <div class="p-4 flex-grow-1 d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="fw-bold text-dark mb-0 text-truncate" style="max-width: 80%;">@poi.Name</h6>
                             <div class="dropdown">
-                                <button class="btn btn-link link-dark p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="bi bi-three-dots-vertical fs-5"></i>
+                                <button class="btn btn-link link-muted p-0" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots"></i>
                                 </button>
-                                <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg">
-                                    <li><button class="dropdown-item fw-semibold" @onclick="() => StartEdit(poi)"><i class="bi bi-pencil-square me-2 text-primary"></i>Chỉnh sửa</button></li>
-                                    <li><button class="dropdown-item" @onclick="() => ShowQrCode(poi)"><i class="bi bi-qr-code me-2"></i>Mã QR</button></li>
-                                    <li><button class="dropdown-item" @onclick="() => TranslatePoiSingleAsync(poi)" disabled="@_isTranslating"><i class="bi bi-translate me-2 text-info"></i>Dịch tự động</button></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><button class="dropdown-item text-danger fw-semibold" @onclick="() => AskDelete(poi)"><i class="bi bi-trash3 me-2"></i>Xóa địa điểm</button></li>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0">
+                                    <li><button class="dropdown-item" @onclick="() => StartEdit(poi)"><i class="bi bi-pencil me-2"></i> Chỉnh sửa</button></li>
+                                    <li><button class="dropdown-item" @onclick="() => ShowQrCode(poi)"><i class="bi bi-qr-code me-2"></i> Xuất mã QR</button></li>
+                                    <li><button class="dropdown-item text-danger" @onclick="() => AskDelete(poi)"><i class="bi bi-trash me-2"></i> Xóa bỏ</button></li>
                                 </ul>
                             </div>
                         </div>
                         
-                        <p class="food-card-desc">@poi.Description</p>
-                        
-                        <div class="small text-muted mb-3">
-                            <i class="bi bi-geo-alt-fill text-danger"></i> 
-                            <code>@poi.Latitude.ToString("0.0000"), @poi.Longitude.ToString("0.0000")</code>
+                        <p class="text-muted small mb-4 flex-grow-1" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 3.2em;">
+                            @poi.Description
+                        </p>
+
+                        <div class="map-placeholder mb-4">
+                            <svg width="60" height="60" viewBox="0 0 100 100" class="opacity-50">
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" stroke-dasharray="2 4" />
+                                <circle cx="50" cy="50" r="5" fill="var(--primary-color)" />
+                                <text x="50" y="75" text-anchor="middle" font-size="8" fill="currentColor">@poi.Latitude.ToString("0.00"), @poi.Longitude.ToString("0.00")</text>
+                            </svg>
                         </div>
 
-                        <div class="food-card-footer">
+                        <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
                             <div class="d-flex gap-2">
-                                <span class="badge badge-pill @(poi.IsActive ? "badge-green" : "badge-gray")">
-                                    @(poi.IsActive ? "Hoạt động" : "Tạm dừng")
+                                <span class="saas-badge badge-highlight">
+                                    <i class="bi bi-translate me-1"></i>@GetTranslationCount(poi)
                                 </span>
-                                @if (GetTranslationCount(poi) > 0)
-                                {
-                                    <span class="badge badge-pill badge-orange">
-                                        <i class="bi bi-globe me-1"></i>@GetTranslationCount(poi) Ngôn ngữ
-                                    </span>
-                                }
+                                <span class="small text-muted py-1">Ngôn ngữ</span>
                             </div>
+                            <span class="small text-muted">ID: #@poi.Id</span>
                         </div>
                     </div>
                 </div>
-            }
-        </div>
-
-        @if (GetTotalPoiPages() > 1)
-        {
-            <div class="d-flex justify-content-center align-items-center mt-5 gap-3">
-                <button class="btn btn-modern border bg-white" disabled="@(_currentPage <= 1)" @onclick="() => _currentPage--">
-                    <i class="bi bi-chevron-left"></i> Trang trước
-                </button>
-                <span class="fw-bold fs-5 text-muted">@_currentPage / @GetTotalPoiPages()</span>
-                <button class="btn btn-modern border bg-white" disabled="@(_currentPage >= GetTotalPoiPages())" @onclick="() => _currentPage++">
-                    Trang sau <i class="bi bi-chevron-right"></i>
-                </button>
             </div>
         }
+    </div>
+
+    @if (GetTotalPoiPages() > 1)
+    {
+        <div class="d-flex justify-content-center align-items-center mt-5 gap-3">
+            <button class="btn btn-saas btn-saas-secondary" disabled="@(_currentPage <= 1)" @onclick="() => _currentPage--">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <span class="small fw-bold text-muted">Trang @_currentPage / @GetTotalPoiPages()</span>
+            <button class="btn btn-saas btn-saas-secondary" disabled="@(_currentPage >= GetTotalPoiPages())" @onclick="() => _currentPage++">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
     }
-</div>
+}
 
 @if (_qrModalVisible)
 {
