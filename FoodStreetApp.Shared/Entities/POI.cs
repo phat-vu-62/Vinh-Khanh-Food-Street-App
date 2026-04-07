@@ -13,6 +13,7 @@ public class POI
     public int RadiusMeters { get; set; } = 15;
     public bool IsActive { get; set; } = true;
     public POIType Type { get; set; } = POIType.Food;
+    public string? ImageUrl { get; set; }
 
     // Translated Fields
     public string? NameVi { get; set; }

@@ -71,7 +71,8 @@ using (var scope = app.Services.CreateScope())
     {
         "NameVi", "NameEn", "NameZh", "NameKo", "NameJa",
         "DescriptionVi", "DescriptionEn", "DescriptionZh", "DescriptionKo", "DescriptionJa",
-        "TextContent", "TextContentVi", "TextContentEn", "TextContentZh", "TextContentKo", "TextContentJa"
+        "TextContent", "TextContentVi", "TextContentEn", "TextContentZh", "TextContentKo", "TextContentJa",
+        "ImageUrl"
     };
     foreach (var col in poiColumns)
     {

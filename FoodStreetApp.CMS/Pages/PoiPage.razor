@@ -250,7 +250,7 @@ else if (!_isLoading)
                                     <InputTextArea class="form-control form-control-sm" rows="3" @bind-Value="_form.TextContent" placeholder="Nhập nội dung để AI tự động chuyển thành giọng nói..." />
                                     <div class="mt-2 d-flex justify-content-between align-items-center">
                                         <div class="x-small text-muted"><i class="bi bi-stars me-1"></i> Giọng đọc: Nam/Nữ miền Nam</div>
-                                        <button type="button" class="btn btn-link p-0 text-decoration-none x-small fw-bold">Nghe thử với AI</button>
+                                        <button type="button" class="btn btn-link p-0 text-decoration-none x-small fw-bold" @onclick="PreviewTtsAsync">Nghe thử với AI</button>
                                     </div>
                                 </div>
                             }
@@ -332,6 +332,10 @@ else if (!_isLoading)
                                         <label class="form-label-saas">Mô tả (ZH)</label>
                                         <InputText class="form-control form-control-saas" @bind-Value="_form.DescriptionZh" />
                                     </div>
+                                    <div>
+                                        <label class="form-label-saas">Nội dung thuyết minh (ZH)</label>
+                                        <InputTextArea class="form-control form-control-saas" rows="2" @bind-Value="_form.TextContentZh" />
+                                    </div>
                                 }
                                 else if (_activeTab == "ko")
                                 {
@@ -343,6 +347,10 @@ else if (!_isLoading)
                                         <label class="form-label-saas">Mô tả (KO)</label>
                                         <InputText class="form-control form-control-saas" @bind-Value="_form.DescriptionKo" />
                                     </div>
+                                    <div>
+                                        <label class="form-label-saas">Nội dung thuyết minh (KO)</label>
+                                        <InputTextArea class="form-control form-control-saas" rows="2" @bind-Value="_form.TextContentKo" />
+                                    </div>
                                 }
                                 else
                                 {
@@ -353,6 +361,10 @@ else if (!_isLoading)
                                     <div class="mb-3">
                                         <label class="form-label-saas">Mô tả (JA)</label>
                                         <InputText class="form-control form-control-saas" @bind-Value="_form.DescriptionJa" />
+                                    </div>
+                                    <div>
+                                        <label class="form-label-saas">Nội dung thuyết minh (JA)</label>
+                                        <InputTextArea class="form-control form-control-saas" rows="2" @bind-Value="_form.TextContentJa" />
                                     </div>
                                 }
                             </div>
@@ -512,13 +524,39 @@ else if (!_isLoading)
         var file = e.File;
         if (file != null)
         {
-            var format = "image/png";
-            var resizedImage = await file.RequestImageFileAsync(format, 400, 400);
-            var buffer = new byte[resizedImage.Size];
-            await resizedImage.OpenReadStream().ReadAsync(buffer);
-            _form.ImageBase64 = $"data:{format};base64,{Convert.ToBase64String(buffer)}";
-            Toasts.Success("Đã chọn ảnh thành công!");
+            try 
+            {
+                var format = "image/png";
+                // Resize to 300x300 to reduce memory and SignalR traffic
+                var resizedImage = await file.RequestImageFileAsync(format, 300, 300);
+                
+                using var ms = new MemoryStream();
+                await resizedImage.OpenReadStream(maxAllowedSize: 1024 * 1024 * 5).CopyToAsync(ms);
+                var buffer = ms.ToArray();
+                
+                _form.ImageBase64 = $"data:{format};base64,{Convert.ToBase64String(buffer)}";
+                Toasts.Success("Đã tải ảnh lên thành công! ✨");
+            }
+            catch (Exception ex)
+            {
+                Toasts.Error("Lỗi khi xử lý ảnh. Vui lòng thử lại.");
+                Console.WriteLine(ex.Message);
+            }
         }
+    }
+
+    private async Task PreviewTtsAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_form.TextContent))
+        {
+            Toasts.Info("Vui lòng nhập nội dung để nghe thử.");
+            return;
+        }
+
+        Toasts.Info("Đang khởi tạo giọng đọc AI... 🎙️");
+        await Task.Delay(500);
+        // Using browser's built-in speech synthesis for a quick mock preview
+        await JS.InvokeVoidAsync("eval", $"var msg = new SpeechSynthesisUtterance('{_form.TextContent.Replace("'", "\\'")}'); msg.lang = 'vi-VN'; window.speechSynthesis.speak(msg);");
     }
 
     [JSInvokable]
@@ -574,7 +612,8 @@ else if (!_isLoading)
                 TextContentEn = _form.TextContentEn,
                 TextContentZh = _form.TextContentZh,
                 TextContentKo = _form.TextContentKo,
-                TextContentJa = _form.TextContentJa
+                TextContentJa = _form.TextContentJa,
+                ImageUrl = _form.ImageBase64 ?? _form.ImageUrl
             };
 
             if (_isEditing)
