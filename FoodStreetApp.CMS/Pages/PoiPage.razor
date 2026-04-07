@@ -145,12 +145,12 @@ else if (!_isLoading)
 {
     <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px);">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" style="max-width: 900px;">
-            <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-                <EditForm Model="_form" OnValidSubmit="SaveAsync">
+            <EditForm Model="_form" OnValidSubmit="SaveAsync" class="h-100 w-100">
+                <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden; height: auto; max-height: 90vh;">
                     <DataAnnotationsValidator />
                     
                     <!-- Header -->
-                    <div class="px-5 py-4 border-bottom d-flex justify-content-between align-items-center bg-white sticky-top mb-1" style="border-radius: 20px 20px 0 0; z-index: 10;">
+                    <div class="modal-header px-5 py-4 border-bottom bg-white">
                         <div>
                             <h4 class="fw-bold text-dark m-0">@(_isEditing ? "🖊️ Chỉnh sửa địa điểm" : "✨ Thêm địa điểm mới")</h4>
                             <p class="text-muted small mb-0">Cập nhật thông tin chi tiết và nội dung đa ngôn ngữ.</p>
@@ -158,10 +158,10 @@ else if (!_isLoading)
                         <button type="button" class="btn-close" @onclick="CloseEditor"></button>
                     </div>
 
-                    <div class="modal-body px-5 py-0">
+                    <div class="modal-body px-5 py-4">
                         
                         <!-- Section 1: Basic Information -->
-                        <div class="modal-section">
+                        <div class="modal-section pt-0">
                             <div class="modal-section-title"><i class="bi bi-info-circle"></i> Thông tin cơ bản</div>
                             <div class="row g-4">
                                 <div class="col-md-5">
@@ -279,7 +279,7 @@ else if (!_isLoading)
                         </div>
 
                         <!-- Section 4: Translations -->
-                        <div class="modal-section border-0 pb-5">
+                        <div class="modal-section border-0">
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <div class="modal-section-title mb-0"><i class="bi bi-translate"></i> Bản dịch đa ngôn ngữ</div>
                                 <button type="button" class="btn btn-saas btn-saas-secondary btn-sm" @onclick="TranslateInEditorAsync" disabled="@_isTranslating">
@@ -357,8 +357,8 @@ else if (!_isLoading)
                             <i class="bi bi-check-lg"></i> Lưu địa điểm
                         </button>
                     </div>
-                </EditForm>
-            </div>
+                </div>
+            </EditForm>
         </div>
     </div>
 }
