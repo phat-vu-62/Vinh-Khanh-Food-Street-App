@@ -556,12 +556,33 @@ else if (!_isLoading)
 
         Toasts.Info("Đang khởi tạo giọng đọc AI... 🎙️");
         
-        // Cloud-based Native Vietnamese TTS (Guaranteed quality)
+        // Robust Native TTS (Polling for voices)
         var script = @"
             (function(text) {
-                var url = 'https://translate.google.com/translate_tts?ie=UTF-8&q=' + encodeURIComponent(text) + '&tl=vi&client=tw-ob';
-                var audio = new Audio(url);
-                audio.play();
+                var synth = window.speechSynthesis;
+                
+                function speak() {
+                    var voices = synth.getVoices();
+                    if (voices.length === 0) {
+                        setTimeout(speak, 100); // Poll for voices
+                        return;
+                    }
+                    
+                    var viVoice = voices.find(v => (v.lang.includes('vi') || v.name.toLowerCase().includes('vietnam')) && v.name.toLowerCase().includes('natural')) 
+                               || voices.find(v => v.lang.includes('vi') || v.name.toLowerCase().includes('vietnam')) 
+                               || voices[0];
+                    
+                    var msg = new SpeechSynthesisUtterance(text);
+                    if (viVoice) {
+                        msg.voice = viVoice;
+                    }
+                    msg.lang = 'vi-VN';
+                    msg.rate = 0.95;
+                    synth.cancel();
+                    synth.speak(msg);
+                }
+                
+                speak();
             })";
             
         await JS.InvokeVoidAsync("eval", $"{script}('{_form.TextContent.Replace("'", "\\'").Replace("\n", " ")}')");

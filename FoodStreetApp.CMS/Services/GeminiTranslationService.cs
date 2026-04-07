@@ -39,7 +39,7 @@ public class GeminiTranslationService : IGeminiTranslationService
             var apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY")
                          ?? _configuration["Gemini:ApiKey"];
 
-            var model = _configuration["Gemini:Model"] ?? "gemini-1.5-flash";
+            var model = _configuration["Gemini:Model"] ?? "gemini-2.0-flash";
 
             if (string.IsNullOrWhiteSpace(apiKey))
             {
@@ -99,7 +99,7 @@ public class GeminiTranslationService : IGeminiTranslationService
                 }
             };
 
-            var url = $"https://generativelanguage.googleapis.com/v1/models/{model}:generateContent?key={apiKey}";
+            var url = $"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={apiKey}";
             HttpResponseMessage? response = null;
 
             // Retry up to 3 times with backoff for rate-limiting (429)
