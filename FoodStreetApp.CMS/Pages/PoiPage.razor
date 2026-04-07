@@ -256,7 +256,7 @@ else if (!_isLoading)
                                     <InputTextArea id="narration-text" class="form-control form-control-sm" rows="3" @bind-Value="_form.TextContent" placeholder="Nhập nội dung để AI tự động chuyển thành giọng nói..." />
                                     <div class="mt-2 d-flex justify-content-between align-items-center">
                                         <div class="x-small text-muted"><i class="bi bi-stars me-1"></i> Giọng đọc: Nam/Nữ miền Nam</div>
-                                        <button type="button" class="btn btn-link p-0 text-decoration-none x-small fw-bold" onclick="playGoogleTts()">Nghe thử với AI</button>
+                                        <button type="button" class="btn btn-link p-0 text-decoration-none x-small fw-bold" onclick="triggerPremiumTts()">Nghe thử với AI</button>
                                     </div>
                                 </div>
                             }
@@ -439,6 +439,13 @@ else if (!_isLoading)
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (firstRender)
+        {
+            var apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY") 
+                         ?? Configuration["Gemini:ApiKey"];
+            await JS.InvokeVoidAsync("eval", $"window.CMS_CONFIG = {{ apiKey: '{apiKey}' }};");
+        }
+
         if (_isEditorOpen && !_mapInitialized)
         {
             _mapInitialized = true;
@@ -780,14 +787,24 @@ else if (!_isLoading)
 }
 
 <script>
-    async function playPremiumTts(text, voiceName, apiKey) {
+    async function triggerPremiumTts() {
         var textarea = document.getElementById('narration-text');
         var audioEl = document.getElementById('tts-audio-element');
+        var config = window.CMS_CONFIG || {};
         
+        if (!textarea || !textarea.value || textarea.value.trim() === '') {
+            alert('Vui lòng nhập nội dung để nghe thử.');
+            return;
+        }
+
+        var text = textarea.value;
+        var voiceName = 'vi-VN-Standard-A';
+        var apiKey = config.apiKey;
+
+        console.log('Instant Client-Side TTS Triggered.');
+
         try {
-            console.log('Requesting Premium TTS:', voiceName);
-            
-            // 1. ATTEMPT OFFICIAL GOOGLE CLOUD TTS (SYTHESIZE)
+            // 1. ATTEMPT OFFICIAL GOOGLE CLOUD TTS (SYTHESIZE) - DIRECT FETCH (NO DELAY)
             const response = await fetch(`https://texttospeech.googleapis.com/v1/text:synthesize?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -804,31 +821,19 @@ else if (!_isLoading)
                 audioEl.play();
                 return;
             }
-            
-            console.warn('Official TTS API failed (maybe not enabled). Falling back to Translate engine...');
         } catch (e) {
-            console.error('Premium TTS Error:', e);
+            console.error('Premium API Error:', e);
         }
 
-        // 2. FALLBACK: PROVEN TRANSLATE ENGINE
+        // 2. FALLBACK 1: PROVEN TRANSLATE ENGINE (FASTER)
         var url = 'https://translate.google.com/translate_tts?ie=UTF-8&q=' + encodeURIComponent(text) + '&tl=vi&client=tw-ob';
         audioEl.src = url;
         audioEl.play().catch(function(e) {
-            // 3. LAST RESORT: NATIVE BROWSER SPEECH
-            console.warn('Cloud Fallback Blocked. Using System Native Voice.');
+            // 3. FALLBACK 2: NATIVE BROWSER SPEECH (GUARANTEED)
             var synth = window.speechSynthesis;
             var msg = new SpeechSynthesisUtterance(text);
             msg.lang = 'vi-VN';
             synth.speak(msg);
         });
-    }
-
-    // Keep the old function name for the button until we update it, or just use playPremiumTts below
-    function playGoogleTts() {
-        // Redir to the new async handler with default voice
-        var text = document.getElementById('narration-text').value;
-        // The API Key will be handled by the C# call which is better, but if triggered by click:
-        // We'll update the button to call C# method instead for key security if possible, 
-        // but for now, we'll let C# call JS.
     }
 </script>
