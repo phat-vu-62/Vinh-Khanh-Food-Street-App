@@ -2,107 +2,107 @@
 @inject IAdminDataService DataService
 @inject ToastService Toasts
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="h4 mb-0">POI Management</h1>
-        <small class="text-muted">Tạo mới, chỉnh sửa và quản lý các POI</small>
+        <h1 class="h3 fw-bold mb-0 text-orange">Quản lý địa điểm</h1>
+        <p class="text-muted mb-0">Tạo mới, chỉnh sửa và cấu hình các điểm tham quan ẩm thực</p>
     </div>
-    <button class="btn btn-primary" @onclick="StartCreate">+ Thêm mới</button>
+    <button class="btn btn-modern btn-primary-f&b shadow-sm" @onclick="StartCreate">
+        <i class="bi bi-plus-lg"></i> Thêm địa điểm mới
+    </button>
 </div>
 
-<div class="module-panel">
-    
-
+<div class="module-panel border-0 shadow-none bg-transparent p-0">
     @if (!_isLoading && _pois.Count == 0)
     {
-        <div class="empty-state">
-            <i class="bi bi-geo-alt empty-icon"></i>
-            <div class="empty-title">Không tìm thấy điểm tham quan nào</div>
-            <div class="empty-description">Chưa có điểm tham quan nào được cấu hình. Hãy tạo điểm đầu tiên để bắt đầu xây dựng bản đồ.</div>
-            <button class="btn btn-primary mt-2" @onclick="StartCreate"><i class="bi bi-plus-lg"></i> Tạo điểm đầu tiên</button>
+        <div class="food-card p-5 text-center bg-white border-0 shadow-sm rounded-4">
+            <div class="empty-state">
+                <i class="bi bi-geo-alt text-muted" style="font-size: 4rem;"></i>
+                <h4 class="fw-bold mt-3">Chưa có địa điểm nào</h4>
+                <p class="text-muted">Hãy bắt đầu bằng cách tạo điểm tham quan ẩm thực đầu tiên của bạn.</p>
+                <button class="btn btn-modern btn-primary-f&b mt-3" @onclick="StartCreate">
+                    <i class="bi bi-plus-lg"></i> Tạo ngay
+                </button>
+            </div>
         </div>
     }
     else if (!_isLoading)
     {
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <div class="input-group" style="max-width:320px;">
-                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                <input class="form-control" placeholder="Tìm kiếm POI..." @bind="_searchTerm" @bind:event="oninput" @bind:after="() => { _currentPage = 1; }" />
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+            <div class="input-group" style="max-width:400px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+                <span class="input-group-text bg-white border-end-0 rounded-start-4"><i class="bi bi-search text-muted"></i></span>
+                <input class="form-control border-start-0 rounded-end-4" 
+                       placeholder="Tìm kiếm địa điểm (tên, mô tả...)" 
+                       @bind="_searchTerm" 
+                       @bind:event="oninput" 
+                       @bind:after="() => { _currentPage = 1; }" />
             </div>
-            <small class="text-muted">@GetFilteredPois().Count() mục</small>
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge badge-pill badge-gray border">Tổng số: @GetFilteredPois().Count() mục</span>
+            </div>
         </div>
 
-        <div class="table-responsive">
-            <table class="table admin-table">
-                <thead>
-                    <tr>
-                        <th>POI Name</th>
-                        <th>Description</th>
-                        <th>Coordinates</th>
-                        <th>Translations</th>
-                        <th>Status</th>
-                        <th class="text-end">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var poi in GetPagedPois())
-                    {
-                        <tr>
-                            <td class="fw-semibold">@poi.Name</td>
-                            <td class="text-muted" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@poi.Description</td>
-                            <td><code>@poi.Latitude.ToString("0.00000"), @poi.Longitude.ToString("0.00000")</code></td>
-                            <td>
+        <div class="poi-grid">
+            @foreach (var poi in GetPagedPois())
+            {
+                <div class="food-card">
+                    <!-- Placeholder image based on food category/tags if we had any, otherwise random signature -->
+                    <img class="food-card-img" 
+                         src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=80&sig=@poi.Id" 
+                         alt="@poi.Name" />
+                    
+                    <div class="food-card-body">
+                        <div class="food-card-title">
+                            <span class="text-truncate" title="@poi.Name">@poi.Name</span>
+                            <div class="dropdown">
+                                <button class="btn btn-link link-dark p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-three-dots-vertical fs-5"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg">
+                                    <li><button class="dropdown-item fw-semibold" @onclick="() => StartEdit(poi)"><i class="bi bi-pencil-square me-2 text-primary"></i>Chỉnh sửa</button></li>
+                                    <li><button class="dropdown-item" @onclick="() => ShowQrCode(poi)"><i class="bi bi-qr-code me-2"></i>Mã QR</button></li>
+                                    <li><button class="dropdown-item" @onclick="() => TranslatePoiSingleAsync(poi)" disabled="@_isTranslating"><i class="bi bi-translate me-2 text-info"></i>Dịch tự động</button></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><button class="dropdown-item text-danger fw-semibold" @onclick="() => AskDelete(poi)"><i class="bi bi-trash3 me-2"></i>Xóa địa điểm</button></li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <p class="food-card-desc">@poi.Description</p>
+                        
+                        <div class="small text-muted mb-3">
+                            <i class="bi bi-geo-alt-fill text-danger"></i> 
+                            <code>@poi.Latitude.ToString("0.0000"), @poi.Longitude.ToString("0.0000")</code>
+                        </div>
+
+                        <div class="food-card-footer">
+                            <div class="d-flex gap-2">
+                                <span class="badge badge-pill @(poi.IsActive ? "badge-green" : "badge-gray")">
+                                    @(poi.IsActive ? "Hoạt động" : "Tạm dừng")
+                                </span>
                                 @if (GetTranslationCount(poi) > 0)
                                 {
-                                    <span class="badge text-bg-primary">@GetTranslationCount(poi) ngôn ngữ</span>
+                                    <span class="badge badge-pill badge-orange">
+                                        <i class="bi bi-globe me-1"></i>@GetTranslationCount(poi) Ngôn ngữ
+                                    </span>
                                 }
-                                else
-                                {
-                                    <span class="text-muted small">—</span>
-                                }
-                            </td>
-                            <td>
-                                @if (poi.IsActive)
-                                {
-                                    <span class="badge bg-active" @onclick="(args) => ToggleActiveAsync(poi, new ChangeEventArgs { Value = false })" style="cursor:pointer;">Hoạt động</span>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-inactive" @onclick="(args) => ToggleActiveAsync(poi, new ChangeEventArgs { Value = true })" style="cursor:pointer;">Tạm dừng</span>
-                                }
-                            </td>
-                            <td class="text-end">
-                                <button class="btn btn-sm btn-outline-info me-1" @onclick="() => ShowQrCode(poi)" title="QR Code">
-                                    <i class="bi bi-qr-code"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => TranslatePoiSingleAsync(poi)" disabled="@_isTranslating" title="Translate">
-                                    <i class="bi bi-translate"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => StartEdit(poi)" title="Edit">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => AskDelete(poi)" title="Delete">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
 
         @if (GetTotalPoiPages() > 1)
         {
-            <div class="d-flex justify-content-between align-items-center mt-3">
-                <small class="text-muted">Trang @_currentPage / @GetTotalPoiPages()</small>
-                <div class="d-flex gap-1">
-                    <button class="btn btn-sm btn-outline-secondary" disabled="@(_currentPage <= 1)" @onclick="() => _currentPage--">
-                        <i class="bi bi-chevron-left"></i> Trước
-                    </button>
-                    <button class="btn btn-sm btn-outline-secondary" disabled="@(_currentPage >= GetTotalPoiPages())" @onclick="() => _currentPage++">
-                        Sau <i class="bi bi-chevron-right"></i>
-                    </button>
-                </div>
+            <div class="d-flex justify-content-center align-items-center mt-5 gap-3">
+                <button class="btn btn-modern border bg-white" disabled="@(_currentPage <= 1)" @onclick="() => _currentPage--">
+                    <i class="bi bi-chevron-left"></i> Trang trước
+                </button>
+                <span class="fw-bold fs-5 text-muted">@_currentPage / @GetTotalPoiPages()</span>
+                <button class="btn btn-modern border bg-white" disabled="@(_currentPage >= GetTotalPoiPages())" @onclick="() => _currentPage++">
+                    Trang sau <i class="bi bi-chevron-right"></i>
+                </button>
             </div>
         }
     }
@@ -110,21 +110,24 @@
 
 @if (_qrModalVisible)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,.5)">
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px);">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content text-center p-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="modal-title m-0"><i class="bi bi-qr-code"></i> QR Code</h5>
+            <div class="modal-content p-4 text-center">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="modal-title fw-bold m-0"><i class="bi bi-qr-code text-orange"></i> Mã QR Địa điểm</h4>
                     <button type="button" class="btn-close" @onclick="() => _qrModalVisible = false"></button>
                 </div>
-                <h5>@_selectedPoiForQr?.Name</h5>
-                <p class="text-muted small">Quét mã để mở ứng dụng và phát âm thanh ngay lập tức (Bỏ qua GPS)</p>
-                <div class="bg-light d-inline-block p-4 rounded mb-3 border">
-                     <!-- Dummy QR Image using a public API. In prod, use local generator like QRCoder -->
-                     <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=@($"foodstreet://poi?id={_selectedPoiForQr?.Id}&play=true&skipGps=true")" alt="QR Code" width="200" height="200" />
+                <h5 class="fw-bold text-dark">@_selectedPoiForQr?.Name</h5>
+                <p class="text-muted small px-3">Quét mã này để khách tham quan nghe âm thanh giới thiệu ngay lập tức tại quán.</p>
+                
+                <div class="bg-light d-inline-block p-4 rounded-5 mb-4 border border-light shadow-inner" style="background: white !important;">
+                     <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=@(Uri.EscapeDataString($"foodstreet://poi?id={_selectedPoiForQr?.Id}&play=true&skipGps=true"))" 
+                          alt="QR Code" width="200" height="200" class="img-fluid" />
                 </div>
-                <div>
-                     <a class="btn btn-outline-primary btn-sm" href="/qr/@_selectedPoiForQr?.Id" target="_blank">Kiểm tra Link Redirect</a>
+                
+                <div class="d-grid">
+                     <a class="btn btn-modern btn-primary-f&b" href="/qr/@_selectedPoiForQr?.Id" target="_blank">Xem Link trực tiếp</a>
+                     <button class="btn btn-link text-muted mt-2 text-decoration-none" @onclick="() => _qrModalVisible = false">Đóng</button>
                 </div>
             </div>
         </div>
@@ -133,149 +136,113 @@
 
 @if (_isEditorOpen)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,.5)">
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px);">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content form-card">
+            <div class="modal-content overflow-hidden">
                 <EditForm Model="_form" OnValidSubmit="SaveAsync">
-                    <div class="modal-header">
-                        <h5 class="modal-title">@(_isEditing ? "Chỉnh sửa POI" : "Thêm mới POI")</h5>
+                    <div class="modal-header bg-light border-0 py-3 px-4">
+                        <h4 class="modal-title fw-bold text-dark">@(_isEditing ? "🖊️ Chỉnh sửa địa điểm" : "✨ Thêm địa điểm mới")</h4>
                         <button type="button" class="btn-close" @onclick="CloseEditor"></button>
                     </div>
-                    <div class="modal-body" style="max-height: 75vh; overflow-y: auto;">
+                    <div class="modal-body p-4">
                         <DataAnnotationsValidator />
-                        <ValidationSummary />
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Tên điểm</label>
-                                <InputText class="form-control" @bind-Value="_form.Name" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Đường dẫn Âm thanh (URL)</label>
-                                <InputText class="form-control" @bind-Value="_form.AudioUrl" />
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Mô tả</label>
-                                <InputText class="form-control" @bind-Value="_form.Description" />
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Nội dung TTS</label>
-                                <InputTextArea class="form-control" rows="3" @bind-Value="_form.TextContent" placeholder="Nội dung dùng cho Text-to-Speech nếu không có Audio URL" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Vĩ độ (Latitude)</label>
-                                <InputNumber class="form-control" @bind-Value="_form.Latitude" />
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Kinh độ (Longitude)</label>
-                                <InputNumber class="form-control" @bind-Value="_form.Longitude" />
+                        <div class="alert alert-info border-0 rounded-4 d-flex align-items-center gap-3 mb-4">
+                            <i class="bi bi-info-circle-fill fs-4 text-primary"></i>
+                            <div class="small">
+                                <b>Lưu ý:</b> Nhập thông tin tiếng Việt ở phần nội dung chính, sau đó dùng công cụ <b>Dịch tự động</b> để hỗ trợ các ngôn ngữ khách du lịch.
                             </div>
                         </div>
 
-                        @* ── Translation Section ── *@
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Tên địa điểm (Tiếng Việt)</label>
+                                <InputText class="form-control" @bind-Value="_form.Name" placeholder="Ví dụ: Ốc Oanh, Lẩu bò..." />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">Link Âm thanh (Audio URL)</label>
+                                <InputText class="form-control" @bind-Value="_form.AudioUrl" placeholder="https://..." />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Mô tả ngắn gọn</label>
+                                <InputText class="form-control" @bind-Value="_form.Description" placeholder="Mẹo: Viết ngắn gọn về đặc sản của quán..." />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-bold">Nội dung thuyết minh (TTS)</label>
+                                <InputTextArea class="form-control" rows="3" @bind-Value="_form.TextContent" placeholder="Nội dung này sẽ được AI đọc lên cho khách nghe..." />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold"><i class="bi bi-pin-map me-1"></i>Vĩ độ (Latitude)</label>
+                                <InputNumber class="form-control" @bind-Value="_form.Latitude" step="any" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold"><i class="bi bi-pin-map-fill me-1"></i>Kinh độ (Longitude)</label>
+                                <InputNumber class="form-control" @bind-Value="_form.Longitude" step="any" />
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch mt-2">
+                                    <InputCheckbox class="form-check-input" id="isActiveCheck" @bind-Value="_form.IsActive" />
+                                    <label class="form-check-label fw-bold" for="isActiveCheck">Trạng thái hoạt động</label>
+                                </div>
+                            </div>
+                        </div>
+
                         @if (_isEditing)
                         {
-                            <hr class="my-4" />
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6 class="mb-0">
-                                    <i class="bi bi-translate"></i> Translations
-                                </h6>
-                                <button type="button"
-                                        class="btn btn-outline-primary btn-sm"
-                                        disabled="@_isTranslating"
-                                        @onclick="TranslateInEditorAsync">
-                                    @if (_isTranslating)
-                                    {
-                                        <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                                        <span>Đang dịch...</span>
-                                    }
-                                    else
-                                    {
-                                        <span>🌐 Dịch tự động</span>
-                                    }
-                                </button>
-                            </div>
-
-                            <div class="row g-3">
-                                @* Vietnamese *@
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted">🇻🇳 Tên (Vi)</label>
-                                    <InputText class="form-control form-control-sm" @bind-Value="_form.NameVi" />
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted">🇻🇳 Mô tả (Vi)</label>
-                                    <InputText class="form-control form-control-sm" @bind-Value="_form.DescriptionVi" />
+                            <div class="mt-5 p-4 rounded-4 border bg-light">
+                                <div class="d-flex justify-content-between align-items-center mb-4">
+                                    <h5 class="fw-bold mb-0 text-orange">
+                                        <i class="bi bi-translate"></i> Bản dịch đa ngôn ngữ
+                                    </h5>
+                                    <button type="button" class="btn btn-modern btn-outline-primary bg-white shadow-sm" disabled="@_isTranslating" @onclick="TranslateInEditorAsync">
+                                        @if (_isTranslating)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                            <span>Đang dịch AI...</span>
+                                        }
+                                        else
+                                        {
+                                            <span><i class="bi bi-stars me-1 text-warning"></i> AI Dịch tự động</span>
+                                        }
+                                    </button>
                                 </div>
 
-                                @* English *@
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted">🇺🇸 Tên (En)</label>
-                                    <InputText class="form-control form-control-sm" @bind-Value="_form.NameEn" />
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted">🇺🇸 Mô tả (En)</label>
-                                    <InputText class="form-control form-control-sm" @bind-Value="_form.DescriptionEn" />
-                                </div>
-
-                                @* Chinese *@
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted">🇨🇳 Tên (Zh)</label>
-                                    <InputText class="form-control form-control-sm" @bind-Value="_form.NameZh" />
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted">🇨🇳 Mô tả (Zh)</label>
-                                    <InputText class="form-control form-control-sm" @bind-Value="_form.DescriptionZh" />
-                                </div>
-
-                                @* Korean *@
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted">🇰🇷 Tên (Ko)</label>
-                                    <InputText class="form-control form-control-sm" @bind-Value="_form.NameKo" />
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted">🇰🇷 Mô tả (Ko)</label>
-                                    <InputText class="form-control form-control-sm" @bind-Value="_form.DescriptionKo" />
-                                </div>
-
-                                @* Japanese *@
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted">🇯🇵 Tên (Ja)</label>
-                                    <InputText class="form-control form-control-sm" @bind-Value="_form.NameJa" />
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted">🇯🇵 Mô tả (Ja)</label>
-                                    <InputText class="form-control form-control-sm" @bind-Value="_form.DescriptionJa" />
-                                </div>
-                                
-                                <h6 class="mb-0 mt-4"><i class="bi bi-volume-up"></i> Bản dịch nội dung TTS</h6>
-                                
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted">🇻🇳 Văn bản TTS (Vi)</label>
-                                    <InputTextArea class="form-control form-control-sm" rows="2" @bind-Value="_form.TextContentVi" />
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted">🇺🇸 Văn bản TTS (En)</label>
-                                    <InputTextArea class="form-control form-control-sm" rows="2" @bind-Value="_form.TextContentEn" />
-                                </div>
-                                
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted">🇨🇳 Văn bản TTS (Zh)</label>
-                                    <InputTextArea class="form-control form-control-sm" rows="2" @bind-Value="_form.TextContentZh" />
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted">🇰🇷 Văn bản TTS (Ko)</label>
-                                    <InputTextArea class="form-control form-control-sm" rows="2" @bind-Value="_form.TextContentKo" />
-                                </div>
-                                
-                                <div class="col-md-6">
-                                    <label class="form-label text-muted">🇯🇵 Văn bản TTS (Ja)</label>
-                                    <InputTextArea class="form-control form-control-sm" rows="2" @bind-Value="_form.TextContentJa" />
+                                <div class="row g-4">
+                                    <!-- English -->
+                                    <div class="col-12 border-bottom pb-3">
+                                        <div class="row g-3">
+                                            <div class="col-md-4"><label class="form-label small text-muted">🇺🇸 Tên (English)</label><InputText class="form-control form-control-sm" @bind-Value="_form.NameEn" /></div>
+                                            <div class="col-md-8"><label class="form-label small text-muted">🇺🇸 Mô tả (English)</label><InputText class="form-control form-control-sm" @bind-Value="_form.DescriptionEn" /></div>
+                                            <div class="col-12"><label class="form-label small text-muted">🇺🇸 Nội dung thuyết minh (English)</label><InputTextArea class="form-control form-control-sm" rows="1" @bind-Value="_form.TextContentEn" /></div>
+                                        </div>
+                                    </div>
+                                    <!-- Chinese -->
+                                    <div class="col-12 border-bottom pb-3">
+                                        <div class="row g-3">
+                                            <div class="col-md-4"><label class="form-label small text-muted">🇨🇳 Tên (Chinese)</label><InputText class="form-control form-control-sm" @bind-Value="_form.NameZh" /></div>
+                                            <div class="col-md-8"><label class="form-label small text-muted">🇨🇳 Mô tả (Chinese)</label><InputText class="form-control form-control-sm" @bind-Value="_form.DescriptionZh" /></div>
+                                        </div>
+                                    </div>
+                                    <!-- Korean -->
+                                    <div class="col-12 border-bottom pb-3">
+                                        <div class="row g-3">
+                                            <div class="col-md-4"><label class="form-label small text-muted">🇰🇷 Tên (Korean)</label><InputText class="form-control form-control-sm" @bind-Value="_form.NameKo" /></div>
+                                            <div class="col-md-8"><label class="form-label small text-muted">🇰🇷 Mô tả (Korean)</label><InputText class="form-control form-control-sm" @bind-Value="_form.DescriptionKo" /></div>
+                                        </div>
+                                    </div>
+                                    <!-- Japanese -->
+                                    <div class="col-12">
+                                        <div class="row g-3">
+                                            <div class="col-md-4"><label class="form-label small text-muted">🇯🇵 Tên (Japanese)</label><InputText class="form-control form-control-sm" @bind-Value="_form.NameJa" /></div>
+                                            <div class="col-md-8"><label class="form-label small text-muted">🇯🇵 Mô tả (Japanese)</label><InputText class="form-control form-control-sm" @bind-Value="_form.DescriptionJa" /></div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         }
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseEditor">Hủy bỏ</button>
-                        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                    <div class="modal-footer border-0 p-4 pt-0">
+                        <button type="button" class="btn btn-modern btn-light" @onclick="CloseEditor">Hủy bỏ</button>
+                        <button type="submit" class="btn btn-modern btn-primary-f&b px-4">Lưu địa điểm</button>
                     </div>
                 </EditForm>
             </div>
@@ -284,8 +251,8 @@
 }
 
 <ConfirmModal Visible="_confirmDeleteVisible"
-              Title="Xóa POI"
-              Message="Hành động này không thể hoàn tác. Bạn có chắc chắn muốn xóa?"
+              Title="Xóa địa điểm"
+              Message="Hành động này không thể hoàn tác. Bạn có chắc chắn muốn xóa vĩnh viễn địa điểm này?"
               OnConfirm="DeleteConfirmedAsync"
               OnCancel="CancelDelete" />
 

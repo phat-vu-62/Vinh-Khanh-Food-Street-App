@@ -2,10 +2,10 @@
 @inject IAdminDataService DataService
 @inject ToastService Toasts
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="h4 mb-0">Dashboard</h1>
-        <small class="text-muted">Tổng quan nội dung Vinh Khánh Food Street</small>
+        <h1 class="h3 fw-bold mb-0" style="color: var(--primary-color);">Tổng quan</h1>
+        <p class="text-muted mb-0">Theo dõi hoạt động và nội dung ẩm thực Vinh Khánh</p>
     </div>
 </div>
 
@@ -13,47 +13,47 @@
 
 @if (!_isLoading)
 {
-    <div class="row g-4 mb-4">
+    <div class="row g-4 mb-5">
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card stats-card h-100">
-                <div class="stats-icon text-primary bg-primary bg-opacity-10">
+            <div class="food-card stats-card h-100 p-4">
+                <div class="stats-icon badge-orange" style="font-size: 1.75rem; width: 60px; height: 60px;">
                     <i class="bi bi-geo-alt"></i>
                 </div>
                 <div class="stats-info">
-                    <div class="stats-title">Total POIs</div>
+                    <div class="stats-title">Tổng địa điểm</div>
                     <div class="stats-value">@Pois.Count</div>
                 </div>
             </div>
         </div>
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card stats-card h-100">
-                <div class="stats-icon text-info bg-info bg-opacity-10">
+            <div class="food-card stats-card h-100 p-4">
+                <div class="stats-icon badge-green" style="font-size: 1.75rem; width: 60px; height: 60px;">
                     <i class="bi bi-file-earmark-music"></i>
                 </div>
                 <div class="stats-info">
-                    <div class="stats-title">Total Audio</div>
+                    <div class="stats-title">Tổng âm thanh</div>
                     <div class="stats-value">@Audios.Count</div>
                 </div>
             </div>
         </div>
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card stats-card h-100">
-                <div class="stats-icon text-success bg-success bg-opacity-10">
+            <div class="food-card stats-card h-100 p-4" style="background: linear-gradient(135deg, #ffffff 0%, #fff7ed 100%);">
+                <div class="stats-icon text-info bg-info bg-opacity-10" style="font-size: 1.75rem; width: 60px; height: 60px; color: #0ea5e9 !important; background: #e0f2fe !important;">
                     <i class="bi bi-map"></i>
                 </div>
                 <div class="stats-info">
-                    <div class="stats-title">Active Tours</div>
+                    <div class="stats-title">Lộ trình hoạt động</div>
                     <div class="stats-value">@Tours.Count</div>
                 </div>
             </div>
         </div>
         <div class="col-12 col-sm-6 col-xl-3">
-            <div class="card stats-card h-100">
-                <div class="stats-icon text-warning bg-warning bg-opacity-10">
+            <div class="food-card stats-card h-100 p-4">
+                <div class="stats-icon text-warning bg-warning bg-opacity-10" style="font-size: 1.75rem; width: 60px; height: 60px; color: #f59e0b !important; background: #fef3c7 !important;">
                     <i class="bi bi-bar-chart"></i>
                 </div>
                 <div class="stats-info">
-                    <div class="stats-title">Interactions</div>
+                    <div class="stats-title">Lượt tương tác</div>
                     <div class="stats-value">@Histories.Count</div>
                 </div>
             </div>
@@ -61,67 +61,68 @@
     </div>
 
     <!-- Data Analytics Dashboard -->
-    <div class="row mb-4">
-        <!-- Travel Route Tracking (ArrayList processing) -->
-        <div class="col-lg-6 mb-3">
-            <div class="card h-100 shadow-sm border-0">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="mb-0"><i class="bi bi-signpost-split"></i> Theo dõi tuyến di chuyển</h5>
-                    <small class="text-muted">Lộ trình dựa trên lịch sử người dùng</small>
-                </div>
-                <div class="card-body pt-0">
-                    <div class="route-map p-3 bg-light rounded" style="min-height: 200px; max-height: 300px; overflow-y: auto;">
-                        @if (UserRoutes.Count == 0)
-                        {
-                            <p class="text-muted text-center mt-4">Chưa có lộ trình nào.</p>
-                        }
-                        else
-                        {
-                            @foreach (var route in UserRoutes)
-                            {
-                                <div class="mb-3">
-                                    <strong>Người dùng: @route.Key</strong>
-                                    <div class="d-flex flex-wrap mt-2 align-items-center gap-2">
-                                        @for (int i = 0; i < route.Value.Count; i++)
-                                        {
-                                            var coord = route.Value[i];
-                                            <span class="badge bg-secondary">@coord.Item1.ToString("0.00"), @coord.Item2.ToString("0.00")</span>
-                                            @if (i < route.Value.Count - 1)
-                                            {
-                                                <i class="bi bi-arrow-right text-muted"></i>
-                                            }
-                                        }
-                                    </div>
-                                </div>
-                            }
-                        }
+    <div class="row mb-5">
+        <!-- Travel Route Tracking -->
+        <div class="col-lg-6 mb-4">
+            <div class="food-card h-100 p-4">
+                <div class="mb-3 d-flex align-items-center justify-content-between">
+                    <div>
+                        <h5 class="fw-bold mb-0"><i class="bi bi-signpost-split text-orange"></i> Tuyến di chuyển phổ biến</h5>
                     </div>
+                </div>
+                <div class="route-map p-3 bg-light rounded-4" style="min-height: 250px; max-height: 350px; overflow-y: auto; background-color: #f8fafc !important;">
+                    @if (UserRoutes.Count == 0)
+                    {
+                        <div class="empty-state py-4">
+                            <p class="text-muted text-center">Chưa có lộ trình nào được ghi nhận.</p>
+                        </div>
+                    }
+                    else
+                    {
+                        @foreach (var route in UserRoutes)
+                        {
+                            <div class="mb-4 p-3 bg-white rounded-3 border border-light">
+                                <strong class="text-dark d-block mb-2"><i class="bi bi-person-circle me-2"></i>Khách tham quan: @route.Key</strong>
+                                <div class="d-flex flex-wrap mt-2 align-items-center gap-2">
+                                    @for (int i = 0; i < route.Value.Count; i++)
+                                    {
+                                        var coord = route.Value[i];
+                                        <span class="badge badge-pill badge-gray">@coord.Item1.ToString("0.00"), @coord.Item2.ToString("0.00")</span>
+                                        @if (i < route.Value.Count - 1)
+                                        {
+                                            <i class="bi bi-arrow-right text-primary"></i>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
                 </div>
             </div>
         </div>
 
         <!-- Top POIs & Avg Listening Time -->
-        <div class="col-lg-6 mb-3">
-            <div class="card h-100 shadow-sm border-0">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="mb-0"><i class="bi bi-bar-chart"></i> Top Audios</h5>
-                    <small class="text-muted">Các POI được nghe nhiều nhất</small>
+        <div class="col-lg-6 mb-4">
+            <div class="food-card h-100 p-4">
+                <div class="mb-3">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-trophy text-warning"></i> Địa điểm thu hút nhất</h5>
+                    <small class="text-muted">Top 5 địa điểm có lượt nghe Audio cao nhất</small>
                 </div>
-                <div class="card-body pt-0">
+                <div class="table-responsive">
                     <table class="table table-hover align-middle">
-                        <thead class="table-light">
+                        <thead class="bg-light">
                             <tr>
-                                <th>Hạng</th>
-                                <th>POI Name</th>
-                                <th>Listens</th>
-                                <th>Avg Time</th>
+                                <th class="border-0 rounded-start">STT</th>
+                                <th class="border-0">Tên địa điểm</th>
+                                <th class="border-0">Lượt nghe</th>
+                                <th class="border-0 rounded-end">Thời gian TB</th>
                             </tr>
                         </thead>
                         <tbody>
                             @if (TopPois.Count == 0)
                             {
                                 <tr>
-                                    <td colspan="4" class="text-center text-muted">Chưa có dữ liệu</td>
+                                    <td colspan="4" class="text-center py-4 text-muted">Chưa có dữ liệu thống kê</td>
                                 </tr>
                             }
                             else
@@ -130,10 +131,10 @@
                                 @foreach (var p in TopPois)
                                 {
                                     <tr>
-                                        <td><span class="badge bg-primary rounded-circle">@rank</span></td>
-                                        <td>@p.PoiName</td>
-                                        <td>@p.Count</td>
-                                        <td>@p.AvgTime.ToString("0.0") giây</td>
+                                        <td><span class="badge rounded-pill @(rank == 1 ? "bg-warning" : "bg-light text-dark")">#@rank</span></td>
+                                        <td class="fw-semibold">@p.PoiName</td>
+                                        <td><span class="text-primary fw-bold">@p.Count</span></td>
+                                        <td class="text-muted">@p.AvgTime.ToString("0.0")s</td>
                                     </tr>
                                     rank++;
                                 }
@@ -145,31 +146,36 @@
         </div>
     </div>
     
-    <div class="row mb-4">
+    <div class="row mb-5">
         <!-- Heatmap visualization -->
         <div class="col-12">
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="mb-0"><i class="bi bi-map-fill"></i> Activity Heatmap</h5>
+            <div class="food-card p-4">
+                <div class="mb-4">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-map-fill text-danger"></i> Bản đồ nhiệt hoạt động</h5>
+                    <small class="text-muted">Mật độ tương tác của khách tham quan trên toàn tuyến</small>
                 </div>
-                <div class="card-body text-center bg-light heat-map-container" style="min-height: 300px; position: relative; overflow: hidden; border-radius: 8px;">
+                <div class="text-center bg-light heat-map-container rounded-4 border position-relative" style="min-height: 400px; overflow: hidden; background: #f1f5f9 !important;">
                      <!-- Simple Map Visualization -->
-                     <svg width="100%" height="300" style="position: absolute; top:0; left:0;">
+                     <svg width="100%" height="400" style="position: absolute; top:0; left:0;">
                          @foreach(var dp in HeatmapPoints)
                          {
-                             <!-- Normalize lat/long to roughly fit inside SVG (Demo coords 10.x, 106.x) -->
                              double cx = (dp.Longitude - 106.69) * 5000 + 400; 
-                             double cy = 300 - ((dp.Latitude - 10.76) * 5000 + 150);
+                             double cy = 400 - ((dp.Latitude - 10.76) * 5000 + 150);
                              double r = dp.Intensity * 3 + 5;
-                             <circle cx="@cx" cy="@cy" r="@r" fill="rgba(255, 0, 0, 0.5)" filter="blur(8px)" />
-                             <circle cx="@cx" cy="@cy" r="@(r/2)" fill="rgba(255, 50, 0, 0.8)" title="@dp.Title" />
+                             <circle cx="@cx" cy="@cy" r="@r" fill="rgba(234, 88, 12, 0.4)" filter="blur(8px)" />
+                             <circle cx="@cx" cy="@cy" r="@(r/2)" fill="var(--primary-color)" title="@dp.Title">
+                                 <title>@dp.Title: @dp.Intensity lượt</title>
+                             </circle>
                          }
-                         <text x="10" y="20" font-size="12" fill="gray">Dựa trên tọa độ lịch sử người dùng</text>
                      </svg>
+                     <div class="position-absolute bottom-0 start-0 p-3">
+                         <span class="badge badge-pill badge-gray border"><i class="bi bi-info-circle me-1"></i>Dữ liệu tọa độ GPS thực tế</span>
+                     </div>
                 </div>
             </div>
         </div>
     </div>
+}
 }
 
 @code {

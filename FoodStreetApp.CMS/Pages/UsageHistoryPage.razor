@@ -2,48 +2,51 @@
 @inject IAdminDataService DataService
 @inject ToastService Toasts
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="h4 mb-0">Usage History</h1>
-        <small class="text-muted">Nhật ký hoạt động xem POI và phát Audio</small>
+        <h1 class="h3 fw-bold mb-0 text-orange">Lịch sử truy cập</h1>
+        <p class="text-muted mb-0">Nhật ký hoạt động của khách tham quan trên ứng dụng di động</p>
     </div>
     <div class="d-flex gap-2">
-        <InputDate class="form-control" style="min-width: 150px;" @bind-Value="_selectedDate" @bind-Value:after="() => { _currentPage = 1; LoadAsync(); }" TValue="DateTime?" placeholder="Lọc theo ngày..." />
-        <button class="btn btn-outline-secondary" @onclick="ClearFilter" disabled="@(_selectedDate == null)">Xóa lọc</button>
-        <button class="btn btn-outline-primary" @onclick="LoadAsync">Làm mới</button>
+        <div class="input-group" style="width: 220px;">
+            <span class="input-group-text bg-white border-end-0 rounded-start-3"><i class="bi bi-calendar3"></i></span>
+            <InputDate class="form-control border-start-0 rounded-end-3" @bind-Value="_selectedDate" @bind-Value:after="() => { _currentPage = 1; LoadAsync(); }" TValue="DateTime?" />
+        </div>
+        <button class="btn btn-modern btn-light border shadow-sm" @onclick="ClearFilter" disabled="@(_selectedDate == null)">Xóa lọc</button>
+        <button class="btn btn-modern btn-primary-f&b shadow-sm" @onclick="LoadAsync"><i class="bi bi-arrow-clockwise"></i> Làm mới</button>
     </div>
 </div>
 
-<section class="module-panel">
+<section class="food-card p-4 border-0 shadow-sm">
     <LoadingState IsLoading="_isLoading" Message="Đang tải lịch sử sử dụng..." />
 
     @if (!_isLoading && _history.Count == 0)
     {
-        <div class="empty-state">
-            <i class="bi bi-clock-history empty-icon"></i>
-            <div class="empty-title">Chưa có lịch sử sử dụng</div>
-            <div class="empty-description">Nhật ký hoạt động sẽ xuất hiện tại đây khi người dùng tương tác với các điểm tham quan qua ứng dụng di động.</div>
+        <div class="empty-state py-5">
+            <i class="bi bi-clock-history text-muted" style="font-size: 3rem;"></i>
+            <h5 class="fw-bold mt-3">Chưa có hoạt động nào</h5>
+            <p class="text-muted">Nhật ký sẽ tự động xuất hiện khi có người dùng tương tác với mã QR hoặc xem bản đồ.</p>
         </div>
     }
     else if (!_isLoading)
     {
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <div class="input-group" style="max-width:320px;">
-                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
-                <input class="form-control" placeholder="Tìm kiếm theo User, POI hoặc Action..." @bind="_searchTerm" @bind:event="oninput" @bind:after="() => { _currentPage = 1; }" />
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+            <div class="input-group" style="max-width:380px;">
+                <span class="input-group-text bg-white border-end-0 rounded-start-3"><i class="bi bi-search text-muted"></i></span>
+                <input class="form-control border-start-0 rounded-end-3" placeholder="Tìm tên khách, địa điểm hoặc hành động..." @bind="_searchTerm" @bind:event="oninput" @bind:after="() => { _currentPage = 1; }" />
             </div>
-            <small class="text-muted">@GetFilteredHistory().Count() bản ghi</small>
+            <span class="badge badge-pill badge-gray border">Tổng cộng: @GetFilteredHistory().Count() bản ghi</span>
         </div>
 
         <div class="table-responsive">
-            <table class="table admin-table">
-                <thead>
+            <table class="table table-hover align-middle">
+                <thead class="bg-light">
                     <tr>
-                        <th>User</th>
-                        <th>POI Name</th>
-                        <th>Action Type</th>
-                        <th>Duration</th>
-                        <th>Timestamp</th>
+                        <th class="border-0">Khách tham quan</th>
+                        <th class="border-0">Địa điểm tương tác</th>
+                        <th class="border-0">Hành động</th>
+                        <th class="border-0">Thời lượng</th>
+                        <th class="border-0 text-end">Thời gian</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -51,26 +54,36 @@
                     {
                         <tr>
                             <td>
-                                <span class="d-inline-flex align-items-center gap-1">
-                                    <i class="bi bi-person-circle text-muted"></i>
-
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                        <i class="bi bi-person-circle text-orange"></i>
+                                    </div>
+                                    <span class="fw-bold text-dark">@(string.IsNullOrEmpty(item.UserId) ? "Khách ẩn danh" : item.UserId)</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge badge-pill badge-gray border">
+                                    <i class="bi bi-geo-alt me-1"></i>@FindPoiName(item.PoiId)
                                 </span>
                             </td>
-                            <td class="fw-semibold">@FindPoiName(item.PoiId)</td>
                             <td>
-                                <span class="badge @(GetActionBadge(item.Action))">@GetActionLabel(item.Action)</span>
+                                <span class="badge badge-pill @(GetActionBadge(item.Action)) px-2 py-1">
+                                    @GetActionLabel(item.Action)
+                                </span>
                             </td>
                             <td>
                                 @if (item.DurationSeconds.HasValue && item.DurationSeconds > 0)
                                 {
-                                    <span>@item.DurationSeconds giây</span>
+                                    <span class="fw-bold text-primary">@item.DurationSeconds giây</span>
                                 }
                                 else
                                 {
-                                    <span class="text-muted">—</span>
+                                    <span class="text-muted small">—</span>
                                 }
                             </td>
-                            <td>@item.VisitedAtUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</td>
+                            <td class="text-end text-muted small">
+                                <i class="bi bi-clock me-1"></i>@item.VisitedAtUtc.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss")
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -79,16 +92,14 @@
 
         @if (GetTotalHistoryPages() > 1)
         {
-            <div class="d-flex justify-content-between align-items-center mt-3">
-                <small class="text-muted">Trang @_currentPage / @GetTotalHistoryPages()</small>
-                <div class="d-flex gap-1">
-                    <button class="btn btn-sm btn-outline-secondary" disabled="@(_currentPage <= 1)" @onclick="() => _currentPage--">
-                        <i class="bi bi-chevron-left"></i> Trước
-                    </button>
-                    <button class="btn btn-sm btn-outline-secondary" disabled="@(_currentPage >= GetTotalHistoryPages())" @onclick="() => _currentPage++">
-                        Sau <i class="bi bi-chevron-right"></i>
-                    </button>
-                </div>
+            <div class="d-flex justify-content-center align-items-center mt-4 gap-3">
+                <button class="btn btn-sm btn-modern border bg-white shadow-sm" disabled="@(_currentPage <= 1)" @onclick="() => _currentPage--">
+                    <i class="bi bi-chevron-left"></i> Trang trước
+                </button>
+                <span class="fw-bold text-orange">@_currentPage / @GetTotalHistoryPages()</span>
+                <button class="btn btn-sm btn-modern border bg-white shadow-sm" disabled="@(_currentPage >= GetTotalHistoryPages())" @onclick="() => _currentPage++">
+                    Trang sau <i class="bi bi-chevron-right"></i>
+                </button>
             </div>
         }
     }

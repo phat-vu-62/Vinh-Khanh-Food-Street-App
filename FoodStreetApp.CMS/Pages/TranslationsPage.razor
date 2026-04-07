@@ -2,83 +2,90 @@
 @inject IAdminDataService DataService
 @inject ToastService Toasts
 
-<div class="d-flex justify-content-between align-items-center mb-3 text-white">
+<div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="h4 mb-0">Translations</h1>
-        <small class="text-white-50">Review and edit POI translations by language</small>
+        <h1 class="h3 fw-bold mb-0 text-orange">Bản dịch đa ngôn ngữ</h1>
+        <p class="text-muted mb-0">Quản lý nội dung hiển thị cho khách du lịch quốc tế</p>
     </div>
-    <div class="d-flex gap-2">
-        <select class="form-select bg-dark text-white border-secondary" style="min-width: 120px;" @bind="_selectedLanguage">
-            @foreach (var language in _languages)
-            {
-                <option value="@language">@language.ToUpper()</option>
-            }
-        </select>
-        <button class="btn btn-primary" @onclick="TranslateAllAsync" disabled="@_isTranslatingAll">
+    <div class="d-flex gap-3">
+        <div class="input-group" style="width: 200px;">
+            <span class="input-group-text bg-white border-end-0 rounded-start-3"><i class="bi bi-translate text-muted"></i></span>
+            <select class="form-select border-start-0 rounded-end-3 fw-bold" @bind="_selectedLanguage">
+                @foreach (var language in _languages)
+                {
+                    <option value="@language">@(language == "vi" ? "Tiếng Việt 🇻🇳" : language == "en" ? "English 🇺🇸" : language == "zh" ? "Chinese 🇨🇳" : language == "ko" ? "Korean 🇰🇷" : "Japanese 🇯🇵")</option>
+                }
+            </select>
+        </div>
+        <button class="btn btn-modern btn-primary-f&b shadow-sm" @onclick="TranslateAllAsync" disabled="@_isTranslatingAll">
             @if (_isTranslatingAll)
             {
-                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
-                <span>Đang dịch...</span>
+                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                <span>Đang xử lý...</span>
             }
             else
             {
-                <span>Dịch tất cả POI</span>
+                <span><i class="bi bi-stars me-1"></i> Dịch tất cả POI</span>
             }
         </button>
     </div>
 </div>
 
-<section class="module-panel">
+<section class="food-card p-4 border-0 shadow-sm">
     <LoadingState IsLoading="_isLoading" Message="Đang tải bản dịch..." />
 
     @if (!_isLoading && _pois.Count == 0)
     {
-        <div class="empty-state">
-            <i class="bi bi-translate empty-icon"></i>
-            <div class="empty-title">Không tìm thấy điểm tham quan nào</div>
-            <div class="empty-description">Hãy thêm điểm tham quan trước, sau đó bạn có thể quản lý bản dịch đa ngôn ngữ tại đây.</div>
+        <div class="empty-state py-5">
+            <i class="bi bi-translate text-muted" style="font-size: 3rem;"></i>
+            <h5 class="fw-bold mt-3">Chưa có dữ liệu địa điểm</h5>
+            <p class="text-muted">Bạn cần tạo các địa điểm trước khi bắt đầu quản lý bản dịch.</p>
         </div>
     }
     else if (!_isLoading)
     {
         <div class="table-responsive">
-            <table class="table admin-table">
-                <thead>
+            <table class="table table-hover align-middle">
+                <thead class="bg-light">
                     <tr>
-                        <th>POI</th>
-                        <th>Original Text</th>
-                        <th>Translated Text (@_selectedLanguage.ToUpper())</th>
-                        <th class="text-end">Actions</th>
+                        <th class="border-0" style="width: 20%;">Địa điểm</th>
+                        <th class="border-0" style="width: 35%;">Văn bản gốc (VN)</th>
+                        <th class="border-0" style="width: 35%;">Bản dịch (@_selectedLanguage.ToUpper())</th>
+                        <th class="border-0 text-center" style="width: 10%;">Tác vụ</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var poi in _pois.OrderBy(x => x.Name))
                     {
-                        <tr>
+                        <!-- Name Translation Row -->
+                        <tr class="border-bottom-0">
                             <td>
-                                <strong>@poi.Name</strong>
-                                <div class="small text-muted">Tên</div>
+                                <div class="fw-bold">@poi.Name</div>
+                                <span class="badge badge-pill badge-gray mt-1">Tên quán</span>
                             </td>
-                            <td>@poi.Name</td>
+                            <td class="text-dark">@poi.Name</td>
                             <td>
-                                <input type="text" class="form-control" 
+                                <input type="text" class="form-control form-control-sm rounded-3 border-orange border-opacity-25" 
+                                       placeholder="Chưa có bản dịch..."
                                        value="@GetNameTranslation(poi, _selectedLanguage)" 
                                        @onchange="@(e => SetNameTranslation(poi, _selectedLanguage, e.Value?.ToString()))" />
                             </td>
-                            <td class="text-end" rowspan="2" style="vertical-align: middle;">
-                                <button class="btn btn-sm btn-outline-primary" @onclick="() => SavePoiAsync(poi)">Lưu thay đổi</button>
+                            <td class="text-center" rowspan="2">
+                                <button class="btn btn-modern btn-primary-f&b btn-sm rounded-3 w-100 mb-2" @onclick="() => SavePoiAsync(poi)">Lưu</button>
+                                <button class="btn btn-modern btn-light btn-sm rounded-3 w-100" title="Chi tiết" @onclick="() => SavePoiAsync(poi)"><i class="bi bi-three-dots"></i></button>
                             </td>
                         </tr>
-                        <tr>
-                            <td>
-                                <strong>@poi.Name</strong>
-                                <div class="small text-muted">Mô tả</div>
+                        <!-- Description Translation Row -->
+                        <tr class="table-active-light">
+                            <td class="border-top-0 pt-0">
+                                <span class="badge badge-pill badge-orange mt-1">Mô tả</span>
                             </td>
-                            <td class="text-muted" style="max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@poi.Description</td>
-                            <td>
-                                <input type="text" class="form-control" 
+                            <td class="text-muted small border-top-0 pt-0" style="max-width: 300px; white-space: normal;">@poi.Description</td>
+                            <td class="border-top-0 pt-0">
+                                <textarea class="form-control form-control-sm rounded-3 border-orange border-opacity-10" rows="1"
+                                       placeholder="Mô tả cho du khách..."
                                        value="@GetDescriptionTranslation(poi, _selectedLanguage)" 
-                                       @onchange="@(e => SetDescriptionTranslation(poi, _selectedLanguage, e.Value?.ToString()))" />
+                                       @onchange="@(e => SetDescriptionTranslation(poi, _selectedLanguage, e.Value?.ToString()))"></textarea>
                             </td>
                         </tr>
                     }

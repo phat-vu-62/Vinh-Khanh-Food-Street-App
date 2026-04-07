@@ -2,57 +2,65 @@
 @inject IAdminDataService DataService
 @inject ToastService Toasts
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="h4 mb-0">Tours Management</h1>
-        <small class="text-muted">Xây dựng Tours, thêm POI và sắp xếp trình tự</small>
+        <h1 class="h3 fw-bold mb-0 text-orange">Quản lý lộ trình</h1>
+        <p class="text-muted mb-0">Xây dựng các tour đi bộ ẩm thực bằng cách kết nối nhiều địa điểm</p>
     </div>
-    <button class="btn btn-primary" @onclick="StartCreate">+ Thêm mới</button>
+    <button class="btn btn-modern btn-primary-f&b shadow-sm" @onclick="StartCreate">
+        <i class="bi bi-plus-lg"></i> Thêm lộ trình
+    </button>
 </div>
 
-<section class="module-panel">
-    <LoadingState IsLoading="_isLoading" Message="Đang tải danh sách hành trình..." />
+<section class="food-card p-4 border-0 shadow-sm">
+    <LoadingState IsLoading="_isLoading" Message="Đang tải danh sách lộ trình..." />
 
     @if (!_isLoading && _tours.Count == 0)
     {
-        <div class="empty-state">
-            <i class="bi bi-map empty-icon"></i>
-            <div class="empty-title">Chưa có Tours nào</div>
-            <div class="empty-description">Tạo Tours bằng cách kết hợp nhiều POI thành một tuyến đường đi bộ.</div>
-            <button class="btn btn-primary mt-2" @onclick="StartCreate"><i class="bi bi-plus-lg"></i> Thêm mới</button>
+        <div class="empty-state py-5">
+            <i class="bi bi-map text-muted" style="font-size: 3rem;"></i>
+            <h5 class="fw-bold mt-3">Chưa có lộ trình nào</h5>
+            <p class="text-muted">Kết nối các địa điểm ăn uống thành một tour tham quan hoàn chỉnh.</p>
+            <button class="btn btn-modern btn-primary-f&b mt-2" @onclick="StartCreate"><i class="bi bi-plus-lg"></i> Tạo ngay</button>
         </div>
     }
     else if (!_isLoading)
     {
         <div class="table-responsive">
-            <table class="table admin-table">
-                <thead>
+            <table class="table table-hover align-middle">
+                <thead class="bg-light">
                     <tr>
-                        <th>Tour Name</th>
-                        <th>Description</th>
-                        <th>POI Sequence</th>
-                        <th class="text-end">Actions</th>
+                        <th class="border-0">Tên lộ trình</th>
+                        <th class="border-0">Mô tả</th>
+                        <th class="border-0">Chuỗi địa điểm</th>
+                        <th class="border-0 text-end">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var tour in _tours.OrderByDescending(x => x.Id))
                     {
                         <tr>
-                            <td class="fw-semibold">@tour.Name</td>
-                            <td class="text-muted" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">@tour.Description</td>
+                            <td class="fw-bold text-dark">@tour.Name</td>
+                            <td class="text-muted small" style="max-width:250px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">@tour.Description</td>
                             <td>
-                                @foreach (var poiId in tour.PoiIds)
-                                {
-                                    <span class="badge text-bg-secondary me-1">@FindPoiName(poiId)</span>
-                                }
+                                <div class="d-flex flex-wrap gap-1">
+                                    @foreach (var poiId in tour.PoiIds)
+                                    {
+                                        <span class="badge badge-pill badge-gray border">@FindPoiName(poiId)</span>
+                                    }
+                                </div>
                             </td>
                             <td class="text-end">
-                                <button class="btn btn-sm btn-outline-secondary me-1" @onclick="() => StartEdit(tour)" title="Chỉnh sửa">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(tour.Id)" title="Xóa">
-                                    <i class="bi bi-trash"></i>
-                                </button>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-light rounded-3" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-three-dots"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg">
+                                        <li><button class="dropdown-item" @onclick="() => StartEdit(tour)"><i class="bi bi-pencil me-2 text-primary"></i>Sửa lộ trình</button></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><button class="dropdown-item text-danger" @onclick="() => DeleteAsync(tour.Id)"><i class="bi bi-trash me-2"></i>Xóa</button></li>
+                                    </ul>
+                                </div>
                             </td>
                         </tr>
                     }
@@ -64,65 +72,80 @@
 
 @if (_editorOpen)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,.5)">
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px);">
         <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content form-card">
+            <div class="modal-content overflow-hidden">
                 <EditForm Model="_form" OnValidSubmit="SaveAsync">
-                    <div class="modal-header">
-                        <h5 class="modal-title">@(_isEditing ? "Chỉnh sửa Tour" : "Thêm mới Tour")</h5>
+                    <div class="modal-header border-0 bg-light py-3 px-4">
+                        <h5 class="modal-title fw-bold">@(_isEditing ? "🖊️ Cập nhật lộ trình" : "✨ Tạo lộ trình mới")</h5>
                         <button type="button" class="btn-close" @onclick="CloseEditor"></button>
                     </div>
-                    <div class="modal-body">
-                        <div class="row g-3">
+                    <div class="modal-body p-4">
+                        <div class="row g-4">
                             <div class="col-md-6">
-                                <label class="form-label">Tour Name</label>
-                                <InputText class="form-control" @bind-Value="_form.Name" />
+                                <label class="form-label fw-bold">Tên lộ trình</label>
+                                <InputText class="form-control" @bind-Value="_form.Name" placeholder="Ví dụ: Tour Hải Sản Vinh Khánh" />
                             </div>
                             <div class="col-md-6">
-                                <label class="form-label">Description</label>
-                                <InputText class="form-control" @bind-Value="_form.Description" />
+                                <label class="form-label fw-bold">Mô tả ngắn</label>
+                                <InputText class="form-control" @bind-Value="_form.Description" placeholder="Hành trình khám phá các món ốc..." />
                             </div>
+                            
+                            <div class="col-12">
+                                <hr class="my-2" />
+                            </div>
+
                             <div class="col-md-5">
-                                <label class="form-label">Các POI có sẵn</label>
+                                <label class="form-label fw-bold">Chọn địa điểm để thêm</label>
                                 <select class="form-select" @bind="_selectedPoiId">
+                                    <option value="0">-- Chọn địa điểm --</option>
                                     @foreach (var poi in _pois.OrderBy(x => x.Name))
                                     {
                                         <option value="@poi.Id">@poi.Name</option>
                                     }
                                 </select>
+                                <button type="button" class="btn btn-modern btn-outline-primary w-100 mt-3" @onclick="AddPoiToTour">
+                                    <i class="bi bi-plus-circle me-1"></i> Thêm vào chuỗi
+                                </button>
                             </div>
-                            <div class="col-md-2 d-flex align-items-end">
-                                <button type="button" class="btn btn-outline-primary w-100" @onclick="AddPoiToTour">Thêm</button>
-                            </div>
-                            <div class="col-md-5">
-                                <label class="form-label">POI Sequence (Kéo để sắp xếp)</label>
-                                <ul class="list-group list-group-flush border rounded" ondragover="event.preventDefault();">
-                                    @if (_form.PoiIds.Count == 0)
-                                    {
-                                        <li class="list-group-item text-muted">Chưa chọn POI nào</li>
-                                    }
-                                    @for (var i = 0; i < _form.PoiIds.Count; i++)
-                                    {
-                                        var currentIndex = i;
-                                        var poiId = _form.PoiIds[currentIndex];
-                                        <li class="list-group-item d-flex justify-content-between align-items-center"
-                                            draggable="true" 
-                                            @ondragstart="@(() => DragStart(currentIndex))"
-                                            @ondrop="@(() => Drop(currentIndex))"
-                                            style="cursor: grab;">
-                                            <span><i class="bi bi-grip-vertical text-muted me-2"></i> @FindPoiName(poiId)</span>
-                                            <div class="btn-group btn-group-sm">
-                                                <button type="button" class="btn btn-outline-danger btn-sm" @onclick="() => RemovePoi(currentIndex)">×</button>
-                                            </div>
-                                        </li>
-                                    }
-                                </ul>
+                            
+                            <div class="col-md-7">
+                                <label class="form-label fw-bold">Thứ tự di chuyển (Kéo thả để sắp xếp)</label>
+                                <div class="bg-light rounded-4 p-2 border" style="min-height: 150px;">
+                                    <ul class="list-group list-group-flush" ondragover="event.preventDefault();">
+                                        @if (_form.PoiIds.Count == 0)
+                                        {
+                                            <li class="list-group-item bg-transparent text-center py-4 text-muted border-0">
+                                                <i class="bi bi-info-circle d-block mb-1"></i>
+                                                Chưa có địa điểm nào trong lộ trình này
+                                            </li>
+                                        }
+                                        @for (var i = 0; i < _form.PoiIds.Count; i++)
+                                        {
+                                            var currentIndex = i;
+                                            var poiId = _form.PoiIds[currentIndex];
+                                            <li class="list-group-item d-flex justify-content-between align-items-center bg-white rounded-3 shadow-sm mb-2 border-0"
+                                                draggable="true" 
+                                                @ondragstart="@(() => DragStart(currentIndex))"
+                                                @ondrop="@(() => Drop(currentIndex))"
+                                                style="cursor: grab;">
+                                                <div class="d-flex align-items-center">
+                                                    <span class="badge bg-orange text-white rounded-circle me-3" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">@(i + 1)</span>
+                                                    <span class="fw-semibold">@FindPoiName(poiId)</span>
+                                                </div>
+                                                <button type="button" class="btn btn-link text-danger p-1" @onclick="() => RemovePoi(currentIndex)">
+                                                    <i class="bi bi-x-circle-fill"></i>
+                                                </button>
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseEditor">Hủy bỏ</button>
-                        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                    <div class="modal-footer border-0 p-4 pt-0">
+                        <button type="button" class="btn btn-modern btn-light" @onclick="CloseEditor">Đóng</button>
+                        <button type="submit" class="btn btn-modern btn-primary-f&b px-4">Lưu lộ trình</button>
                     </div>
                 </EditForm>
             </div>
