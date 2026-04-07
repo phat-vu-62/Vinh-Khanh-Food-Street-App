@@ -27,6 +27,7 @@ namespace FoodStreetApp.Data
 
         // Increment this whenever seed data changes so all devices get the updated POIs on next launch.
         private const string SeedVersionKey = "poi_seed_version";
+        private const string HasSyncedWithWebKey = "has_synced_with_web";
         private const int CurrentSeedVersion = 11; // v11: Fixed duplication issue with thread-safe init
         private const string LastSyncUtcKey = "poi_last_sync_utc";
 
@@ -37,6 +38,13 @@ namespace FoodStreetApp.Data
             {
                 var db = await GetDatabaseAsync();
                 System.Diagnostics.Debug.WriteLine($"Database initialized at: {_dbPath}");
+
+                // IF WE ALREADY SYNCED WITH WEB AT LEAST ONCE, WE NEVER SEED LOCAL DATA AGAIN.
+                if (Preferences.Get(HasSyncedWithWebKey, false))
+                {
+                    System.Diagnostics.Debug.WriteLine("[DB] Skipping seed because app has already synced with Web.");
+                    return;
+                }
 
                 var storedVersion = Preferences.Get(SeedVersionKey, 0);
                 if (storedVersion < CurrentSeedVersion)
@@ -150,6 +158,13 @@ namespace FoodStreetApp.Data
                             var existing = await db.Table<POI>().Where(x => x.Id == localPoi.Id).FirstOrDefaultAsync();
                             if (existing is null)
                             {
+                                // Check by name too to prevent duplicates if IDs were shifted - but only if it's not a fresh sync
+                                var byName = await db.Table<POI>().Where(x => x.Name == localPoi.Name).FirstOrDefaultAsync();
+                                if (byName != null)
+                                {
+                                    // If names match but IDs don't, delete the old local "Seed" version and insert the new web version
+                                    await db.DeleteAsync(byName);
+                                }
                                 affected += await db.InsertAsync(localPoi);
                             }
                             else
@@ -168,19 +183,40 @@ namespace FoodStreetApp.Data
                 }
             }
 
-            var remotePois = await httpClient.GetFromJsonAsync<List<RemotePoiDto>>(targetUrl);
-            if (remotePois is null || remotePois.Count == 0)
+            // FULL SYNC FALLBACK OR FIRST TIME SYNC
+            try
             {
+                var remotePois = await httpClient.GetFromJsonAsync<List<RemotePoiDto>>(targetUrl);
+                if (remotePois is null || remotePois.Count == 0)
+                {
+                    return 0;
+                }
+
+                var alreadySyncedOnce = Preferences.Get(HasSyncedWithWebKey, false);
+
+                // IF THIS IS OUR FIRST SUCCESSFUL CONNECTION TO WEB, WIPE ALL SEEDED DATA TO PREVENT DUPLICATES
+                if (!alreadySyncedOnce)
+                {
+                    System.Diagnostics.Debug.WriteLine("[SYNC] First web sync ever — wiping local database to remove duplicates.");
+                    await db.DeleteAllAsync<POI>();
+                    Preferences.Set(HasSyncedWithWebKey, true);
+                }
+                else
+                {
+                    // Regular full sync wipe
+                    await db.DeleteAllAsync<POI>();
+                }
+
+                var localPois = remotePois.Select(MapRemotePoi).ToList();
+                await db.InsertAllAsync(localPois);
+                Preferences.Set(LastSyncUtcKey, DateTime.UtcNow.ToString("O"));
+                return localPois.Count;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[SYNC] Error during web sync: {ex.Message}");
                 return 0;
             }
-
-            await db.DeleteAllAsync<POI>();
-
-            var localPois = remotePois.Select(MapRemotePoi).ToList();
-
-            await db.InsertAllAsync(localPois);
-            Preferences.Set(LastSyncUtcKey, DateTime.UtcNow.ToString("O"));
-            return localPois.Count;
         }
 
         private static POI MapRemotePoi(RemotePoiDto p)
