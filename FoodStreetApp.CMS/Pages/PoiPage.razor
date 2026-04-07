@@ -556,35 +556,12 @@ else if (!_isLoading)
 
         Toasts.Info("Đang khởi tạo giọng đọc AI... 🎙️");
         
-        // Advanced JS to find native Vietnamese voice with polling for voices list populating
+        // Cloud-based Native Vietnamese TTS (Guaranteed quality)
         var script = @"
             (function(text) {
-                var synth = window.speechSynthesis;
-                
-                function speak() {
-                    var voices = synth.getVoices();
-                    if (voices.length === 0) {
-                        // Retry matching if the array is initially empty (common in some browsers)
-                        setTimeout(speak, 50);
-                        return;
-                    }
-                    
-                    var viVoice = voices.find(v => (v.lang.includes('vi') || v.name.toLowerCase().includes('vietnam')) && v.name.toLowerCase().includes('natural') ) 
-                               || voices.find(v => v.lang.includes('vi') || v.name.toLowerCase().includes('vietnam')) 
-                               || voices[0];
-                    
-                    var msg = new SpeechSynthesisUtterance(text);
-                    if (viVoice) {
-                        msg.voice = viVoice;
-                        console.log('Selected voice:', viVoice.name);
-                    }
-                    msg.lang = 'vi-VN';
-                    msg.rate = 0.9;
-                    synth.cancel(); // Stop any pending speech
-                    synth.speak(msg);
-                }
-                
-                speak();
+                var url = 'https://translate.google.com/translate_tts?ie=UTF-8&q=' + encodeURIComponent(text) + '&tl=vi&client=tw-ob';
+                var audio = new Audio(url);
+                audio.play();
             })";
             
         await JS.InvokeVoidAsync("eval", $"{script}('{_form.TextContent.Replace("'", "\\'").Replace("\n", " ")}')");
