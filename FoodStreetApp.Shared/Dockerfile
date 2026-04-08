@@ -14,9 +14,14 @@ RUN dotnet publish "FoodStreetApp.CMS/FoodStreetApp.CMS.csproj" -c Release -o /a
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
+# Add dependencies for GSSAPI/PostgreSQL and clean up
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgssapi-krb5-2 \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 COPY --from=build /app/publish .
 
-ENV PORT=8080
-EXPOSE 8080
+ENV PORT=10000
+EXPOSE 10000
 
-ENTRYPOINT ["sh", "-c", "ASPNETCORE_URLS=http://0.0.0.0:${PORT:-8080} dotnet FoodStreetApp.CMS.dll"]
+ENTRYPOINT ["sh", "-c", "ASPNETCORE_URLS=http://0.0.0.0:${PORT:-10000} dotnet FoodStreetApp.CMS.dll"]

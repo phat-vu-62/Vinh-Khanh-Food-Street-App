@@ -284,29 +284,28 @@ public class AdminDataService : IAdminDataService
 
     public async Task<FoodStreetApp.CMS.Models.AnalyticsSummary> GetAnalyticsSummaryAsync(DateTime? startDate = null, DateTime? endDate = null)
     {
-        var start = startDate?.ToUniversalTime();
-        var end = endDate?.ToUniversalTime();
+        var start = startDate?.ToUniversalTime() ?? DateTime.UtcNow.Date.AddDays(-30).ToUniversalTime();
+        var end = endDate?.ToUniversalTime() ?? DateTime.UtcNow.ToUniversalTime();
 
-        var query = _dbContext.UserHistories.AsNoTracking();
+        var query = _dbContext.UserHistories.AsNoTracking()
+            .Where(h => h.VisitedAtUtc >= start && h.VisitedAtUtc <= end);
 
-        if (start.HasValue) query = query.Where(h => h.VisitedAtUtc >= start.Value);
-        if (end.HasValue) query = query.Where(h => h.VisitedAtUtc <= end.Value);
+        // 1. Basic KPIs in fewer roundtrips
+        var stats = await query
+            .GroupBy(h => 1)
+            .Select(g => new
+            {
+                TotalAudio = g.Count(l => l.Action == "audio_played" || l.Action == "Listen"),
+                TotalViews = g.Count(l => l.Action == "poi_viewed" || l.Action == "POI viewed"),
+                HighEngagement = g.Count(l => (l.Action == "audio_played" || l.Action == "Listen") && l.DurationSeconds > 10),
+                AvgDuration = g.Where(l => l.DurationSeconds.HasValue && l.DurationSeconds > 0).Average(l => (double?)l.DurationSeconds) ?? 0,
+                UniqueUsers = g.Select(l => l.UserId).Distinct().Count()
+            })
+            .FirstOrDefaultAsync();
 
-        // Optimized DB-side aggregations
-        var totalAudio = await query.CountAsync(l => l.Action == "audio_played" || l.Action == "Listen");
-        var totalViews = await query.CountAsync(l => l.Action == "poi_viewed" || l.Action == "POI viewed");
-        var uniqueUsers = await query.Select(l => l.UserId).Distinct().CountAsync();
-        
-        var avgDuration = await query
-            .Where(l => l.DurationSeconds.HasValue && l.DurationSeconds > 0)
-            .AverageAsync(l => (double?)l.DurationSeconds) ?? 0;
+        if (stats == null) stats = new { TotalAudio = 0, TotalViews = 0, HighEngagement = 0, AvgDuration = 0d, UniqueUsers = 0 };
 
-        // Engagement Rate (> 10s)
-        var engagementBase = await query.CountAsync(l => l.Action == "audio_played" || l.Action == "Listen");
-        var highEngagement = await query.CountAsync(l => (l.Action == "audio_played" || l.Action == "Listen") && l.DurationSeconds > 10);
-        var engagementRate = engagementBase > 0 ? (double)highEngagement * 100 / engagementBase : 0;
-
-        // Top POIs (Filtered to only count Views/Scans to avoid over-counting during audio playback)
+        // 2. Top POIs
         var topPoiData = await query
             .Where(l => l.Action == "qr_scanned" || l.Action == "poi_viewed" || l.Action == "POI viewed")
             .GroupBy(l => l.PoiId)
@@ -323,26 +322,30 @@ public class AdminDataService : IAdminDataService
         var topPois = topPoiData.Select(x => new FoodStreetApp.CMS.Models.TopPoiMetric
         {
             PoiId = x.Key,
-            PoiName = poiNames.ContainsKey(x.Key) ? poiNames[x.Key] : $"POI #{x.Key}",
+            PoiName = poiNames.GetValueOrDefault(x.Key, $"POI #{x.Key}"),
             Count = x.Count
         }).ToList();
 
-        // Trends (Optimized to daily groupings in DB)
-        var trendStart = startDate?.Date ?? DateTime.UtcNow.Date.AddDays(-6);
-        var trends = new List<FoodStreetApp.CMS.Models.TrendPoint>();
+        // 3. Daily Trends (FIXED: Single query instead of loop)
+        var trendData = await query
+            .GroupBy(l => l.VisitedAtUtc.Date)
+            .Select(g => new
+            {
+                Date = g.Key,
+                Views = g.Count(l => l.Action == "poi_viewed" || l.Action == "POI viewed"),
+                Listens = g.Count(l => l.Action == "audio_played" || l.Action == "Listen")
+            })
+            .OrderBy(x => x.Date)
+            .ToListAsync();
 
-        for (var d = trendStart; d <= (endDate?.Date ?? DateTime.UtcNow.Date); d = d.AddDays(1))
+        var trends = trendData.Select(x => new FoodStreetApp.CMS.Models.TrendPoint
         {
-            var dayStart = d.ToUniversalTime();
-            var dayEnd = d.AddDays(1).ToUniversalTime();
-            
-            var views = await query.CountAsync(l => l.VisitedAtUtc >= dayStart && l.VisitedAtUtc < dayEnd && (l.Action == "poi_viewed" || l.Action == "POI viewed"));
-            var listens = await query.CountAsync(l => l.VisitedAtUtc >= dayStart && l.VisitedAtUtc < dayEnd && (l.Action == "audio_played" || l.Action == "Listen"));
-            
-            trends.Add(new FoodStreetApp.CMS.Models.TrendPoint { Date = d, Views = views, Listens = listens });
-        }
+            Date = x.Date,
+            Views = x.Views,
+            Listens = x.Listens
+        }).ToList();
 
-        // Peak Hour (Optimized)
+        // 4. Peak Hour
         var peakHourStr = "N/A";
         var peakGroup = await query
             .GroupBy(l => l.VisitedAtUtc.Hour)
@@ -357,14 +360,14 @@ public class AdminDataService : IAdminDataService
 
         return new FoodStreetApp.CMS.Models.AnalyticsSummary
         {
-            TotalAudioPlayed = totalAudio,
-            TotalPoiViewed = totalViews,
-            UniqueUsersCount = uniqueUsers,
-            AvgDurationSeconds = avgDuration,
+            TotalAudioPlayed = stats.TotalAudio,
+            TotalPoiViewed = stats.TotalViews,
+            UniqueUsersCount = stats.UniqueUsers,
+            AvgDurationSeconds = stats.AvgDuration,
             TopPois = topPois,
             HotSpotName = topPois.FirstOrDefault()?.PoiName ?? "N/A",
             PeakHour = peakHourStr,
-            EngagementRate = engagementRate,
+            EngagementRate = stats.TotalAudio > 0 ? (double)stats.HighEngagement * 100 / stats.TotalAudio : 0,
             DailyTrends = trends
         };
     }
