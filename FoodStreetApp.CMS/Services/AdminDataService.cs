@@ -1,5 +1,5 @@
 using FoodStreetApp.CMS.Interfaces;
-using FoodStreetApp.CMS.Data;
+using FoodStreetApp.Shared.Context;
 using FoodStreetApp.Shared.Entities;
 using Microsoft.EntityFrameworkCore;
 

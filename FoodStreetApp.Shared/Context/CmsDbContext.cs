@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
-namespace FoodStreetApp.CMS.Data;
+namespace FoodStreetApp.Shared.Context;
 
 public class CmsDbContext : DbContext
 {

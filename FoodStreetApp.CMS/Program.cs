@@ -1,5 +1,5 @@
 using FoodStreetApp.CMS.Interfaces;
-using FoodStreetApp.CMS.Data;
+using FoodStreetApp.Shared.Context;
 using FoodStreetApp.CMS.Services;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;

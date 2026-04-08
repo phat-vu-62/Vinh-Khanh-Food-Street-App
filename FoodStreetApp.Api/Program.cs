@@ -2,20 +2,17 @@ using FoodStreetApp.Api.Interfaces;
 using FoodStreetApp.Api.Repositories;
 using FoodStreetApp.Api.Services;
 using FoodStreetApp.Shared.Entities;
+using FoodStreetApp.Shared.Context;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var port = Environment.GetEnvironmentVariable("PORT");
-if (!string.IsNullOrWhiteSpace(port))
-{
-    builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
-}
+// DB Context Setup
+var connectionString = builder.Configuration.GetConnectionString("Postgres");
+builder.Services.AddDbContext<CmsDbContext>(options =>
+    options.UseNpgsql(connectionString));
 
 builder.Services.AddControllers();
-
-builder.Services.AddSingleton<IRepository<POI>>(_ => new InMemoryRepository<POI>(x => x.Id, (x, id) => x.Id = id));
-builder.Services.AddSingleton<IRepository<Tour>>(_ => new InMemoryRepository<Tour>(x => x.Id, (x, id) => x.Id = id));
-builder.Services.AddSingleton<IRepository<Audio>>(_ => new InMemoryRepository<Audio>(x => x.Id, (x, id) => x.Id = id));
 
 builder.Services.AddScoped<IPOIService, POIService>();
 builder.Services.AddScoped<ITourService, TourService>();

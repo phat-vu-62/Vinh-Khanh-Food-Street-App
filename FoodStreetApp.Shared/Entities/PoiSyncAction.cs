@@ -1,4 +1,4 @@
-namespace FoodStreetApp.CMS.Data;
+namespace FoodStreetApp.Shared.Entities;
 
 public class PoiSyncAction
 {
