@@ -136,10 +136,12 @@ namespace FoodStreetApp.Data
             {
                 try
                 {
+                    System.Diagnostics.Debug.WriteLine($"[SYNC] Attempting delta sync since {lastSyncUtc}");
                     var actionRequestUrl = $"{actionsUrl}?sinceUtc={Uri.EscapeDataString(lastSyncUtc)}";
                     var actions = await httpClient.GetFromJsonAsync<List<RemotePoiActionDto>>(actionRequestUrl);
-                    if (actions is not null)
+                    if (actions is not null && actions.Count > 0)
                     {
+                        System.Diagnostics.Debug.WriteLine($"[SYNC] Received {actions.Count} delta actions");
                         var affected = 0;
                         foreach (var action in actions.OrderBy(x => x.OccurredAtUtc))
                         {
@@ -186,12 +188,15 @@ namespace FoodStreetApp.Data
             // FULL SYNC FALLBACK OR FIRST TIME SYNC
             try
             {
+                System.Diagnostics.Debug.WriteLine($"[SYNC] Attempting full sync from {targetUrl}");
                 var remotePois = await httpClient.GetFromJsonAsync<List<RemotePoiDto>>(targetUrl);
                 if (remotePois is null || remotePois.Count == 0)
                 {
+                    System.Diagnostics.Debug.WriteLine("[SYNC] Received empty POI list from web");
                     return 0;
                 }
 
+                System.Diagnostics.Debug.WriteLine($"[SYNC] Received {remotePois.Count} POIs from web");
                 var alreadySyncedOnce = Preferences.Get(HasSyncedWithWebKey, false);
 
                 // IF THIS IS OUR FIRST SUCCESSFUL CONNECTION TO WEB, WIPE ALL SEEDED DATA TO PREVENT DUPLICATES
@@ -210,11 +215,12 @@ namespace FoodStreetApp.Data
                 var localPois = remotePois.Select(MapRemotePoi).ToList();
                 await db.InsertAllAsync(localPois);
                 Preferences.Set(LastSyncUtcKey, DateTime.UtcNow.ToString("O"));
+                System.Diagnostics.Debug.WriteLine($"[SYNC] Successfully inserted {localPois.Count} POIs");
                 return localPois.Count;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[SYNC] Error during web sync: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[SYNC] FATAL ERROR during web sync: {ex.Message}");
                 return 0;
             }
         }

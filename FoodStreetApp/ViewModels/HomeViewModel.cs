@@ -221,6 +221,9 @@ namespace FoodStreetApp.ViewModels
         {
             try
             {
+                // Ensure service is initialized (triggers web sync on startup)
+                await _poiService.InitializeAsync();
+
                 var pois = await _poiService.GetAllPOIsAsync().ConfigureAwait(false);
 
                 // Offload all string manipulations and list rebuilding to a background thread
@@ -250,7 +253,7 @@ namespace FoodStreetApp.ViewModels
                         var place = new FoodPlace
                         {
                             Name = poi.Name,
-                            Image = imageName,
+                            Image = !string.IsNullOrEmpty(poi.ImageUrl) ? poi.ImageUrl : imageName,
                             Rating = poi.Rating, // DB Rating
                             OriginalDescription = poi.Description ?? string.Empty,
                             Latitude = poi.Latitude,
@@ -268,6 +271,7 @@ namespace FoodStreetApp.ViewModels
                             featured.Latitude = poi.Latitude;
                             featured.Longitude = poi.Longitude;
                             featured.Rating = poi.Rating;
+                            if (!string.IsNullOrEmpty(poi.ImageUrl)) featured.Image = poi.ImageUrl;
                         }
 
                         var popular = PopularSeafoodStalls.FirstOrDefault(p => p.Name == poi.Name);
@@ -277,6 +281,7 @@ namespace FoodStreetApp.ViewModels
                             popular.Latitude = poi.Latitude;
                             popular.Longitude = poi.Longitude;
                             popular.Rating = poi.Rating;
+                            if (!string.IsNullOrEmpty(poi.ImageUrl)) popular.Image = poi.ImageUrl;
                         }
                     }
 
