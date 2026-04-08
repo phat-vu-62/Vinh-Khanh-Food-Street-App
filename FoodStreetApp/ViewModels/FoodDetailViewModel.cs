@@ -46,10 +46,14 @@ namespace FoodStreetApp.ViewModels
                 // Track POI view event
                 if (_place?.PoiData != null)
                 {
-                    _ = _trackingService.TrackEventAsync(_place.PoiData.Id, "poi_viewed");
+                    Task.Run(async () => {
+                        Console.WriteLine($"[TRACKING] Page load trigger for POI {_place.PoiData.Id}");
+                        await _trackingService.TrackEventAsync(_place.PoiData.Id, "poi_viewed");
+                    });
                 }
             }
         }
+
 
 
         public string? AutoPlay { get => _autoPlay; set { _autoPlay = value; OnPropertyChanged(); } }

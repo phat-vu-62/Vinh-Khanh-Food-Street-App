@@ -38,7 +38,9 @@ if (!string.IsNullOrWhiteSpace(databaseUrl))
 
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-builder.Services.AddDbContext<CmsDbContext>(options => options.UseNpgsql(connectionString));
+builder.Services.AddDbContext<CmsDbContext>(options => 
+    options.UseNpgsql(connectionString, x => x.MigrationsAssembly("FoodStreetApp.CMS")));
+
 
 // Register Gemini translation service with SSL bypass for firewall compatibility
 builder.Services.AddHttpClient<IGeminiTranslationService, GeminiTranslationService>()
@@ -55,6 +57,7 @@ builder.Services.AddScoped<ToastService>();
 var app = builder.Build();
 
 Console.WriteLine($"[Config] Startup: Environment={app.Environment.EnvironmentName}, Port={port}");
+
 Console.WriteLine($"[Config] DB: ConnectionString is {(string.IsNullOrWhiteSpace(connectionString) ? "MISSING" : "DETECTED")}");
 
 using (var scope = app.Services.CreateScope())

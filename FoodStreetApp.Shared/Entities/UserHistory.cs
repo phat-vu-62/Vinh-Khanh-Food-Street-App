@@ -8,4 +8,6 @@ public class UserHistory
     public DateTime VisitedAtUtc { get; set; } = DateTime.UtcNow;
     public string? Action { get; set; }
     public int? DurationSeconds { get; set; }
+    public string? QRCode { get; set; }
 }
+

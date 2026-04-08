@@ -42,6 +42,13 @@ namespace FoodStreetApp
                                 ImageUrl = poi.ImageUrl,
                                 PoiData = poi
                             };
+                            
+                            // Track QR Scanned event
+                            var tracking = Handler?.MauiContext?.Services.GetService<Services.ITrackingService>();
+                            if (tracking != null)
+                            {
+                                _ = tracking.TrackEventAsync(id, "qr_scanned", qrCode: uri.ToString());
+                            }
 
                             // Navigate to detail page with autoplay parameters
                             await MainThread.InvokeOnMainThreadAsync(async () =>

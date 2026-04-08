@@ -162,8 +162,10 @@ else
                         <th>Khách tham quan</th>
                         <th>Hành động</th>
                         <th>Địa điểm</th>
+                        <th>Nguồn (QR)</th>
                         <th>Thời lượng</th>
                         <th>Thời gian</th>
+
                     </tr>
                 </thead>
                 <tbody>
@@ -180,9 +182,11 @@ else
                             </td>
                             <td><span class="saas-badge @(h.Action == "Listen" || h.Action == "audio_played" ? "badge-active" : "badge-highlight")">@h.Action</span></td>
                             <td>@_poiNames.GetValueOrDefault(h.PoiId, $"POI #{h.PoiId}")</td>
+                            <td class="small text-muted">@(h.QRCode != null ? h.QRCode.Split('?').Last() : "-")</td>
                             <td class="small fw-semibold">@(h.DurationSeconds ?? 0)s</td>
                             <td class="text-muted small">@h.VisitedAtUtc.ToLocalTime().ToString("HH:mm, dd/MM")</td>
                         </tr>
+
                     }
                 </tbody>
             </table>

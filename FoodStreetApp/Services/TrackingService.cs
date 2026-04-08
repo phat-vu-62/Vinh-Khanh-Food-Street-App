@@ -1,10 +1,11 @@
 using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace FoodStreetApp.Services
 {
     public interface ITrackingService
     {
-        Task TrackEventAsync(int poiId, string action, int? durationSeconds = null);
+        Task TrackEventAsync(int poiId, string action, int? durationSeconds = null, string? qrCode = null);
     }
 
     public class TrackingService : ITrackingService
@@ -14,7 +15,7 @@ namespace FoodStreetApp.Services
 
         public TrackingService()
         {
-            _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
             
             // Generate a GUID for anonymous user tracking if not already present
             _userId = Preferences.Get("tracking_user_id", string.Empty);
@@ -25,7 +26,7 @@ namespace FoodStreetApp.Services
             }
         }
 
-        public async Task TrackEventAsync(int poiId, string action, int? durationSeconds = null)
+        public async Task TrackEventAsync(int poiId, string action, int? durationSeconds = null, string? qrCode = null)
         {
             try
             {
@@ -35,24 +36,39 @@ namespace FoodStreetApp.Services
                     PoiId = poiId,
                     Action = action,
                     DurationSeconds = durationSeconds,
+                    QRCode = qrCode,
                     VisitedAtUtc = DateTime.UtcNow
                 };
 
-                // The CMS API endpoint for UsageHistory
+                // The CMS API endpoint for History
                 var trackingUrl = "https://vinh-khanh-food-street-app.onrender.com/api/history";
                 
-                System.Diagnostics.Debug.WriteLine($"[TRACKING] Sending {action} for POI {poiId} (Duration: {durationSeconds}s)");
+                Console.WriteLine($"[TRACKING] Sending {action} for POI {poiId} (QR: {qrCode})");
                 
-                // Fire and forget, don't await to avoid blocking narration or geofence
-                _ = _httpClient.PostAsJsonAsync(trackingUrl, payload).ContinueWith(t => 
+                // PRODUCTION FIX: No more fire-and-forget. We must await to ensure data is sent.
+                var response = await _httpClient.PostAsJsonAsync(trackingUrl, payload);
+                
+                if (response.IsSuccessStatusCode)
                 {
-                    if (t.IsFaulted)
-                        System.Diagnostics.Debug.WriteLine($"[TRACKING] Failed: {t.Exception?.InnerException?.Message}");
-                });
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"[TRACKING] SUCCESS: {response.StatusCode} | Full Response: {responseBody}");
+                }
+                else
+                {
+                    var errorBody = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"[TRACKING] FAILURE: {response.StatusCode} | Error: {errorBody}");
+                    
+                    // Specific log for QR scanned to alert user
+                    if (action == "qr_scanned")
+                    {
+                        System.Diagnostics.Debug.WriteLine("[TRACKING] CRITICAL: QR scan was NOT recorded by server.");
+                    }
+                }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[TRACKING] Error queuing event: {ex.Message}");
+                Console.WriteLine($"[TRACKING] FATAL ERROR: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[TRACKING] Exception Details: {ex}");
             }
         }
     }
