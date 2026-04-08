@@ -153,9 +153,13 @@ else
     private int _audioCount;
     private DateTime _lastUpdated;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await LoadAsync();
+        if (firstRender)
+        {
+            await LoadAsync();
+            StateHasChanged();
+        }
     }
 
     private async Task LoadAsync()
@@ -165,8 +169,8 @@ else
         
         try
         {
-            var pois = DataService.GetPois();
-            _poiCount = pois.Count;
+            // Move fast queries to a separate block if needed, but for now we defer everything heavy
+            _poiCount = DataService.GetPois().Count;
             _audioCount = DataService.GetAudios().Count;
             
             _summary = await DataService.GetAnalyticsSummaryAsync();
