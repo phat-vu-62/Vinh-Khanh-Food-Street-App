@@ -11,8 +11,9 @@ builder.Configuration.AddEnvironmentVariables();
 
 // Configure Port at builder stage - Clean and resilient for Render/Docker
 var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
-builder.Configuration["HTTP_PORTS"] = port; // Set native .NET port configuration
-Console.WriteLine($"[STARTUP] Target Port: {port}");
+builder.Configuration["ASPNETCORE_URLS"] = $"http://*:{port}";
+builder.WebHost.UseUrls($"http://*:{port}");
+Console.WriteLine($"[STARTUP] Universal Binding: http://*:{port}");
 
 
 
@@ -56,6 +57,13 @@ builder.Services.AddScoped<IQRCodeService, QRCodeService>();
 builder.Services.AddScoped<ToastService>();
 
 var app = builder.Build();
+
+// Global Request Logger Middleware - DEBUG VISIBILITY
+app.Use(async (context, next) =>
+{
+    Console.WriteLine($"[REQUEST] {context.Request.Method} {context.Request.Path}{context.Request.QueryString}");
+    await next();
+});
 
 // Health Check endpoint MUST be mapped early for Render/Cloudflare
 app.MapGet("/health", () => "OK");

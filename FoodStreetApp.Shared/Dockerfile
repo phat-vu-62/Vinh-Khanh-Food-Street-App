@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY --from=build /app/publish .
 
-ENV ASPNETCORE_HTTP_PORTS=10000
+ENV ASPNETCORE_URLS=http://*:10000
 EXPOSE 10000
 
 ENTRYPOINT ["dotnet", "FoodStreetApp.CMS.dll"]
