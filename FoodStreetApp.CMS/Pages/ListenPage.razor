@@ -57,10 +57,6 @@
 
                 <audio @ref="_audioElement" id="listenAudio" src="@_audioUrl" preload="auto" crossorigin="anonymous"></audio>
             </div>
-
-            <div class="debug-panel p-2 x-small text-muted text-center border-top">
-                <code>@_debugInfo</code>
-            </div>
         </div>
     }
 </div>
@@ -89,25 +85,34 @@
                     if (window.audioState.currentLang === 'vi' && window.audioState.audioUrl) {
                         const playPromise = audioElement.play();
                         if (playPromise !== undefined) {
-                            playPromise.catch(e => {
+                            playPromise.then(() => {
+                                window.audioState.isPlaying = true;
+                                dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', true);
+                            }).catch(e => {
                                 dotNetHelper.invokeMethodAsync('OnPlaybackError', "Browser Block: " + e.message);
                             });
                         }
                     } else {
                         if (!window.speechSynthesis) {
                             dotNetHelper.invokeMethodAsync('ToggleBrowserWarning', true);
-                            dotNetHelper.invokeMethodAsync('OnPlaybackError', "Trình duyệt này không hỗ trợ AI đọc.");
                             return;
                         }
                         window.speechSynthesis.cancel();
                         const u = new SpeechSynthesisUtterance(window.audioState.ttsText);
                         u.lang = window.audioState.ttsLang;
-                        u.onstart = () => dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', true);
-                        u.onend = () => dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
+                        u.onstart = () => {
+                            window.audioState.isPlaying = true;
+                            dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', true);
+                        };
+                        u.onend = () => {
+                            window.audioState.isPlaying = false;
+                            dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
+                        };
                         u.onerror = (e) => {
                             if (e.error !== 'interrupted') {
                                 dotNetHelper.invokeMethodAsync('OnPlaybackError', "Voice Error: " + e.error);
                             } else {
+                                window.audioState.isPlaying = false;
                                 dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
                             }
                         };
@@ -119,9 +124,18 @@
             }
         };
 
-        audioElement.onplaying = () => dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', true);
-        audioElement.onpause = () => dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
-        audioElement.onended = () => dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
+        audioElement.onplaying = () => {
+            window.audioState.isPlaying = true;
+            dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', true);
+        };
+        audioElement.onpause = () => {
+            window.audioState.isPlaying = false;
+            dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
+        };
+        audioElement.onended = () => {
+            window.audioState.isPlaying = false;
+            dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
+        };
         audioElement.onwaiting = () => dotNetHelper.invokeMethodAsync('OnBuffering', true);
         audioElement.oncanplay = () => dotNetHelper.invokeMethodAsync('OnBuffering', false);
     };
@@ -136,7 +150,7 @@
     .audio-card { width: 100%; max-width: 400px; background: white; border-radius: 32px; overflow: hidden; position: relative; }
     .gradient-bar { height: 6px; background: linear-gradient(90deg, #3b82f6, #06b6d4); }
     .lang-selector { display: flex; justify-content: center; gap: 8px; padding: 20px 10px 0; }
-    .lang-btn { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 12px; font-size: 0.7rem; font-weight: bold; color: #64748b; cursor: pointer; transition: 0.2s; }
+    .lang-btn { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 12px; font-size: 0.7rem; font-weight: bold; color: #64748b; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
     .lang-btn.active { background: #3b82f6; color: white; border-color: #3b82f6; }
     .card-content { padding: 30px; text-align: center; }
     .icon-circle { width: 64px; height: 64px; background: #eff6ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; color: #3b82f6; font-size: 1.8rem; }
@@ -147,7 +161,6 @@
     .audio-wave { display: flex; justify-content: center; gap: 4px; height: 20px; margin-top: 20px; }
     .audio-wave span { width: 3px; background: #3b82f6; border-radius: 2px; animation: w 0.8s infinite alternate; }
     @@keyframes w { from { height: 4px; } to { height: 18px; } }
-    .x-small { font-size: 0.65rem; }
 </style>
 
 @code {
@@ -156,7 +169,7 @@
     private ElementReference _audioElement;
     private DotNetObjectReference<ListenPage>? _objRef;
     private bool _isPlaying, _isBuffering, _hasError, _showBrowserWarning;
-    private string _currentLang = "vi", _currentName = "", _statusMessage = "", _audioUrl = "", _debugInfo = "V-Final-InAppFix";
+    private string _currentLang = "vi", _currentName = "", _statusMessage = "", _audioUrl = "";
 
     protected override void OnInitialized() {
         _poi = DataService.GetPoiById(PoiId);
@@ -212,7 +225,6 @@
     
     [JSInvokable] public void OnPlaybackError(string m) { 
         _isPlaying = false; _isBuffering = false; _hasError = true; 
-        _debugInfo = "Debug: " + m;
         _statusMessage = "Sự cố âm thanh";
         StateHasChanged(); 
     }
