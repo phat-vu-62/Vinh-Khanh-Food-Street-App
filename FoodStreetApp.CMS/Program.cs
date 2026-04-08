@@ -9,14 +9,14 @@ var builder = WebApplication.CreateBuilder(args);
 // Fix status 134 on Render/Linux by disabling file system watchers
 builder.Configuration.AddEnvironmentVariables();
 
-// Configure Port & Protocol at builder stage - Dual Stack (v4/v6) and HTTP/1.1 for Proxy stability
+// Configure Port & Protocol at builder stage - ListenAnyIP is safest for dual-stack (v4/v6)
 var port = int.Parse(Environment.GetEnvironmentVariable("PORT") ?? "10000");
 builder.WebHost.ConfigureKestrel(options => {
-    // Listen on all interfaces (IPv4 and IPv6) to avoid connection refused on some proxy networks
-    options.Listen(System.Net.IPAddress.Any, port, listenOptions => listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1);
-    options.Listen(System.Net.IPAddress.IPv6Any, port, listenOptions => listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1);
+    options.ListenAnyIP(port, listenOptions => {
+        listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1;
+    });
 });
-Console.WriteLine($"[STARTUP] Dual-Stack Kestrel (v4/v6) on Port {port} [HTTP/1.1 only]");
+Console.WriteLine($"[STARTUP] Kestrel listening on Port {port} (Any IP, HTTP/1.1 only)");
 
 
 

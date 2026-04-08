@@ -14,9 +14,11 @@ RUN dotnet publish "FoodStreetApp.CMS/FoodStreetApp.CMS.csproj" -c Release -o /a
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
 
-# Add dependencies for GSSAPI/PostgreSQL and clean up
+# Add dependencies for GSSAPI, ICU (Globalization), and clean up
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgssapi-krb5-2 \
+    libicu74 \
+    ca-certificates \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/publish .
