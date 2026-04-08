@@ -9,11 +9,13 @@ var builder = WebApplication.CreateBuilder(args);
 // Fix status 134 on Render/Linux by disabling file system watchers
 builder.Configuration.AddEnvironmentVariables();
 
-// Configure Port at builder stage - Clean and resilient for Render/Docker
-var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
+// Configure Port at builder stage - Using 8080 as primary default for .NET 10
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
 builder.Configuration["ASPNETCORE_URLS"] = $"http://*:{port}";
-builder.WebHost.UseUrls($"http://*:{port}");
-Console.WriteLine($"[STARTUP] Universal Binding: http://*:{port}");
+builder.WebHost.ConfigureKestrel(options => {
+    options.ListenAnyIP(int.Parse(port));
+});
+Console.WriteLine($"[STARTUP] Kestrel listening on all IPs at port: {port}");
 
 
 
@@ -58,11 +60,20 @@ builder.Services.AddScoped<ToastService>();
 
 var app = builder.Build();
 
-// Global Request Logger Middleware - DEBUG VISIBILITY
+// Global Request Logger Middleware - ENHANCED DEBUG VISIBILITY
 app.Use(async (context, next) =>
 {
-    Console.WriteLine($"[REQUEST] {context.Request.Method} {context.Request.Path}{context.Request.QueryString}");
+    var host = context.Request.Host;
+    var proto = context.Request.Headers["X-Forwarded-Proto"].ToString() ?? "http";
+    Console.WriteLine($"[REQUEST] {context.Request.Method} {proto}://{host}{context.Request.Path}{context.Request.QueryString}");
     await next();
+});
+
+// Configure Forwarded Headers for Render/Cloudflare Proxy transparency
+app.UseForwardedHeaders(new ForwardedHeadersOptions
+{
+    ForwardedHeaders = Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedFor | 
+                       Microsoft.AspNetCore.HttpOverrides.ForwardedHeaders.XForwardedProto
 });
 
 // Health Check endpoint MUST be mapped early for Render/Cloudflare
