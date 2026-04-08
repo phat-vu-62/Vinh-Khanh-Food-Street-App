@@ -94,67 +94,8 @@ namespace FoodStreetApp.ViewModels
         public HomeViewModel(IPOIService poiService)
         {
             _poiService = poiService;
-            FeaturedStalls = new ObservableCollection<FoodPlace>
-            {
-                new FoodPlace
-                {
-                    Name = "Ốc Phát",
-                    Image = "ocphat.jpg",
-                    Rating = 4.8,
-                    OriginalDescription = "Quán ốc bình dân, đa dạng các loại ốc tươi ngon, nêm nếm đậm đà.",
-                    Latitude = 10.7621,
-                    Longitude = 106.7032
-                },
-                new FoodPlace
-                {
-                    Name = "Ốc Hồng Nhung",
-                    Image = "ochongnhung.jpg",
-                    Rating = 4.5,
-                    OriginalDescription = "Nổi tiếng với các món ốc xào me, nướng mỡ hành thơm lừng.",
-                    Latitude = 10.7615,
-                    Longitude = 106.7038
-                },
-                new FoodPlace
-                {
-                    Name = "BONA Food and Beer",
-                    Image = "bona.jpg",
-                    Rating = 4.9,
-                    OriginalDescription = "Kết hợp giữa đồ ăn ngon và bia tươi, cực kỳ sôi động về đêm.",
-                    Latitude = 10.7598,
-                    Longitude = 106.7055
-                }
-            };
-
-            PopularSeafoodStalls = new ObservableCollection<FoodPlace>
-            {
-                new FoodPlace
-                {
-                    Name = "Ốc Nhi 20k",
-                    Image = "ocnhi20k.jpg",
-                    Rating = 4.6,
-                    OriginalDescription = "Đồng giá 20k, phù hợp học sinh sinh viên, ngon và rẻ.",
-                    Latitude = 10.7610,
-                    Longitude = 106.7042
-                },
-                new FoodPlace
-                {
-                    Name = "Ốc Ty",
-                    Image = "octy.jpg",
-                    Rating = 4.7,
-                    OriginalDescription = "Ốc tươi sống, phục vụ nhanh, không gian thoáng mát.",
-                    Latitude = 10.7605,
-                    Longitude = 106.7050
-                },
-                new FoodPlace
-                {
-                    Name = "Lãng Quán",
-                    Image = "langquan.jpg",
-                    Rating = 4.4,
-                    OriginalDescription = "Hải sản tươi sống, không gian gia đình ấm cúng.",
-                    Latitude = 10.7592,
-                    Longitude = 106.7061
-                }
-            };
+            FeaturedStalls = new ObservableCollection<FoodPlace>();
+            PopularSeafoodStalls = new ObservableCollection<FoodPlace>();
 
             RefreshTranslations();
             LocalizationResourceManager.Instance.PropertyChanged += (s, e) => RefreshTranslations();
@@ -226,12 +167,10 @@ namespace FoodStreetApp.ViewModels
 
                 var pois = await _poiService.GetAllPOIsAsync().ConfigureAwait(false);
 
-                // Offload all string manipulations and list rebuilding to a background thread
-                var processedList = await Task.Run(() =>
+                // Offload all mapping and filtering to a background thread for UI fluidness
+                var (allList, featuredList, seafoodList) = await Task.Run(() =>
                 {
-                    var resultList = new List<FoodPlace>(pois.Count);
-
-                    foreach (var poi in pois)
+                    FoodPlace MapPoi(POI poi)
                     {
                         string imageName = "placeholder_food.png";
                         if (poi.Name.Contains("Phát")) imageName = "ocphat.jpg";
@@ -250,56 +189,57 @@ namespace FoodStreetApp.ViewModels
                         else if (poi.Name.Contains("Diễm")) imageName = "ocdiem.jpg";
                         else if (poi.Name.Contains("Lẩu gà lá é")) imageName = "laugalae.jpg";
 
-                        var place = new FoodPlace
+                        return new FoodPlace
                         {
                             Name = poi.Name,
                             Image = !string.IsNullOrEmpty(poi.ImageUrl) ? poi.ImageUrl : imageName,
-                            Rating = poi.Rating, // DB Rating
+                            Rating = poi.Rating,
                             OriginalDescription = poi.Description ?? string.Empty,
                             Latitude = poi.Latitude,
                             Longitude = poi.Longitude,
                             PoiData = poi
                         };
-
-                        resultList.Add(place);
-
-                        // Note: It is safe to read memory on bg thread, we will not assign property observables here
-                        var featured = FeaturedStalls.FirstOrDefault(f => f.Name == poi.Name);
-                        if (featured != null)
-                        {
-                            featured.PoiData = poi;
-                            featured.Latitude = poi.Latitude;
-                            featured.Longitude = poi.Longitude;
-                            featured.Rating = poi.Rating;
-                            if (!string.IsNullOrEmpty(poi.ImageUrl)) featured.Image = poi.ImageUrl;
-                        }
-
-                        var popular = PopularSeafoodStalls.FirstOrDefault(p => p.Name == poi.Name);
-                        if (popular != null)
-                        {
-                            popular.PoiData = poi;
-                            popular.Latitude = poi.Latitude;
-                            popular.Longitude = poi.Longitude;
-                            popular.Rating = poi.Rating;
-                            if (!string.IsNullOrEmpty(poi.ImageUrl)) popular.Image = poi.ImageUrl;
-                        }
                     }
 
-                    return resultList;
-                });
+                    // 1. Build All Restaurants
+                    var all = pois.Select(MapPoi).ToList();
 
-                // Re-enter the main thread just once to update view models
-                await MainThread.InvokeOnMainThreadAsync(() =>
-                {
-                    _allRestaurantsFullList = processedList;
+                    // 2. Build Featured (Top 3 by priority)
+                    var featured = pois.OrderByDescending(p => p.Priority)
+                                      .Take(3)
+                                      .Select(MapPoi)
+                                      .ToList();
+
+                    // 3. Build Seafood Section (Contains "Ốc" or "Hải sản")
+                    var seafood = pois.Where(p => p.Name.Contains("Ốc", StringComparison.OrdinalIgnoreCase) || 
+                                                 p.Name.Contains("Seafood", StringComparison.OrdinalIgnoreCase))
+                                     .OrderByDescending(p => p.Rating)
+                                     .Take(6)
+                                     .Select(MapPoi)
+                                     .ToList();
+
+                    return (all, featured, seafood);
+                });
+ 
+                 // Re-enter the main thread just once to update view models
+                 await MainThread.InvokeOnMainThreadAsync(() =>
+                 {
+                    _allRestaurantsFullList = allList;
+ 
+                    // Update dynamic collections
+                    FeaturedStalls.Clear();
+                    foreach (var p in featuredList) FeaturedStalls.Add(p);
+
+                    PopularSeafoodStalls.Clear();
+                    foreach (var p in seafoodList) PopularSeafoodStalls.Add(p);
 
                     RefreshTranslations(); // Updates translated descriptions
-
+ 
                     // Create new collections on the UI thread and reassign
                     AllRestaurants = new ObservableCollection<FoodPlace>(_allRestaurantsFullList);
-
+ 
                     FilterRestaurants();
-                });
+                 });
             }
             catch (Exception ex)
             {
