@@ -9,16 +9,27 @@ namespace FoodStreetApp.Api.Controllers;
 public class POIController : ControllerBase
 {
     private readonly IPOIService _service;
+    private readonly IQRCodeService _qrCodeService;
 
-    public POIController(IPOIService service)
+    public POIController(IPOIService service, IQRCodeService qrCodeService)
     {
         _service = service;
+        _qrCodeService = qrCodeService;
     }
 
     [HttpGet]
     public async Task<ActionResult<IReadOnlyCollection<POI>>> GetAll()
     {
         return Ok(await _service.GetAllAsync());
+    }
+
+    [HttpGet("qrcodes")]
+    public async Task<ActionResult<IEnumerable<FoodStreetApp.Shared.DTOs.RestaurantQRCodeDto>>> GetQRCodes()
+    {
+        // In a real production app, baseUri should come from configuration
+        string baseUri = $"{Request.Scheme}://{Request.Host}";
+        var qrCodes = await _qrCodeService.GetRestaurantQRCodesAsync(baseUri);
+        return Ok(qrCodes);
     }
 
     [HttpGet("{id:int}")]

@@ -49,6 +49,7 @@ builder.Services.AddHttpClient<IGeminiTranslationService, GeminiTranslationServi
 
 // Register Admin Services
 builder.Services.AddScoped<IAdminDataService, AdminDataService>();
+builder.Services.AddScoped<IQRCodeService, QRCodeService>();
 builder.Services.AddScoped<ToastService>();
 
 var app = builder.Build();
