@@ -3,6 +3,7 @@
 @using FoodStreetApp.CMS.Interfaces
 @using FoodStreetApp.Shared.Entities
 @inject IAdminDataService DataService
+@inject IJSRuntime JSRuntime
 
 <div class="listen-container">
     @if (_poi == null)
@@ -17,13 +18,22 @@
         <div class="audio-card">
             <div class="gradient-bar"></div>
             
+            <!-- Language Selector -->
+            <div class="lang-selector">
+                <button class="lang-btn @(_currentLang == "vi" ? "active" : "")" @onclick='() => ChangeLang("vi")' title="Tiếng Việt">VN</button>
+                <button class="lang-btn @(_currentLang == "en" ? "active" : "")" @onclick='() => ChangeLang("en")' title="English">EN</button>
+                <button class="lang-btn @(_currentLang == "zh" ? "active" : "")" @onclick='() => ChangeLang("zh")' title="Chinese">ZH</button>
+                <button class="lang-btn @(_currentLang == "ko" ? "active" : "")" @onclick='() => ChangeLang("ko")' title="Korean">KO</button>
+                <button class="lang-btn @(_currentLang == "ja" ? "active" : "")" @onclick='() => ChangeLang("ja")' title="Japanese">JA</button>
+            </div>
+
             <div class="card-content">
                 <div class="icon-circle">
                     <i class="bi bi-shop"></i>
                 </div>
                 
-                <h1 class="restaurant-title">@_poi.Name</h1>
-                <p class="subtitle">@(_isPlaying ? "Đang kể câu chuyện cho bạn..." : "Chạm để bắt đầu hành trình ẩm thực")</p>
+                <h1 class="restaurant-title">@_currentName</h1>
+                <p class="subtitle">@_statusMessage</p>
 
                 <div class="player-controls">
                     <button class="play-btn @(_isPlaying ? "playing" : "")" @onclick="TogglePlay">
@@ -77,45 +87,74 @@
         background: linear-gradient(90deg, #0984e3, #00cec9);
     }
 
+    .lang-selector {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        padding: 20px 10px 0;
+    }
+
+    .lang-btn {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 4px 10px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: #64748b;
+    }
+
+    .lang-btn.active {
+        background: #0984e3;
+        color: white;
+        border-color: #0984e3;
+    }
+
     .card-content {
-        padding: 50px 30px;
+        padding: 30px 30px 50px;
         text-align: center;
     }
 
     .icon-circle {
-        width: 80px;
-        height: 80px;
+        width: 70px;
+        height: 70px;
         background: #f0f7ff;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin: 0 auto 25px;
+        margin: 0 auto 20px;
         color: #0984e3;
-        font-size: 2.5rem;
+        font-size: 2.2rem;
     }
 
     .restaurant-title {
         font-weight: 800;
-        font-size: 1.75rem;
-        margin-bottom: 10px;
+        font-size: 1.6rem;
+        margin-bottom: 8px;
         color: #1e293b;
     }
 
     .subtitle {
         color: #64748b;
-        font-size: 0.95rem;
-        margin-bottom: 40px;
+        font-size: 0.9rem;
+        margin-bottom: 30px;
+        min-height: 3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
 
     .play-btn {
-        width: 100px;
-        height: 100px;
+        width: 90px;
+        height: 90px;
         background: #0984e3;
         border: none;
         border-radius: 50%;
         color: white;
-        font-size: 3rem;
+        font-size: 2.8rem;
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -149,8 +188,8 @@
         justify-content: center;
         align-items: center;
         gap: 5px;
-        height: 30px;
-        margin-top: 30px;
+        height: 25px;
+        margin-top: 25px;
     }
 
     .audio-wave span {
@@ -160,11 +199,11 @@
         animation: wave 1s infinite alternate;
     }
 
-    .audio-wave span:nth-child(1) { height: 10px; animation-delay: 0.1s; }
-    .audio-wave span:nth-child(2) { height: 20px; animation-delay: 0.2s; }
-    .audio-wave span:nth-child(3) { height: 25px; animation-delay: 0.3s; }
-    .audio-wave span:nth-child(4) { height: 15px; animation-delay: 0.4s; }
-    .audio-wave span:nth-child(5) { height: 10px; animation-delay: 0.5s; }
+    .audio-wave span:nth-child(1) { height: 8px; animation-delay: 0.1s; }
+    .audio-wave span:nth-child(2) { height: 16px; animation-delay: 0.2s; }
+    .audio-wave span:nth-child(3) { height: 22px; animation-delay: 0.3s; }
+    .audio-wave span:nth-child(4) { height: 12px; animation-delay: 0.4s; }
+    .audio-wave span:nth-child(5) { height: 8px; animation-delay: 0.5s; }
 
     @@keyframes wave {
         from { transform: scaleY(1); }
@@ -172,29 +211,99 @@
     }
 </style>
 
-@inject IJSRuntime JSRuntime
-
 @code {
     [Parameter] public int PoiId { get; set; }
     private POI? _poi;
     private bool _isPlaying;
+    private string _currentLang = "vi";
+    private string _currentName = "";
+    private string _statusMessage = "";
 
     protected override void OnInitialized()
     {
         _poi = DataService.GetPoiById(PoiId);
+        UpdateDisplay();
+    }
+
+    private void ChangeLang(string lang)
+    {
+        if (_isPlaying)
+        {
+            _ = StopAllPlayback();
+        }
+        _currentLang = lang;
+        UpdateDisplay();
+    }
+
+    private void UpdateDisplay()
+    {
+        if (_poi == null) return;
+
+        _currentName = _currentLang switch
+        {
+            "en" => _poi.NameEn ?? _poi.Name,
+            "zh" => _poi.NameZh ?? _poi.Name,
+            "ko" => _poi.NameKo ?? _poi.Name,
+            "ja" => _poi.NameJa ?? _poi.Name,
+            _ => _poi.Name
+        };
+
+        var desc = _currentLang switch
+        {
+            "en" => _poi.DescriptionEn ?? _poi.Description,
+            "zh" => _poi.DescriptionZh ?? _poi.Description,
+            "ko" => _poi.DescriptionKo ?? _poi.Description,
+            "ja" => _poi.DescriptionJa ?? _poi.Description,
+            _ => _poi.Description
+        };
+
+        _statusMessage = desc ?? "Chạm để bắt đầu hành trình ẩm thực";
     }
 
     private async Task TogglePlay()
     {
         if (!_isPlaying)
         {
-            await JSRuntime.InvokeVoidAsync("eval", "document.getElementById('audioPlayer').play()");
+            if (_currentLang == "vi" && !string.IsNullOrEmpty(_poi?.AudioUrl))
+            {
+                // Play original audio file for Vietnamese
+                await JSRuntime.InvokeVoidAsync("audioHelper.play", "audioPlayer");
+            }
+            else
+            {
+                // Use TTS for other languages or if no audio file
+                string textToSpeak = _currentLang switch
+                {
+                    "en" => _poi?.TextContentEn ?? _poi?.DescriptionEn ?? _poi?.NameEn,
+                    "zh" => _poi?.TextContentZh ?? _poi?.DescriptionZh ?? _poi?.NameZh,
+                    "ko" => _poi?.TextContentKo ?? _poi?.DescriptionKo ?? _poi?.NameKo,
+                    "ja" => _poi?.TextContentJa ?? _poi?.DescriptionJa ?? _poi?.NameJa,
+                    _ => _poi?.TextContent ?? _poi?.Description ?? _poi?.Name
+                } ?? "";
+
+                string ttsLang = _currentLang switch
+                {
+                    "en" => "en-US",
+                    "zh" => "zh-CN",
+                    "ko" => "ko-KR",
+                    "ja" => "ja-JP",
+                    _ => "vi-VN"
+                };
+
+                await JSRuntime.InvokeVoidAsync("audioHelper.speak", textToSpeak, ttsLang);
+            }
             _isPlaying = true;
         }
         else
         {
-            await JSRuntime.InvokeVoidAsync("eval", "document.getElementById('audioPlayer').pause()");
-            _isPlaying = false;
+            await StopAllPlayback();
         }
+    }
+
+    private async Task StopAllPlayback()
+    {
+        await JSRuntime.InvokeVoidAsync("audioHelper.pause", "audioPlayer");
+        await JSRuntime.InvokeVoidAsync("audioHelper.stopSpeaking");
+        _isPlaying = false;
     }
 }
