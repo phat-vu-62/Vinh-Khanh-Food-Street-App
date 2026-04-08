@@ -37,7 +37,6 @@
                 <p class="subtitle @(_hasError ? "text-danger fw-bold" : "")">@_statusMessage</p>
 
                 <div class="player-controls">
-                    <!-- id="main-play-btn" is targeted by the JS mobile bridge -->
                     <button id="main-play-btn" class="play-btn @(_isPlaying ? "playing" : "")" disabled="@_isBuffering">
                         <i class="bi @(_isPlaying ? "bi-pause-fill" : "bi-play-fill ms-1")"></i>
                     </button>
@@ -61,10 +60,7 @@
 <script>
     window.initAudioMobileBridge = function(dotNetHelper, audioElement, playButtonId) {
         const playButton = document.getElementById(playButtonId);
-        if (!playButton || !audioElement) {
-            console.error("Missing elements:", { playButton, audioElement });
-            return;
-        }
+        if (!playButton || !audioElement) return;
 
         window.audioState = {
             isPlaying: false,
@@ -74,28 +70,33 @@
             audioUrl: ''
         };
 
-        // Standard JS Click Handler - SYNC and FAST for Mobile Autoplay bypass
         playButton.onclick = function() {
             try {
                 if (window.audioState.isPlaying) {
                     audioElement.pause();
-                    window.speechSynthesis.cancel();
+                    if (window.speechSynthesis) window.speechSynthesis.cancel();
                     window.audioState.isPlaying = false;
                 } else {
                     if (window.audioState.currentLang === 'vi' && window.audioState.audioUrl) {
-                        const playPromise = audioElement.play();
-                        if (playPromise !== undefined) {
-                            playPromise.catch(e => {
-                                dotNetHelper.invokeMethodAsync('OnPlaybackError', "Audio Blocked: " + e.message);
-                            });
-                        }
+                        audioElement.play().catch(e => dotNetHelper.invokeMethodAsync('OnPlaybackError', e.message));
                     } else {
+                        if (!window.speechSynthesis) {
+                            dotNetHelper.invokeMethodAsync('OnPlaybackError', "Trình duyệt không hỗ trợ AI đọc. Hãy dùng Chrome/Safari.");
+                            return;
+                        }
                         window.speechSynthesis.cancel();
                         const u = new SpeechSynthesisUtterance(window.audioState.ttsText);
                         u.lang = window.audioState.ttsLang;
                         u.onstart = () => dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', true);
                         u.onend = () => dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
-                        u.onerror = (e) => dotNetHelper.invokeMethodAsync('OnPlaybackError', "TTS Error: " + e.error);
+                        u.onerror = (e) => {
+                            // IGNORE 'interrupted' because it's triggered by .cancel()
+                            if (e.error !== 'interrupted') {
+                                dotNetHelper.invokeMethodAsync('OnPlaybackError', "AI Voice: " + e.error);
+                            } else {
+                                dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
+                            }
+                        };
                         window.speechSynthesis.speak(u);
                     }
                     window.audioState.isPlaying = true;
@@ -106,20 +107,16 @@
             }
         };
 
-        // Native Audio Events
+        // Standard Audio Bindings
         audioElement.onplaying = () => dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', true);
         audioElement.onpause = () => dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
         audioElement.onended = () => dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
         audioElement.onwaiting = () => dotNetHelper.invokeMethodAsync('OnBuffering', true);
         audioElement.oncanplay = () => dotNetHelper.invokeMethodAsync('OnBuffering', false);
-        audioElement.onerror = () => dotNetHelper.invokeMethodAsync('OnPlaybackError', "File not found or format not supported");
     };
 
     window.updateAudioState = function(data) {
-        if (window.audioState) {
-            Object.assign(window.audioState, data);
-            console.log("Audio State Updated:", window.audioState);
-        }
+        if (window.audioState) Object.assign(window.audioState, data);
     };
 </script>
 
@@ -128,7 +125,7 @@
     .audio-card { width: 100%; max-width: 400px; background: white; border-radius: 32px; overflow: hidden; position: relative; }
     .gradient-bar { height: 6px; background: linear-gradient(90deg, #3b82f6, #06b6d4); }
     .lang-selector { display: flex; justify-content: center; gap: 8px; padding: 20px 10px 0; }
-    .lang-btn { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 12px; font-size: 0.7rem; font-weight: bold; color: #64748b; cursor: pointer; border: 1px solid transparent; }
+    .lang-btn { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 12px; font-size: 0.7rem; font-weight: bold; color: #64748b; cursor: pointer; transition: 0.2s; }
     .lang-btn.active { background: #3b82f6; color: white; border-color: #3b82f6; }
     .card-content { padding: 30px; text-align: center; }
     .icon-circle { width: 64px; height: 64px; background: #eff6ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; color: #3b82f6; font-size: 1.8rem; }
@@ -136,13 +133,10 @@
     .subtitle { font-size: 0.9rem; color: #64748b; min-height: 3rem; margin-bottom: 30px; display: flex; align-items: center; justify-content: center; line-height: 1.4; }
     .play-btn { width: 80px; height: 80px; background: #3b82f6; border: none; border-radius: 50%; color: white; font-size: 2.5rem; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3); cursor: pointer; transition: 0.2s; margin: 0 auto; display: flex; align-items: center; justify-content: center; }
     .play-btn.playing { background: #0f172a; }
-    .play-btn:active { transform: scale(0.95); }
-    .play-btn:disabled { opacity: 0.5; cursor: wait; }
     .audio-wave { display: flex; justify-content: center; gap: 4px; height: 20px; margin-top: 20px; }
     .audio-wave span { width: 3px; background: #3b82f6; border-radius: 2px; animation: w 0.8s infinite alternate; }
     @@keyframes w { from { height: 4px; } to { height: 18px; } }
     .x-small { font-size: 0.65rem; }
-    .debug-panel { background: #f8fafc; }
 </style>
 
 @code {
@@ -151,7 +145,7 @@
     private ElementReference _audioElement;
     private DotNetObjectReference<ListenPage>? _objRef;
     private bool _isPlaying, _isBuffering, _hasError;
-    private string _currentLang = "vi", _currentName = "", _statusMessage = "", _audioUrl = "", _debugInfo = "V-Final-Verified";
+    private string _currentLang = "vi", _currentName = "", _statusMessage = "", _audioUrl = "", _debugInfo = "V-Final-Stable";
 
     protected override void OnInitialized() {
         _poi = DataService.GetPoiById(PoiId);
@@ -164,8 +158,7 @@
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender && _poi != null) {
             _objRef = DotNetObjectReference.Create(this);
-            // Delay slightly to ensure ID is in DOM
-            await Task.Delay(200);
+            await Task.Delay(300);
             await JSRuntime.InvokeVoidAsync("initAudioMobileBridge", _objRef, _audioElement, "main-play-btn");
             await SyncDataToJs();
         }
@@ -174,6 +167,9 @@
     private string FixUrl(string? u) => string.IsNullOrEmpty(u) ? "" : (u.Contains("://") ? u : $"{NavigationManager.BaseUri.TrimEnd('/')}/{u.TrimStart('/')}");
 
     private async Task ChangeLang(string l) { 
+        if (string.IsNullOrEmpty(l)) return;
+        await JSRuntime.InvokeVoidAsync("eval", "if(window.audioState){ window.audioState.isPlaying = false; if(window.speechSynthesis) window.speechSynthesis.cancel(); }");
+        _isPlaying = false; 
         _currentLang = l; 
         UpdateDisplay();
         await SyncDataToJs();
@@ -182,8 +178,9 @@
 
     private void UpdateDisplay() {
         if (_poi == null) return;
+        _hasError = false;
         _currentName = _currentLang switch { "en" => _poi.NameEn, "zh" => _poi.NameZh, "ko" => _poi.NameKo, "ja" => _poi.NameJa, _ => _poi.Name } ?? _poi.Name;
-        _statusMessage = _currentLang switch { "en" => _poi.DescriptionEn, "zh" => _poi.DescriptionZh, "ko" => _poi.DescriptionKo, "ja" => _poi.DescriptionJa, _ => _poi.Description } ?? _poi.Description ?? "Sẵn sàng...";
+        _statusMessage = _currentLang switch { "en" => _poi.DescriptionEn, "zh" => _poi.DescriptionZh, "ko" => _poi.DescriptionKo, "ja" => _poi.DescriptionJa, _ => _poi.Description } ?? _poi.Description ?? "Sẵn sàng phát...";
     }
 
     private async Task SyncDataToJs() {
@@ -199,7 +196,7 @@
         });
     }
 
-    [JSInvokable] public void OnPlaybackStateChanged(bool it) { _isPlaying = it; _hasError = false; StateHasChanged(); }
+    [JSInvokable] public void OnPlaybackStateChanged(bool it) { _isPlaying = it; if(it) _hasError = false; StateHasChanged(); }
     [JSInvokable] public void OnBuffering(bool it) { _isBuffering = it; StateHasChanged(); }
     [JSInvokable] public void OnPlaybackError(string m) { 
         _isPlaying = false; _isBuffering = false; _hasError = true; 
