@@ -110,31 +110,28 @@
             }
         }
 
-        // --- TIMER & HEARTBEAT ---
-        let elapsedSeconds = 0;
-        let playStartTime = 0;
-        let timerInterval = null;
-        let lastHeartbeat = 0;
+        // 1. On page load (Initial Scanned Event)
+        track("qr_scanned", { qrCode: window.location.href });
 
-        function startTimer() {
+        // --- REFACTORED SESSION TRACKING ---
+        let totalElapsedSeconds = 0;
+        let timerInterval = null;
+
+        function startTracking() {
             if (timerInterval) return;
             timerInterval = setInterval(() => {
-                elapsedSeconds++;
-                // Heartbeat every 10 seconds
-                if (elapsedSeconds - lastHeartbeat >= 10) {
-                    lastHeartbeat = elapsedSeconds;
-                    track("audio_playing", { durationSeconds: elapsedSeconds });
-                }
+                totalElapsedSeconds++;
             }, 1000);
         }
 
-        function stopTimer() {
+        function stopAndSendTracking() {
             clearInterval(timerInterval);
             timerInterval = null;
+            if (totalElapsedSeconds > 0) {
+                // Send the final cumulative duration
+                track("audio_played", { durationSeconds: totalElapsedSeconds });
+            }
         }
-
-        // 1. On page load (QR scan)
-        track("qr_scanned", { qrCode: window.location.href });
 
         window.audioState = {
             isPlaying: false,
@@ -150,12 +147,12 @@
                     audioElement.pause();
                     if (window.speechSynthesis) window.speechSynthesis.cancel();
                     window.audioState.isPlaying = false;
-                    stopTimer();
+                    // Stop tracking and send the hit on pause
+                    stopAndSendTracking();
                     dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
                 } else {
-                    // 2. On play
-                    track("audio_played");
-                    startTimer();
+                    // Start counting time
+                    startTracking();
 
                     if (window.audioState.currentLang === 'vi' && window.audioState.audioUrl) {
                         const playPromise = audioElement.play();
@@ -164,13 +161,13 @@
                                 window.audioState.isPlaying = true;
                                 dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', true);
                             }).catch(e => {
-                                stopTimer();
+                                clearInterval(timerInterval);
                                 dotNetHelper.invokeMethodAsync('OnPlaybackError', "Browser Block: " + e.message);
                             });
                         }
                     } else {
                         if (!window.speechSynthesis) {
-                            stopTimer();
+                            clearInterval(timerInterval);
                             dotNetHelper.invokeMethodAsync('ToggleBrowserWarning', true);
                             return;
                         }
@@ -183,13 +180,11 @@
                         };
                         u.onend = () => {
                             window.audioState.isPlaying = false;
-                            stopTimer();
+                            stopAndSendTracking();
                             dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
-                            // Also track voice completion with actual time spent
-                            track("audio_completed", { durationSeconds: elapsedSeconds }); 
                         };
                         u.onerror = (e) => {
-                            stopTimer();
+                            clearInterval(timerInterval);
                             if (e.error !== 'interrupted') {
                                 dotNetHelper.invokeMethodAsync('OnPlaybackError', "Voice Error: " + e.error);
                             } else {
@@ -201,30 +196,33 @@
                     }
                 }
             } catch (err) {
-                stopTimer();
+                clearInterval(timerInterval);
                 dotNetHelper.invokeMethodAsync('OnPlaybackError', err.message);
             }
         };
 
         audioElement.onplaying = () => {
             window.audioState.isPlaying = true;
-            startTimer();
+            startTracking();
             dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', true);
         };
         audioElement.onpause = () => {
             window.audioState.isPlaying = false;
-            stopTimer();
+            stopAndSendTracking();
             dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
         };
         audioElement.onended = () => {
             window.audioState.isPlaying = false;
-            stopTimer();
+            stopAndSendTracking();
             dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
-            // 3. On audio end - send actual listening time
-            track("audio_completed", { durationSeconds: elapsedSeconds });
         };
         audioElement.onwaiting = () => dotNetHelper.invokeMethodAsync('OnBuffering', true);
         audioElement.oncanplay = () => dotNetHelper.invokeMethodAsync('OnBuffering', false);
+
+        // Ensure we try to send tracking if they close the tab
+        window.addEventListener('beforeunload', () => {
+            if (timerInterval) stopAndSendTracking();
+        });
     };
 
     window.updateAudioState = function(data) {
