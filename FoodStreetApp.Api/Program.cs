@@ -24,7 +24,7 @@ builder.Services.AddSingleton<IGeofenceService, GeofenceService>();
 builder.Services.AddSingleton<INarrationEngine, NarrationEngine>();
 builder.Services.AddScoped<IQRCodeService, QRCodeService>();
 
-// [EMERGENCY FIX] Configure Port at builder stage for maximum reliability on Render
+// Configure Port at builder stage - Clean and resilient for Render/Docker
 var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 Console.WriteLine($"[STARTUP] Configured Port: {port}");

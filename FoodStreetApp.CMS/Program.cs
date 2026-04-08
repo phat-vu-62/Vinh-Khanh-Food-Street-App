@@ -7,12 +7,9 @@ using Npgsql;
 var builder = WebApplication.CreateBuilder(args);
 
 // Fix status 134 on Render/Linux by disabling file system watchers
-builder.Configuration.Sources.Clear();
-builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: false);
-builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: false);
 builder.Configuration.AddEnvironmentVariables();
 
-// [EMERGENCY FIX] Configure Port at builder stage for maximum reliability on Render
+// Configure Port at builder stage - Clean and resilient for Render/Docker
 var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 Console.WriteLine($"[STARTUP] Configured Port: {port}");
