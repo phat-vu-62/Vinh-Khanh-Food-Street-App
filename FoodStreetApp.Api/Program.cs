@@ -25,7 +25,9 @@ builder.Services.AddSingleton<INarrationEngine, NarrationEngine>();
 builder.Services.AddScoped<IQRCodeService, QRCodeService>();
 
 var app = builder.Build();
+
 if (app.Environment.IsDevelopment())
+
 {
     app.UseHttpsRedirection();
 }

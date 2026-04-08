@@ -58,6 +58,8 @@ var app = builder.Build();
 
 Console.WriteLine($"[Config] Startup: Environment={app.Environment.EnvironmentName}, Port={port}");
 
+
+
 Console.WriteLine($"[Config] DB: ConnectionString is {(string.IsNullOrWhiteSpace(connectionString) ? "MISSING" : "DETECTED")}");
 
 using (var scope = app.Services.CreateScope())
