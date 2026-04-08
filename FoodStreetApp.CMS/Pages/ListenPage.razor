@@ -10,9 +10,9 @@
 <div class="listen-container">
     @if (_poi == null)
     {
-        <div class="status-box">
-            <i class="bi bi-search display-4 text-muted"></i>
-            <h2 class="mt-3">Đang tìm dữ liệu...</h2>
+        <div class="status-box text-center">
+            <div class="spinner-border text-primary mb-3"></div>
+            <h2>Đang tải dữ liệu...</h2>
         </div>
     }
     else
@@ -20,140 +20,98 @@
         <div class="audio-card shadow-lg">
             <div class="gradient-bar"></div>
             
-            <!-- Language Selector -->
             <div class="lang-selector">
-                <button class="lang-btn @(_currentLang == "vi" ? "active" : "")" @onclick='() => ChangeLang("vi")'>VN</button>
-                <button class="lang-btn @(_currentLang == "en" ? "active" : "")" @onclick='() => ChangeLang("en")'>EN</button>
-                <button class="lang-btn @(_currentLang == "zh" ? "active" : "")" @onclick='() => ChangeLang("zh")'>ZH</button>
-                <button class="lang-btn @(_currentLang == "ko" ? "active" : "")" @onclick='() => ChangeLang("ko")'>KO</button>
-                <button class="lang-btn @(_currentLang == "ja" ? "active" : "")" @onclick='() => ChangeLang("ja")'>JA</button>
+                @foreach (var l in new[] { "vi", "en", "zh", "ko", "ja" })
+                {
+                    <button class="lang-btn @(_currentLang == l ? "active" : "")" @onclick='() => ChangeLang(l)'>@l.ToUpper()</button>
+                }
             </div>
 
             <div class="card-content">
                 <div class="icon-circle">
-                    @if (_isBuffering)
-                    {
-                        <div class="spinner-border text-primary" role="status" style="width: 2rem; height: 2rem;"></div>
-                    }
-                    else
-                    {
-                        <i class="bi bi-shop"></i>
-                    }
+                    @if (_isBuffering) { <div class="spinner-border text-primary" style="width: 2rem; height: 2rem;"></div> }
+                    else { <i class="bi bi-shop"></i> }
                 </div>
                 
                 <h1 class="restaurant-title">@_currentName</h1>
                 <p class="subtitle @(_hasError ? "text-danger fw-bold" : "")">@_statusMessage</p>
 
                 <div class="player-controls">
-                    <button class="play-btn @(_isPlaying ? "playing" : "")" @onclick="TogglePlay" disabled="@_isBuffering">
-                        @if (_isPlaying)
-                        {
-                            <i class="bi bi-pause-fill"></i>
-                        }
-                        else
-                        {
-                            <i class="bi bi-play-fill ms-1"></i>
-                        }
+                    <button class="play-btn @(_isPlaying ? "playing" : "")" @onclick="TogglePlay">
+                        <i class="bi @(_isPlaying ? "bi-pause-fill" : "bi-play-fill ms-1")"></i>
                     </button>
                 </div>
 
                 @if (_isPlaying && !_isBuffering)
                 {
-                    <div class="audio-wave">
-                        <span></span><span></span><span></span><span></span><span></span>
-                    </div>
+                    <div class="audio-wave"><span></span><span></span><span></span><span></span><span></span></div>
                 }
 
                 <audio @ref="_audioElement" src="@_audioUrl" preload="auto" crossorigin="anonymous"></audio>
             </div>
 
-            @if (!string.IsNullOrEmpty(_debugInfo))
-            {
-                <div class="debug-panel p-2 small text-muted text-center border-top">
-                    <code>@_debugInfo</code>
-                </div>
-            }
+            <div class="debug-panel p-2 x-small text-muted text-center border-top">
+                <code>@_debugInfo</code>
+            </div>
         </div>
     }
 </div>
 
+<script>
+    // Đảm bảo mã hỗ trợ luôn có sẵn ngay cả khi file rời bị thiếu
+    window.initAudioBridge = function(dotNetHelper, element) {
+        window.audioHelper = {
+            play: function(el) { 
+                if (!el) return;
+                el.play().catch(e => {
+                    console.error(e);
+                    dotNetHelper.invokeMethodAsync('OnPlaybackError', e.message);
+                }); 
+            },
+            pause: function(el) { if(el) el.pause(); },
+            speak: function(text, lang) {
+                window.speechSynthesis.cancel();
+                if(!text) return;
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = lang;
+                u.onstart = () => dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', true);
+                u.onend = () => dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
+                u.onerror = (e) => dotNetHelper.invokeMethodAsync('OnPlaybackError', e.error);
+                window.speechSynthesis.speak(u);
+            },
+            cancelSpeak: () => window.speechSynthesis.cancel()
+        };
+
+        if (element) {
+            element.onplaying = () => dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', true);
+            element.onpause = () => dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
+            element.onended = () => dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
+            element.onwaiting = () => dotNetHelper.invokeMethodAsync('OnBuffering', true);
+            element.oncanplay = () => dotNetHelper.invokeMethodAsync('OnBuffering', false);
+            element.onerror = () => dotNetHelper.invokeMethodAsync('OnPlaybackError', "File âm thanh lỗi hoặc không tồn tại");
+        }
+    };
+</script>
+
 <style>
-    .listen-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        padding: 20px;
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-        font-family: 'Inter', sans-serif;
-    }
-
-    .audio-card {
-        width: 100%;
-        max-width: 400px;
-        background: white;
-        border-radius: 30px;
-        overflow: hidden;
-        position: relative;
-    }
-
-    .gradient-bar { height: 8px; background: linear-gradient(90deg, #0984e3, #00cec9); }
-
+    .listen-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f1f5f9; padding: 20px; font-family: 'Inter', sans-serif; }
+    .audio-card { width: 100%; max-width: 400px; background: white; border-radius: 32px; overflow: hidden; position: relative; }
+    .gradient-bar { height: 6px; background: linear-gradient(90deg, #3b82f6, #06b6d4); }
     .lang-selector { display: flex; justify-content: center; gap: 8px; padding: 20px 10px 0; }
-
-    .lang-btn {
-        background: #f1f5f9;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        padding: 5px 12px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        cursor: pointer;
-        transition: all 0.2s;
-        color: #64748b;
-    }
-
-    .lang-btn.active { background: #0984e3; color: white; border-color: #0984e3; }
-
-    .card-content { padding: 30px 30px 40px; text-align: center; }
-
-    .icon-circle {
-        width: 70px; height: 70px; background: #f0f7ff; border-radius: 50%;
-        display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;
-        color: #0984e3; font-size: 2.2rem;
-    }
-
-    .restaurant-title { font-weight: 800; font-size: 1.6rem; margin-bottom: 8px; color: #1e293b; }
-
-    .subtitle { color: #64748b; font-size: 0.9rem; margin-bottom: 25px; min-height: 3rem; display: flex; align-items: center; justify-content: center; line-height: 1.4; }
-
-    .play-btn {
-        width: 85px; height: 85px; background: #0984e3; border: none; border-radius: 50%;
-        color: white; font-size: 2.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 10px 20px rgba(9, 132, 227, 0.3); transition: all 0.3s; margin: 0 auto;
-    }
-
+    .lang-btn { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 12px; font-size: 0.7rem; font-weight: bold; color: #64748b; cursor: pointer; transition: 0.2s; }
+    .lang-btn.active { background: #3b82f6; color: white; border-color: #3b82f6; }
+    .card-content { padding: 30px; text-align: center; }
+    .icon-circle { width: 64px; height: 64px; background: #eff6ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; color: #3b82f6; font-size: 1.8rem; }
+    .restaurant-title { font-weight: 800; font-size: 1.5rem; color: #1e293b; margin-bottom: 8px; }
+    .subtitle { font-size: 0.9rem; color: #64748b; min-height: 3rem; margin-bottom: 30px; display: flex; align-items: center; justify-content: center; line-height: 1.4; }
+    .play-btn { width: 80px; height: 80px; background: #3b82f6; border: none; border-radius: 50%; color: white; font-size: 2.5rem; box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3); cursor: pointer; transition: 0.2s; margin: 0 auto; display: flex; align-items: center; justify-content: center; }
+    .play-btn.playing { background: #0f172a; }
     .play-btn:active { transform: scale(0.95); }
-    .play-btn:disabled { background: #cbd5e1; box-shadow: none; cursor: not-allowed; }
-    .play-btn:not(.playing):not(:disabled) { animation: pulse 2s infinite; }
-    .play-btn.playing { background: #1e293b; }
-
-    @@keyframes pulse {
-        0% { box-shadow: 0 0 0 0 rgba(9, 132, 227, 0.4); }
-        70% { box-shadow: 0 0 0 15px rgba(9, 132, 227, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(9, 132, 227, 0); }
-    }
-
-    .audio-wave { display: flex; justify-content: center; align-items: center; gap: 4px; height: 25px; margin-top: 25px; }
-    .audio-wave span { width: 3px; background: #0984e3; border-radius: 2px; animation: wave 1s infinite alternate; }
-    .audio-wave span:nth-child(1) { height: 8px; animation-delay: 0.1s; }
-    .audio-wave span:nth-child(2) { height: 18px; animation-delay: 0.2s; }
-    .audio-wave span:nth-child(3) { height: 22px; animation-delay: 0.3s; }
-    .audio-wave span:nth-child(4) { height: 12px; animation-delay: 0.4s; }
-    .audio-wave span:nth-child(5) { height: 8px; animation-delay: 0.5s; }
-
-    @@keyframes wave { from { transform: scaleY(1); } to { transform: scaleY(2.2); } }
-    .debug-panel { background: #f8fafc; font-family: monospace; }
+    .audio-wave { display: flex; justify-content: center; gap: 4px; height: 20px; margin-top: 20px; }
+    .audio-wave span { width: 3px; background: #3b82f6; border-radius: 2px; animation: w 0.8s infinite alternate; }
+    @@keyframes w { from { height: 4px; } to { height: 18px; } }
+    .x-small { font-size: 0.65rem; }
+    .debug-panel { background: #f8fafc; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 </style>
 
 @code {
@@ -161,154 +119,67 @@
     private POI? _poi;
     private ElementReference _audioElement;
     private DotNetObjectReference<ListenPage>? _objRef;
+    private bool _isPlaying, _isBuffering, _hasError;
+    private string _currentLang = "vi", _currentName = "", _statusMessage = "", _audioUrl = "", _debugInfo = "Ready-v3";
 
-    private bool _isPlaying;
-    private bool _isBuffering;
-    private bool _hasError;
-    private string _currentLang = "vi";
-    private string _currentName = "";
-    private string _statusMessage = "";
-    private string _audioUrl = "";
-    private string _debugInfo = "";
-
-    protected override void OnInitialized()
-    {
+    protected override void OnInitialized() {
         _poi = DataService.GetPoiById(PoiId);
-        if (_poi != null)
-        {
-            _audioUrl = FixAudioUrl(_poi.AudioUrl);
+        if (_poi != null) {
+            _audioUrl = FixUrl(_poi.AudioUrl);
+            UpdateDisplay();
         }
-        UpdateDisplay();
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender && _poi != null)
-        {
+    protected override async Task OnAfterRenderAsync(bool firstRender) {
+        if (firstRender && _poi != null) {
             _objRef = DotNetObjectReference.Create(this);
-            await JSRuntime.InvokeVoidAsync("audioHelper.attachEvents", _audioElement, _objRef);
+            await JSRuntime.InvokeVoidAsync("initAudioBridge", _objRef, _audioElement);
         }
     }
 
-    private string FixAudioUrl(string? url)
-    {
-        if (string.IsNullOrEmpty(url)) return "";
-        if (url.StartsWith("http")) return url;
-        
-        // Handle relative URLs
-        var baseUri = NavigationManager.BaseUri.TrimEnd('/');
-        return $"{baseUri}/{url.TrimStart('/')}";
-    }
+    private string FixUrl(string? u) => string.IsNullOrEmpty(u) ? "" : (u.Contains("://") ? u : $"{NavigationManager.BaseUri.TrimEnd('/')}/{u.TrimStart('/')}");
 
-    private void ChangeLang(string lang)
-    {
-        _ = StopAllPlayback();
-        _currentLang = lang;
-        UpdateDisplay();
-    }
-
-    private void UpdateDisplay()
-    {
+    private void UpdateDisplay() {
         if (_poi == null) return;
-        _hasError = false;
-
-        _currentName = _currentLang switch
-        {
-            "en" => _poi.NameEn ?? _poi.Name,
-            "zh" => _poi.NameZh ?? _poi.Name,
-            "ko" => _poi.NameKo ?? _poi.Name,
-            "ja" => _poi.NameJa ?? _poi.Name,
-            _ => _poi.Name
-        };
-
-        var desc = _currentLang switch
-        {
-            "en" => _poi.DescriptionEn ?? _poi.Description,
-            "zh" => _poi.DescriptionZh ?? _poi.Description,
-            "ko" => _poi.DescriptionKo ?? _poi.Description,
-            "ja" => _poi.DescriptionJa ?? _poi.Description,
-            _ => _poi.Description
-        };
-
-        _statusMessage = desc ?? "Chạm để bắt đầu hành trình ẩm thực";
+        _currentName = _currentLang switch { "en" => _poi.NameEn, "zh" => _poi.NameZh, "ko" => _poi.NameKo, "ja" => _poi.NameJa, _ => _poi.Name } ?? _poi.Name;
+        _statusMessage = _currentLang switch { "en" => _poi.DescriptionEn, "zh" => _poi.DescriptionZh, "ko" => _poi.DescriptionKo, "ja" => _poi.DescriptionJa, _ => _poi.Description } ?? _poi.Description ?? "Quét để nghe thuyết minh...";
     }
 
-    private async Task TogglePlay()
-    {
-        if (!_isPlaying)
-        {
-            _hasError = false;
-            if (_currentLang == "vi" && !string.IsNullOrEmpty(_audioUrl))
-            {
-                _debugInfo = "Playing file: " + _audioUrl;
-                await JSRuntime.InvokeVoidAsync("audioHelper.play", _audioElement);
+    private async Task TogglePlay() {
+        try {
+            if (!_isPlaying) {
+                _hasError = false;
+                if (_currentLang == "vi" && !string.IsNullOrEmpty(_audioUrl)) {
+                    _debugInfo = "Loading file...";
+                    await JSRuntime.InvokeVoidAsync("audioHelper.play", _audioElement);
+                } else {
+                    _debugInfo = "Activating AI Voice...";
+                    var t = _currentLang switch { "en" => _poi?.TextContentEn, "zh" => _poi?.TextContentZh, "ko" => _poi?.TextContentKo, "ja" => _poi?.TextContentJa, _ => _poi?.TextContent } ?? _statusMessage;
+                    var l = _currentLang switch { "en" => "en-US", "zh" => "zh-CN", "ko" => "ko-KR", "ja" => "ja-JP", _ => "vi-VN" };
+                    await JSRuntime.InvokeVoidAsync("audioHelper.speak", t, l);
+                }
+            } else {
+                await JSRuntime.InvokeVoidAsync("audioHelper.pause", _audioElement);
+                await JSRuntime.InvokeVoidAsync("audioHelper.cancelSpeak");
+                _isPlaying = false;
             }
-            else
-            {
-                _debugInfo = "Playing TTS for " + _currentLang;
-                string textToSpeak = _currentLang switch
-                {
-                    "en" => _poi?.TextContentEn ?? _poi?.DescriptionEn ?? _poi?.NameEn,
-                    "zh" => _poi?.TextContentZh ?? _poi?.DescriptionZh ?? _poi?.NameZh,
-                    "ko" => _poi?.TextContentKo ?? _poi?.DescriptionKo ?? _poi?.NameKo,
-                    "ja" => _poi?.TextContentJa ?? _poi?.DescriptionJa ?? _poi?.NameJa,
-                    _ => _poi?.TextContent ?? _poi?.Description ?? _poi?.Name
-                } ?? "";
-
-                string ttsLang = _currentLang switch
-                {
-                    "en" => "en-US",
-                    "zh" => "zh-CN",
-                    "ko" => "ko-KR",
-                    "ja" => "ja-JP",
-                    _ => "vi-VN"
-                };
-
-                await JSRuntime.InvokeVoidAsync("audioHelper.speak", textToSpeak, ttsLang);
-                _isPlaying = true; // For TTS we manually set playing state
-            }
-        }
-        else
-        {
-            await StopAllPlayback();
-        }
+        } catch (Exception ex) { OnPlaybackError(ex.Message); }
     }
 
-    private async Task StopAllPlayback()
-    {
+    private async Task ChangeLang(string l) { 
         await JSRuntime.InvokeVoidAsync("audioHelper.pause", _audioElement);
-        await JSRuntime.InvokeVoidAsync("audioHelper.stopSpeaking");
-        _isPlaying = false;
-        StateHasChanged();
+        await JSRuntime.InvokeVoidAsync("audioHelper.cancelSpeak"); 
+        _isPlaying = false; _currentLang = l; UpdateDisplay(); 
     }
 
-    [JSInvokable]
-    public void OnPlaybackStateChanged(bool isPlaying)
-    {
-        _isPlaying = isPlaying;
-        StateHasChanged();
+    [JSInvokable] public void OnPlaybackStateChanged(bool it) { _isPlaying = it; StateHasChanged(); }
+    [JSInvokable] public void OnBuffering(bool it) { _isBuffering = it; StateHasChanged(); }
+    [JSInvokable] public void OnPlaybackError(string m) { 
+        _isPlaying = false; _isBuffering = false; _hasError = true; 
+        _debugInfo = "Error: " + m;
+        _statusMessage = "Không tìm thấy nội dung âm thanh phù hợp";
+        StateHasChanged(); 
     }
 
-    [JSInvokable]
-    public void OnBuffering(bool isBuffering)
-    {
-        _isBuffering = isBuffering;
-        StateHasChanged();
-    }
-
-    [JSInvokable]
-    public void OnPlaybackError(string message)
-    {
-        _isPlaying = false;
-        _isBuffering = false;
-        _hasError = true;
-        _statusMessage = "Lỗi âm thanh: " + message;
-        _debugInfo = "ERROR: " + message;
-        StateHasChanged();
-    }
-
-    public void Dispose()
-    {
-        _objRef?.Dispose();
-    }
+    public void Dispose() => _objRef?.Dispose();
 }
