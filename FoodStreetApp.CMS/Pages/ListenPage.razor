@@ -8,11 +8,23 @@
 @implements IDisposable
 
 <div class="listen-container">
-    @if (_poi == null)
+    @if (_isLoading)
     {
         <div class="status-box text-center">
-            <div class="spinner-border text-primary mb-3"></div>
-            <h2>Đang tìm quán ăn...</h2>
+            <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+            <h2 class="fw-bold">Đang tải dữ liệu...</h2>
+            <p class="text-muted">Vui lòng chờ trong giây lát</p>
+        </div>
+    }
+    else if (_notFound || _poi == null)
+    {
+        <div class="status-box text-center p-4 shadow bg-white rounded-4" style="max-width: 350px;">
+            <div class="mb-3 text-warning">
+                <i class="bi bi-exclamation-triangle" style="font-size: 4rem;"></i>
+            </div>
+            <h2 class="fw-bold h4">Không tìm thấy quán!</h2>
+            <p class="text-muted small">Mã QR này trỏ đến địa điểm không tồn tại hoặc đã bị xóa khỏi hệ thống.</p>
+            <a href="/" class="btn btn-primary w-100 rounded-pill mt-3">Quay lại trang chủ</a>
         </div>
     }
     else
@@ -244,13 +256,25 @@
     private ElementReference _audioElement;
     private DotNetObjectReference<ListenPage>? _objRef;
     private bool _isPlaying, _isBuffering, _hasError, _showBrowserWarning;
+    private bool _isLoading = true;
+    private bool _notFound = false;
     private string _currentLang = "vi", _currentName = "", _statusMessage = "", _audioUrl = "";
 
     protected override void OnInitialized() {
-        _poi = DataService.GetPoiById(PoiId);
-        if (_poi != null) {
-            _audioUrl = FixUrl(_poi.AudioUrl);
-            UpdateDisplay();
+        try {
+            _poi = DataService.GetPoiById(PoiId);
+            if (_poi != null) {
+                _audioUrl = FixUrl(_poi.AudioUrl);
+                UpdateDisplay();
+            } else {
+                _notFound = true;
+            }
+        } catch (Exception ex) {
+            Console.WriteLine($"[ListenPage] Error loading POI: {ex.Message}");
+            _hasError = true;
+            _statusMessage = "Không thể tải dữ liệu";
+        } finally {
+            _isLoading = false;
         }
     }
 
