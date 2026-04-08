@@ -358,5 +358,10 @@ app.MapGet("/api/sync/pois", (IAdminDataService service) =>
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
+// Lấy PORT từ môi trường (QUAN TRỌNG)
 var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
-app.Run($"http://0.0.0.0:{port}");
+
+// Bind đúng port
+app.Urls.Add($"http://0.0.0.0:{port}");
+
+app.Run();
