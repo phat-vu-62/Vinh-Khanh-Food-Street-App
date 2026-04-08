@@ -46,7 +46,7 @@ public class HistoryController : ControllerBase
             );
 
             // 3. BACKEND AS SOURCE OF TRUTH (TIMESTAMPS)
-            history.VisitedAtUtc = DateTime.UtcNow;
+            history.VisitedAtUtc = DateTime.UtcNow.AddHours(7);
 
             // 4. PERSIST
             _dbContext.UserHistories.Add(history);

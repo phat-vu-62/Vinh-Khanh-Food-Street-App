@@ -5,7 +5,7 @@ namespace FoodStreetApp.Models
     [Table("pois")]
     public class POI
     {
-        [PrimaryKey, AutoIncrement]
+        [PrimaryKey]
         public int Id { get; set; }
 
         [MaxLength(200), NotNull]

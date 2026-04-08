@@ -28,7 +28,7 @@ namespace FoodStreetApp.Data
         // Increment this whenever seed data changes so all devices get the updated POIs on next launch.
         private const string SeedVersionKey = "poi_seed_version";
         private const string HasSyncedWithWebKey = "has_synced_with_web";
-        private const int CurrentSeedVersion = 11; // v11: Fixed duplication issue with thread-safe init
+        private const int CurrentSeedVersion = 12; // v12: Removed AutoIncrement and aligned IDs with Server
         private const string LastSyncUtcKey = "poi_last_sync_utc";
 
         public async Task InitializeAsync()
@@ -266,6 +266,7 @@ namespace FoodStreetApp.Data
                 // POI #1 - Ốc Phát
                 new POI
                 {
+                    Id = 1,
                     Name = "Ốc Phát",
                     Latitude = 10.761943,
                     Longitude = 106.702050,
@@ -285,6 +286,7 @@ namespace FoodStreetApp.Data
                 // POI #2 - Ốc Thảo
                 new POI
                 {
+                    Id = 2,
                     Name = "Ốc Thảo",
                     Latitude = 10.761687,
                     Longitude = 106.702396,
@@ -304,6 +306,7 @@ namespace FoodStreetApp.Data
                 // POI #3 - Ốc Vũ
                 new POI
                 {
+                    Id = 3,
                     Name = "Ốc Vũ",
                     Latitude = 10.761398,
                     Longitude = 106.702722,
@@ -323,6 +326,7 @@ namespace FoodStreetApp.Data
                 // POI #4 - Ốc Hồng Nhung
                 new POI
                 {
+                    Id = 4,
                     Name = "Ốc Hồng Nhung",
                     Latitude = 10.761153,
                     Longitude = 106.703071,
@@ -342,6 +346,7 @@ namespace FoodStreetApp.Data
                 // POI #5 - Ốc Oanh
                 new POI
                 {
+                    Id = 5,
                     Name = "Ốc Oanh",
                     Latitude = 10.760736,
                     Longitude = 106.703298,
@@ -361,6 +366,7 @@ namespace FoodStreetApp.Data
                 // POI #6 - A FAT HOT POT
                 new POI
                 {
+                    Id = 6,
                     Name = "A FAT HOT POT",
                     Latitude = 10.760600,
                     Longitude = 106.703528,
@@ -380,6 +386,7 @@ namespace FoodStreetApp.Data
                 // POI #7 - Ốc Bụi
                 new POI
                 {
+                    Id = 7,
                     Name = "Ốc Bụi",
                     Latitude = 10.760615,
                     Longitude = 106.703932,
@@ -399,6 +406,7 @@ namespace FoodStreetApp.Data
                 // POI #8 - Win - Trà Sữa - Coffee
                 new POI
                 {
+                    Id = 8,
                     Name = "Win - Trà Sữa - Coffee",
                     Latitude = 10.760705,
                     Longitude = 106.704130,
@@ -418,6 +426,7 @@ namespace FoodStreetApp.Data
                 // POI #9 - BONA Food and Beer
                 new POI
                 {
+                    Id = 9,
                     Name = "BONA Food and Beer",
                     Latitude = 10.760761,
                     Longitude = 106.704660,
@@ -437,6 +446,7 @@ namespace FoodStreetApp.Data
                 // POI #10 - Ốc Đào 2
                 new POI
                 {
+                    Id = 10,
                     Name = "Ốc Đào 2",
                     Latitude = 10.761180,
                     Longitude = 106.704961,
@@ -456,6 +466,7 @@ namespace FoodStreetApp.Data
                 // POI #11 - Lãng Quán
                 new POI
                 {
+                    Id = 11,
                     Name = "Lãng Quán",
                     Latitude = 10.761127,
                     Longitude = 106.705453,
@@ -475,6 +486,7 @@ namespace FoodStreetApp.Data
                 // POI #12 - Ốc Nhi 20k
                 new POI
                 {
+                    Id = 12,
                     Name = "Ốc Nhi 20k",
                     Latitude = 10.761299,
                     Longitude = 106.705973,
@@ -494,6 +506,7 @@ namespace FoodStreetApp.Data
                 // POI #13 - Ốc Diễm
                 new POI
                 {
+                    Id = 13,
                     Name = "Ốc Diễm",
                     Latitude = 10.761178,
                     Longitude = 106.706166,
@@ -513,6 +526,7 @@ namespace FoodStreetApp.Data
                 // POI #14 - Lẩu gà lá é Con Gà Trống
                 new POI
                 {
+                    Id = 14,
                     Name = "Lẩu gà lá é Con Gà Trống",
                     Latitude = 10.760877,
                     Longitude = 106.706715,
@@ -532,6 +546,7 @@ namespace FoodStreetApp.Data
                 // POI #15 - Ốc Ty
                 new POI
                 {
+                    Id = 15,
                     Name = "Ốc Ty",
                     Latitude = 10.760725,
                     Longitude = 106.706940,
