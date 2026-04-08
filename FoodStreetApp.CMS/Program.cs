@@ -12,6 +12,11 @@ builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnC
 builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: false);
 builder.Configuration.AddEnvironmentVariables();
 
+// [EMERGENCY FIX] Configure Port at builder stage for maximum reliability on Render
+var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+Console.WriteLine($"[STARTUP] Configured Port: {port}");
+
 
 
 var connectionString = builder.Configuration.GetConnectionString("Postgres");
@@ -55,7 +60,8 @@ builder.Services.AddScoped<ToastService>();
 
 var app = builder.Build();
 
-Console.WriteLine($"[Config] Startup: Environment={app.Environment.EnvironmentName}");
+Console.WriteLine($"[STARTUP] Environment: {app.Environment.EnvironmentName}");
+Console.WriteLine($"[STARTUP] Base Path: {app.Environment.ContentRootPath}");
 
 
 
@@ -118,6 +124,9 @@ if (!app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 app.UseRouting();
+
+// Health Check endpoint for Render monitoring
+app.MapGet("/health", () => "OK");
 
 object CreateSyncPoiPayload(FoodStreetApp.Shared.Entities.POI p, Dictionary<int, string> audios, IReadOnlyCollection<FoodStreetApp.Shared.Entities.Translation> translations)
 {
@@ -357,14 +366,5 @@ app.MapGet("/api/sync/pois", (IAdminDataService service) =>
 
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
-
-// Lấy PORT từ môi trường (QUAN TRỌNG)
-var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
-
-// Bind đúng port (Xóa các binding cũ để tránh lỗi 521 Conflict)
-app.Urls.Clear();
-app.Urls.Add($"http://0.0.0.0:{port}");
-
-Console.WriteLine($"[Config] Application listening on: http://0.0.0.0:{port}");
 
 app.Run();

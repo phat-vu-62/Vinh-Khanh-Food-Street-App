@@ -24,19 +24,27 @@ builder.Services.AddSingleton<IGeofenceService, GeofenceService>();
 builder.Services.AddSingleton<INarrationEngine, NarrationEngine>();
 builder.Services.AddScoped<IQRCodeService, QRCodeService>();
 
+// [EMERGENCY FIX] Configure Port at builder stage for maximum reliability on Render
+var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+Console.WriteLine($"[STARTUP] Configured Port: {port}");
+
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+Console.WriteLine($"[STARTUP] Environment: {app.Environment.EnvironmentName}");
 
+if (app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
+
+app.MapGet("/health", () => "OK");
 
 app.MapGet("/", () => Results.Ok(new
 {
     service = "FoodStreetApp.Api",
     status = "running",
-    endpoints = new[] { "/api/POI", "/api/Tour", "/api/Audio", "/qr/{poiId}" }
+    endpoints = new[] { "/api/POI", "/api/Tour", "/api/Audio", "/qr/{poiId}", "/health" }
 }));
 
 // QR code deep link endpoint
@@ -67,14 +75,5 @@ app.MapGet("/qr/{poiId}", (int poiId) =>
 });
 
 app.MapControllers();
-
-// Lấy PORT từ môi trường (QUAN TRỌNG)
-var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
-
-// Bind đúng port (Xóa các binding cũ để tránh lỗi 521 Conflict)
-app.Urls.Clear();
-app.Urls.Add($"http://0.0.0.0:{port}");
-
-Console.WriteLine($"[Config] API listening on: http://0.0.0.0:{port}");
 
 app.Run();
