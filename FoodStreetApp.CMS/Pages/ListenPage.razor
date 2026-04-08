@@ -113,24 +113,30 @@
         // 1. On page load (Initial Scanned Event)
         track("qr_scanned", { qrCode: window.location.href });
 
-        // --- REFACTORED SESSION TRACKING ---
+        // --- REFACTORED PRECISION SESSION TRACKING ---
         let totalElapsedSeconds = 0;
         let timerInterval = null;
+        let hasSentFinalTracking = false;
 
         function startTracking() {
-            if (timerInterval) return;
+            if (timerInterval || hasSentFinalTracking) return;
             timerInterval = setInterval(() => {
                 totalElapsedSeconds++;
             }, 1000);
         }
 
-        function stopAndSendTracking() {
+        function pauseTracking() {
             clearInterval(timerInterval);
             timerInterval = null;
-            if (totalElapsedSeconds > 0) {
-                // Send the final cumulative duration
-                track("audio_played", { durationSeconds: totalElapsedSeconds });
-            }
+        }
+
+        function sendFinalTracking() {
+            pauseTracking();
+            if (hasSentFinalTracking || totalElapsedSeconds <= 0) return;
+            
+            hasSentFinalTracking = true;
+            // Send the final cumulative duration
+            track("audio_played", { durationSeconds: totalElapsedSeconds });
         }
 
         window.audioState = {
@@ -147,27 +153,23 @@
                     audioElement.pause();
                     if (window.speechSynthesis) window.speechSynthesis.cancel();
                     window.audioState.isPlaying = false;
-                    // Stop tracking and send the hit on pause
-                    stopAndSendTracking();
+                    pauseTracking(); // Just pause the timer, don't send yet
                     dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
                 } else {
-                    // Start counting time
-                    startTracking();
-
+                    // Just set state, timer will start when audio actually plays
                     if (window.audioState.currentLang === 'vi' && window.audioState.audioUrl) {
                         const playPromise = audioElement.play();
                         if (playPromise !== undefined) {
                             playPromise.then(() => {
-                                window.audioState.isPlaying = true;
-                                dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', true);
+                                // Handled by onplaying
                             }).catch(e => {
-                                clearInterval(timerInterval);
+                                pauseTracking();
                                 dotNetHelper.invokeMethodAsync('OnPlaybackError', "Browser Block: " + e.message);
                             });
                         }
                     } else {
                         if (!window.speechSynthesis) {
-                            clearInterval(timerInterval);
+                            pauseTracking();
                             dotNetHelper.invokeMethodAsync('ToggleBrowserWarning', true);
                             return;
                         }
@@ -176,15 +178,16 @@
                         u.lang = window.audioState.ttsLang;
                         u.onstart = () => {
                             window.audioState.isPlaying = true;
+                            startTracking(); // Start only when audible
                             dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', true);
                         };
                         u.onend = () => {
                             window.audioState.isPlaying = false;
-                            stopAndSendTracking();
+                            sendFinalTracking(); // End of audio = send
                             dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
                         };
                         u.onerror = (e) => {
-                            clearInterval(timerInterval);
+                            pauseTracking();
                             if (e.error !== 'interrupted') {
                                 dotNetHelper.invokeMethodAsync('OnPlaybackError', "Voice Error: " + e.error);
                             } else {
@@ -196,32 +199,35 @@
                     }
                 }
             } catch (err) {
-                clearInterval(timerInterval);
+                pauseTracking();
                 dotNetHelper.invokeMethodAsync('OnPlaybackError', err.message);
             }
         };
 
         audioElement.onplaying = () => {
             window.audioState.isPlaying = true;
-            startTracking();
+            startTracking(); // START when actually playing
             dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', true);
         };
         audioElement.onpause = () => {
             window.audioState.isPlaying = false;
-            stopAndSendTracking();
+            pauseTracking(); // PAUSE timer, but don't send yet
             dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
         };
         audioElement.onended = () => {
             window.audioState.isPlaying = false;
-            stopAndSendTracking();
+            sendFinalTracking(); // END = Send hit
             dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
         };
-        audioElement.onwaiting = () => dotNetHelper.invokeMethodAsync('OnBuffering', true);
+        audioElement.onwaiting = () => {
+            pauseTracking(); // PAUSE during buffering
+            dotNetHelper.invokeMethodAsync('OnBuffering', true);
+        };
         audioElement.oncanplay = () => dotNetHelper.invokeMethodAsync('OnBuffering', false);
 
-        // Ensure we try to send tracking if they close the tab
+        // Final attempt on closing tab
         window.addEventListener('beforeunload', () => {
-            if (timerInterval) stopAndSendTracking();
+            sendFinalTracking();
         });
     };
 
