@@ -287,7 +287,7 @@ app.MapPost("/api/history", async (FoodStreetApp.Shared.Entities.UserHistory his
     try
     {
         // Enforce server-side timestamp for accuracy
-        history.VisitedAtUtc = DateTime.UtcNow.AddHours(7);
+        history.VisitedAtUtc = DateTime.UtcNow;
         var created = service.AddUsageHistory(history);
         return Results.Created($"/api/UsageHistory/{created.Id}", created);
     }
