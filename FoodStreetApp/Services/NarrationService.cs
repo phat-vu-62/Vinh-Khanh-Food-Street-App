@@ -192,16 +192,11 @@ namespace FoodStreetApp.Services
                 _isSpeaking = false;
                 NarrationFinished?.Invoke(this, EventArgs.Empty);
             }
-            catch (OperationCanceledException)
+            finally
             {
-                System.Diagnostics.Debug.WriteLine($"[NARRATION]   Narration cancelled for '{poi.Name}'");
-                _isSpeaking = false;
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"[NARRATION]   ❌ ERROR in PlayNarrationAsync: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[NARRATION]   Stack: {ex.StackTrace}");
-                _isSpeaking = false;
+                // We call StopNarration here to ensure duration is reported 
+                // regardless of whether it finished naturally or was cancelled.
+                await StopNarrationAsync();
             }
         }
 
@@ -239,6 +234,15 @@ namespace FoodStreetApp.Services
         {
             try
             {
+                // Capture data for tracking BEFORE clearing state
+                var duration = 0;
+                var poiIdToReport = _currentPlayingPoiId;
+                
+                if (_playStartTime.HasValue)
+                {
+                    duration = (int)(DateTime.UtcNow - _playStartTime.Value).TotalSeconds;
+                }
+
                 // Cancel in-progress TTS via its token.
                 if (_ttsCancelToken != null && !_ttsCancelToken.IsCancellationRequested)
                 {
@@ -261,6 +265,17 @@ namespace FoodStreetApp.Services
                 _audioCompletionSource = null;
 
                 _isSpeaking = false;
+                
+                // Clear state
+                _playStartTime = null;
+                _currentPlayingPoiId = null;
+
+                // Send tracking event IF we were actually playing something
+                if (poiIdToReport.HasValue && duration > 0)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[NARRATION] Reporting playback: POI {poiIdToReport}, Duration {duration}s");
+                    await _trackingService.TrackEventAsync(poiIdToReport.Value, "audio_played", duration);
+                }
 
                 // Brief delay to let the TTS engine settle before a new SpeakAsync call.
                 await Task.Delay(150);
@@ -269,17 +284,8 @@ namespace FoodStreetApp.Services
             {
                 System.Diagnostics.Debug.WriteLine($"[NARRATION] StopNarration error: {ex.Message}");
             }
-            finally
-            {
-                if (_playStartTime.HasValue && _currentPlayingPoiId.HasValue)
-                {
-                    var duration = (int)(DateTime.UtcNow - _playStartTime.Value).TotalSeconds;
-                    _ = _trackingService.TrackEventAsync(_currentPlayingPoiId.Value, "audio_played", duration);
-                    _playStartTime = null;
-                    _currentPlayingPoiId = null;
-                }
-            }
         }
+
 
         public Task<bool> IsSpeakingAsync()
         {

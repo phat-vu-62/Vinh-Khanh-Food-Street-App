@@ -43,32 +43,25 @@ namespace FoodStreetApp.Services
                 // The CMS API endpoint for History
                 var trackingUrl = "https://vinh-khanh-food-street-app.onrender.com/api/history";
                 
-                Console.WriteLine($"[TRACKING] Sending {action} for POI {poiId} (QR: {qrCode})");
+                System.Diagnostics.Debug.WriteLine($"[TRACKING] Sending {action} for POI {poiId} (QR: {qrCode})");
                 
-                // PRODUCTION FIX: No more fire-and-forget. We must await to ensure data is sent.
+                // PRODUCTION FIX: We MUST await to ensure data reaches the server
                 var response = await _httpClient.PostAsJsonAsync(trackingUrl, payload);
                 
                 if (response.IsSuccessStatusCode)
                 {
                     var responseBody = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"[TRACKING] SUCCESS: {response.StatusCode} | Full Response: {responseBody}");
+                    System.Diagnostics.Debug.WriteLine($"[TRACKING] SUCCESS: {response.StatusCode} | Response: {responseBody}");
                 }
                 else
                 {
                     var errorBody = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"[TRACKING] FAILURE: {response.StatusCode} | Error: {errorBody}");
-                    
-                    // Specific log for QR scanned to alert user
-                    if (action == "qr_scanned")
-                    {
-                        System.Diagnostics.Debug.WriteLine("[TRACKING] CRITICAL: QR scan was NOT recorded by server.");
-                    }
+                    System.Diagnostics.Debug.WriteLine($"[TRACKING] FAILURE: {response.StatusCode} | Error: {errorBody}");
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[TRACKING] FATAL ERROR: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"[TRACKING] Exception Details: {ex}");
+                System.Diagnostics.Debug.WriteLine($"[TRACKING] FATAL ERROR: {ex.Message}");
             }
         }
     }

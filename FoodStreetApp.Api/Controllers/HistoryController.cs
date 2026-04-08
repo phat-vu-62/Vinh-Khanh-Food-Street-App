@@ -22,55 +22,51 @@ public class HistoryController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> TrackEvent([FromBody] UserHistory history)
     {
-        // 1. Log FULL request payload for production debugging
+        // 1. Log FULL request payload for production auditing
         var jsonPayload = JsonSerializer.Serialize(history);
         _logger.LogInformation("[Tracking] Received payload: {Payload}", jsonPayload);
 
         try
         {
-            // 2. Harden Validation
+            // 2. Strict Production Validation
             if (history.PoiId <= 0)
             {
-                _logger.LogWarning("[Tracking] Validation failed: Invalid PoiId {PoiId}", history.PoiId);
+                _logger.LogWarning("[Tracking] REFUSED: Invalid PoiId {PoiId}", history.PoiId);
                 return BadRequest(new { error = "PoiId must be a positive integer" });
             }
 
             if (string.IsNullOrWhiteSpace(history.Action))
             {
-                _logger.LogWarning("[Tracking] Validation failed: Missing Action for POI {PoiId}", history.PoiId);
+                _logger.LogWarning("[Tracking] REFUSED: Missing Action for POI {PoiId}", history.PoiId);
                 return BadRequest(new { error = "Action is required" });
             }
 
-            // 3. Normalize data
+            // 3. Metadata Normalization
             history.VisitedAtUtc = DateTime.UtcNow;
-            if (history.QRCode != null)
-            {
-                _logger.LogInformation("[Tracking] Event triggered by QR: {QRCode}", history.QRCode);
-            }
+            
+            _logger.LogDebug("[Tracking] Persistence: Preparing to save to PostgreSQL...");
 
-            // 4. Save with careful Await and verification
-            _logger.LogDebug("[Tracking] Attempting to save record to database...");
+            // 4. Guaranteed Database Write
             _dbContext.UserHistories.Add(history);
             
+            _logger.LogInformation("[Tracking] DB: Calling SaveChangesAsync...");
             var result = await _dbContext.SaveChangesAsync();
 
             if (result > 0)
             {
-                _logger.LogInformation("[Tracking] SUCCESS: Saved record ID {Id} for Action {Action}", 
-                    history.Id, history.Action);
-                
+                _logger.LogInformation("[Tracking] SUCCESS: Record {Id} persisted in DB", history.Id);
                 return Ok(new { success = true, id = history.Id });
             }
             else
             {
-                _logger.LogError("[Tracking] FAILURE: SaveChangesAsync returned 0 records affected.");
-                return StatusCode(500, new { error = "Data was not saved to database" });
+                _logger.LogError("[Tracking] FAILURE: No records were written to the database.");
+                return StatusCode(500, new { error = "Database write failed without error message" });
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[Tracking] CRITICAL ERROR saving history record for POI {PoiId}", history.PoiId);
-            return StatusCode(500, new { error = "Internal server error during persistence", details = ex.Message });
+            _logger.LogError(ex, "[Tracking] CRITICAL ERROR: Database persistence failed for POI {PoiId}", history.PoiId);
+            return StatusCode(500, new { error = "Internal server error", message = ex.Message });
         }
     }
 }
