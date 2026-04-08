@@ -4,6 +4,8 @@
 @using FoodStreetApp.Shared.Entities
 @inject IAdminDataService DataService
 @inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
+@implements IDisposable
 
 <div class="listen-container">
     @if (_poi == null)
@@ -15,28 +17,35 @@
     }
     else
     {
-        <div class="audio-card">
+        <div class="audio-card shadow-lg">
             <div class="gradient-bar"></div>
             
             <!-- Language Selector -->
             <div class="lang-selector">
-                <button class="lang-btn @(_currentLang == "vi" ? "active" : "")" @onclick='() => ChangeLang("vi")' title="Tiếng Việt">VN</button>
-                <button class="lang-btn @(_currentLang == "en" ? "active" : "")" @onclick='() => ChangeLang("en")' title="English">EN</button>
-                <button class="lang-btn @(_currentLang == "zh" ? "active" : "")" @onclick='() => ChangeLang("zh")' title="Chinese">ZH</button>
-                <button class="lang-btn @(_currentLang == "ko" ? "active" : "")" @onclick='() => ChangeLang("ko")' title="Korean">KO</button>
-                <button class="lang-btn @(_currentLang == "ja" ? "active" : "")" @onclick='() => ChangeLang("ja")' title="Japanese">JA</button>
+                <button class="lang-btn @(_currentLang == "vi" ? "active" : "")" @onclick='() => ChangeLang("vi")'>VN</button>
+                <button class="lang-btn @(_currentLang == "en" ? "active" : "")" @onclick='() => ChangeLang("en")'>EN</button>
+                <button class="lang-btn @(_currentLang == "zh" ? "active" : "")" @onclick='() => ChangeLang("zh")'>ZH</button>
+                <button class="lang-btn @(_currentLang == "ko" ? "active" : "")" @onclick='() => ChangeLang("ko")'>KO</button>
+                <button class="lang-btn @(_currentLang == "ja" ? "active" : "")" @onclick='() => ChangeLang("ja")'>JA</button>
             </div>
 
             <div class="card-content">
                 <div class="icon-circle">
-                    <i class="bi bi-shop"></i>
+                    @if (_isBuffering)
+                    {
+                        <div class="spinner-border text-primary" role="status" style="width: 2rem; height: 2rem;"></div>
+                    }
+                    else
+                    {
+                        <i class="bi bi-shop"></i>
+                    }
                 </div>
                 
                 <h1 class="restaurant-title">@_currentName</h1>
-                <p class="subtitle">@_statusMessage</p>
+                <p class="subtitle @(_hasError ? "text-danger fw-bold" : "")">@_statusMessage</p>
 
                 <div class="player-controls">
-                    <button class="play-btn @(_isPlaying ? "playing" : "")" @onclick="TogglePlay">
+                    <button class="play-btn @(_isPlaying ? "playing" : "")" @onclick="TogglePlay" disabled="@_isBuffering">
                         @if (_isPlaying)
                         {
                             <i class="bi bi-pause-fill"></i>
@@ -48,15 +57,22 @@
                     </button>
                 </div>
 
-                @if (_isPlaying)
+                @if (_isPlaying && !_isBuffering)
                 {
                     <div class="audio-wave">
                         <span></span><span></span><span></span><span></span><span></span>
                     </div>
                 }
 
-                <audio id="audioPlayer" src="@_poi.AudioUrl" preload="auto"></audio>
+                <audio @ref="_audioElement" src="@_audioUrl" preload="auto" crossorigin="anonymous"></audio>
             </div>
+
+            @if (!string.IsNullOrEmpty(_debugInfo))
+            {
+                <div class="debug-panel p-2 small text-muted text-center border-top">
+                    <code>@_debugInfo</code>
+                </div>
+            }
         </div>
     }
 </div>
@@ -77,28 +93,19 @@
         max-width: 400px;
         background: white;
         border-radius: 30px;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
         overflow: hidden;
         position: relative;
     }
 
-    .gradient-bar {
-        height: 8px;
-        background: linear-gradient(90deg, #0984e3, #00cec9);
-    }
+    .gradient-bar { height: 8px; background: linear-gradient(90deg, #0984e3, #00cec9); }
 
-    .lang-selector {
-        display: flex;
-        justify-content: center;
-        gap: 10px;
-        padding: 20px 10px 0;
-    }
+    .lang-selector { display: flex; justify-content: center; gap: 8px; padding: 20px 10px 0; }
 
     .lang-btn {
         background: #f1f5f9;
         border: 1px solid #e2e8f0;
         border-radius: 8px;
-        padding: 4px 10px;
+        padding: 5px 12px;
         font-size: 0.75rem;
         font-weight: 700;
         cursor: pointer;
@@ -106,131 +113,96 @@
         color: #64748b;
     }
 
-    .lang-btn.active {
-        background: #0984e3;
-        color: white;
-        border-color: #0984e3;
-    }
+    .lang-btn.active { background: #0984e3; color: white; border-color: #0984e3; }
 
-    .card-content {
-        padding: 30px 30px 50px;
-        text-align: center;
-    }
+    .card-content { padding: 30px 30px 40px; text-align: center; }
 
     .icon-circle {
-        width: 70px;
-        height: 70px;
-        background: #f0f7ff;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 20px;
-        color: #0984e3;
-        font-size: 2.2rem;
+        width: 70px; height: 70px; background: #f0f7ff; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;
+        color: #0984e3; font-size: 2.2rem;
     }
 
-    .restaurant-title {
-        font-weight: 800;
-        font-size: 1.6rem;
-        margin-bottom: 8px;
-        color: #1e293b;
-    }
+    .restaurant-title { font-weight: 800; font-size: 1.6rem; margin-bottom: 8px; color: #1e293b; }
 
-    .subtitle {
-        color: #64748b;
-        font-size: 0.9rem;
-        margin-bottom: 30px;
-        min-height: 3rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+    .subtitle { color: #64748b; font-size: 0.9rem; margin-bottom: 25px; min-height: 3rem; display: flex; align-items: center; justify-content: center; line-height: 1.4; }
 
     .play-btn {
-        width: 90px;
-        height: 90px;
-        background: #0984e3;
-        border: none;
-        border-radius: 50%;
-        color: white;
-        font-size: 2.8rem;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 10px 25px rgba(9, 132, 227, 0.4);
-        transition: all 0.3s ease;
-        margin: 0 auto;
+        width: 85px; height: 85px; background: #0984e3; border: none; border-radius: 50%;
+        color: white; font-size: 2.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 10px 20px rgba(9, 132, 227, 0.3); transition: all 0.3s; margin: 0 auto;
     }
 
-    .play-btn:not(.playing) {
-        animation: pulse 2s infinite;
-    }
-
-    .play-btn.playing {
-        background: #2d3436;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-    }
-
-    .play-btn:active {
-        transform: scale(0.92);
-    }
+    .play-btn:active { transform: scale(0.95); }
+    .play-btn:disabled { background: #cbd5e1; box-shadow: none; cursor: not-allowed; }
+    .play-btn:not(.playing):not(:disabled) { animation: pulse 2s infinite; }
+    .play-btn.playing { background: #1e293b; }
 
     @@keyframes pulse {
-        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(9, 132, 227, 0.4); }
-        70% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(9, 132, 227, 0); }
-        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(9, 132, 227, 0); }
+        0% { box-shadow: 0 0 0 0 rgba(9, 132, 227, 0.4); }
+        70% { box-shadow: 0 0 0 15px rgba(9, 132, 227, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(9, 132, 227, 0); }
     }
 
-    .audio-wave {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 5px;
-        height: 25px;
-        margin-top: 25px;
-    }
-
-    .audio-wave span {
-        width: 4px;
-        background: #0984e3;
-        border-radius: 2px;
-        animation: wave 1s infinite alternate;
-    }
-
+    .audio-wave { display: flex; justify-content: center; align-items: center; gap: 4px; height: 25px; margin-top: 25px; }
+    .audio-wave span { width: 3px; background: #0984e3; border-radius: 2px; animation: wave 1s infinite alternate; }
     .audio-wave span:nth-child(1) { height: 8px; animation-delay: 0.1s; }
-    .audio-wave span:nth-child(2) { height: 16px; animation-delay: 0.2s; }
+    .audio-wave span:nth-child(2) { height: 18px; animation-delay: 0.2s; }
     .audio-wave span:nth-child(3) { height: 22px; animation-delay: 0.3s; }
     .audio-wave span:nth-child(4) { height: 12px; animation-delay: 0.4s; }
     .audio-wave span:nth-child(5) { height: 8px; animation-delay: 0.5s; }
 
-    @@keyframes wave {
-        from { transform: scaleY(1); }
-        to { transform: scaleY(2); }
-    }
+    @@keyframes wave { from { transform: scaleY(1); } to { transform: scaleY(2.2); } }
+    .debug-panel { background: #f8fafc; font-family: monospace; }
 </style>
 
 @code {
     [Parameter] public int PoiId { get; set; }
     private POI? _poi;
+    private ElementReference _audioElement;
+    private DotNetObjectReference<ListenPage>? _objRef;
+
     private bool _isPlaying;
+    private bool _isBuffering;
+    private bool _hasError;
     private string _currentLang = "vi";
     private string _currentName = "";
     private string _statusMessage = "";
+    private string _audioUrl = "";
+    private string _debugInfo = "";
 
     protected override void OnInitialized()
     {
         _poi = DataService.GetPoiById(PoiId);
+        if (_poi != null)
+        {
+            _audioUrl = FixAudioUrl(_poi.AudioUrl);
+        }
         UpdateDisplay();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _poi != null)
+        {
+            _objRef = DotNetObjectReference.Create(this);
+            await JSRuntime.InvokeVoidAsync("audioHelper.attachEvents", _audioElement, _objRef);
+        }
+    }
+
+    private string FixAudioUrl(string? url)
+    {
+        if (string.IsNullOrEmpty(url)) return "";
+        if (url.StartsWith("http")) return url;
+        
+        // Handle relative URLs
+        var baseUri = NavigationManager.BaseUri.TrimEnd('/');
+        return $"{baseUri}/{url.TrimStart('/')}";
     }
 
     private void ChangeLang(string lang)
     {
-        if (_isPlaying)
-        {
-            _ = StopAllPlayback();
-        }
+        _ = StopAllPlayback();
         _currentLang = lang;
         UpdateDisplay();
     }
@@ -238,6 +210,7 @@
     private void UpdateDisplay()
     {
         if (_poi == null) return;
+        _hasError = false;
 
         _currentName = _currentLang switch
         {
@@ -264,14 +237,15 @@
     {
         if (!_isPlaying)
         {
-            if (_currentLang == "vi" && !string.IsNullOrEmpty(_poi?.AudioUrl))
+            _hasError = false;
+            if (_currentLang == "vi" && !string.IsNullOrEmpty(_audioUrl))
             {
-                // Play original audio file for Vietnamese
-                await JSRuntime.InvokeVoidAsync("audioHelper.play", "audioPlayer");
+                _debugInfo = "Playing file: " + _audioUrl;
+                await JSRuntime.InvokeVoidAsync("audioHelper.play", _audioElement);
             }
             else
             {
-                // Use TTS for other languages or if no audio file
+                _debugInfo = "Playing TTS for " + _currentLang;
                 string textToSpeak = _currentLang switch
                 {
                     "en" => _poi?.TextContentEn ?? _poi?.DescriptionEn ?? _poi?.NameEn,
@@ -291,8 +265,8 @@
                 };
 
                 await JSRuntime.InvokeVoidAsync("audioHelper.speak", textToSpeak, ttsLang);
+                _isPlaying = true; // For TTS we manually set playing state
             }
-            _isPlaying = true;
         }
         else
         {
@@ -302,8 +276,39 @@
 
     private async Task StopAllPlayback()
     {
-        await JSRuntime.InvokeVoidAsync("audioHelper.pause", "audioPlayer");
+        await JSRuntime.InvokeVoidAsync("audioHelper.pause", _audioElement);
         await JSRuntime.InvokeVoidAsync("audioHelper.stopSpeaking");
         _isPlaying = false;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnPlaybackStateChanged(bool isPlaying)
+    {
+        _isPlaying = isPlaying;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnBuffering(bool isBuffering)
+    {
+        _isBuffering = isBuffering;
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnPlaybackError(string message)
+    {
+        _isPlaying = false;
+        _isBuffering = false;
+        _hasError = true;
+        _statusMessage = "Lỗi âm thanh: " + message;
+        _debugInfo = "ERROR: " + message;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        _objRef?.Dispose();
     }
 }
