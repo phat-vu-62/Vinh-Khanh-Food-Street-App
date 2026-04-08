@@ -12,8 +12,7 @@ builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnC
 builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: false);
 builder.Configuration.AddEnvironmentVariables();
 
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
+
 
 var connectionString = builder.Configuration.GetConnectionString("Postgres");
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
@@ -56,7 +55,7 @@ builder.Services.AddScoped<ToastService>();
 
 var app = builder.Build();
 
-Console.WriteLine($"[Config] Startup: Environment={app.Environment.EnvironmentName}, Port={port}");
+Console.WriteLine($"[Config] Startup: Environment={app.Environment.EnvironmentName}");
 
 
 
@@ -359,4 +358,5 @@ app.MapGet("/api/sync/pois", (IAdminDataService service) =>
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
-app.Run();
+var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
+app.Run($"http://0.0.0.0:{port}");
