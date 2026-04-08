@@ -50,19 +50,17 @@ namespace FoodStreetApp
                                 PoiData = poi
                             };
                             
-                            // Track QR Scanned event
-                            var tracking = Handler?.MauiContext?.Services.GetService<Services.ITrackingService>();
-                            if (tracking != null)
-                            {
-                                await tracking.TrackEventAsync(id, "qr_scanned", qrCode: uri.ToString());
-                            }
+                            // Navigation will now trigger QR tracking via QueryProperty in FoodDetailViewModel
+
 
                             // Navigate to detail page with autoplay parameters
                             await MainThread.InvokeOnMainThreadAsync(async () =>
                             {
-                                await Shell.Current.GoToAsync($"{nameof(Views.FoodDetailPage)}?AutoPlay={play}&SkipGps={skipGps}", 
+                                var encodedQr = Uri.EscapeDataString(uri.ToString());
+                                await Shell.Current.GoToAsync($"{nameof(Views.FoodDetailPage)}?AutoPlay={play}&SkipGps={skipGps}&QRCode={encodedQr}", 
                                     new Dictionary<string, object> { { "FoodPlace", place } });
                             });
+
 
                         }
                     }

@@ -9,10 +9,13 @@ namespace FoodStreetApp.ViewModels
     [QueryProperty(nameof(Place), "FoodPlace")]
     [QueryProperty(nameof(AutoPlay), "AutoPlay")]
     [QueryProperty(nameof(SkipGps), "SkipGps")]
+    [QueryProperty(nameof(QRCode), "QRCode")]
     public class FoodDetailViewModel : INotifyPropertyChanged
     {
         private readonly INarrationService _narrationService;
         private readonly ITrackingService _trackingService;
+        private string? _qrCode;
+
 
         private FoodPlace? _place;
         private string _playStatus = "Play";
@@ -58,6 +61,24 @@ namespace FoodStreetApp.ViewModels
 
         public string? AutoPlay { get => _autoPlay; set { _autoPlay = value; OnPropertyChanged(); } }
         public string? SkipGps { get => _skipGps; set { _skipGps = value; OnPropertyChanged(); } }
+        public string? QRCode 
+        { 
+            get => _qrCode; 
+            set 
+            { 
+                _qrCode = value; 
+                OnPropertyChanged(); 
+                
+                // Track QR source when property is set (lifecycle guaranteed ready)
+                if (!string.IsNullOrEmpty(_qrCode) && _place?.PoiData != null)
+                {
+                    Task.Run(async () => {
+                        await _trackingService.TrackEventAsync(_place.PoiData.Id, "qr_scanned", qrCode: _qrCode);
+                    });
+                }
+            } 
+        }
+
 
         public string PlayStatus
         {
