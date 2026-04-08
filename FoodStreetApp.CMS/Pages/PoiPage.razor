@@ -2,6 +2,7 @@
 @inject IAdminDataService DataService
 @inject ToastService Toasts
 @inject IJSRuntime JS
+@inject NavigationManager NavigationManager
 @inject IConfiguration Configuration
 @using Microsoft.JSInterop
 @using Microsoft.AspNetCore.Components.Forms
@@ -133,12 +134,12 @@ else if (!_isLoading)
                 <p class="text-muted small px-3">Quét mã này để khách tham quan nghe âm thanh giới thiệu ngay lập tức tại quán.</p>
                 
                 <div class="bg-light d-inline-block p-4 rounded-5 mb-4 border border-light shadow-inner" style="background: white !important;">
-                     <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=@(Uri.EscapeDataString($"foodstreet://poi?id={_selectedPoiForQr?.Id}&play=true&skipGps=true"))" 
+                     <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=@(Uri.EscapeDataString($"{NavigationManager.BaseUri.TrimEnd('/')}/listen/{_selectedPoiForQr?.Id}"))" 
                           alt="QR Code" width="200" height="200" class="img-fluid" />
                 </div>
                 
                 <div class="d-grid">
-                     <a class="btn btn-modern btn-primary-f&b" href="/qr/@_selectedPoiForQr?.Id" target="_blank">Xem Link trực tiếp</a>
+                     <a class="btn btn-modern btn-primary-f&b" href="/listen/@_selectedPoiForQr?.Id" target="_blank">Xem Link trực tiếp</a>
                      <button class="btn btn-link text-muted mt-2 text-decoration-none" @onclick="() => _qrModalVisible = false">Đóng</button>
                 </div>
             </div>
