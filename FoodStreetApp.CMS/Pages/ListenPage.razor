@@ -1,0 +1,200 @@
+@page "/listen/{PoiId:int}"
+@layout EmptyLayout
+@using FoodStreetApp.CMS.Interfaces
+@using FoodStreetApp.Shared.Entities
+@inject IAdminDataService DataService
+
+<div class="listen-container">
+    @if (_poi == null)
+    {
+        <div class="status-box">
+            <i class="bi bi-search display-4 text-muted"></i>
+            <h2 class="mt-3">Đang tìm dữ liệu...</h2>
+        </div>
+    }
+    else
+    {
+        <div class="audio-card">
+            <div class="gradient-bar"></div>
+            
+            <div class="card-content">
+                <div class="icon-circle">
+                    <i class="bi bi-shop"></i>
+                </div>
+                
+                <h1 class="restaurant-title">@_poi.Name</h1>
+                <p class="subtitle">@(_isPlaying ? "Đang kể câu chuyện cho bạn..." : "Chạm để bắt đầu hành trình ẩm thực")</p>
+
+                <div class="player-controls">
+                    <button class="play-btn @(_isPlaying ? "playing" : "")" @onclick="TogglePlay">
+                        @if (_isPlaying)
+                        {
+                            <i class="bi bi-pause-fill"></i>
+                        }
+                        else
+                        {
+                            <i class="bi bi-play-fill ms-1"></i>
+                        }
+                    </button>
+                </div>
+
+                @if (_isPlaying)
+                {
+                    <div class="audio-wave">
+                        <span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                }
+
+                <audio id="audioPlayer" src="@_poi.AudioUrl" preload="auto"></audio>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .listen-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        font-family: 'Inter', sans-serif;
+    }
+
+    .audio-card {
+        width: 100%;
+        max-width: 400px;
+        background: white;
+        border-radius: 30px;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+        overflow: hidden;
+        position: relative;
+    }
+
+    .gradient-bar {
+        height: 8px;
+        background: linear-gradient(90deg, #0984e3, #00cec9);
+    }
+
+    .card-content {
+        padding: 50px 30px;
+        text-align: center;
+    }
+
+    .icon-circle {
+        width: 80px;
+        height: 80px;
+        background: #f0f7ff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 25px;
+        color: #0984e3;
+        font-size: 2.5rem;
+    }
+
+    .restaurant-title {
+        font-weight: 800;
+        font-size: 1.75rem;
+        margin-bottom: 10px;
+        color: #1e293b;
+    }
+
+    .subtitle {
+        color: #64748b;
+        font-size: 0.95rem;
+        margin-bottom: 40px;
+    }
+
+    .play-btn {
+        width: 100px;
+        height: 100px;
+        background: #0984e3;
+        border: none;
+        border-radius: 50%;
+        color: white;
+        font-size: 3rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 10px 25px rgba(9, 132, 227, 0.4);
+        transition: all 0.3s ease;
+        margin: 0 auto;
+    }
+
+    .play-btn:not(.playing) {
+        animation: pulse 2s infinite;
+    }
+
+    .play-btn.playing {
+        background: #2d3436;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    }
+
+    .play-btn:active {
+        transform: scale(0.92);
+    }
+
+    @@keyframes pulse {
+        0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(9, 132, 227, 0.4); }
+        70% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(9, 132, 227, 0); }
+        100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(9, 132, 227, 0); }
+    }
+
+    .audio-wave {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 5px;
+        height: 30px;
+        margin-top: 30px;
+    }
+
+    .audio-wave span {
+        width: 4px;
+        background: #0984e3;
+        border-radius: 2px;
+        animation: wave 1s infinite alternate;
+    }
+
+    .audio-wave span:nth-child(1) { height: 10px; animation-delay: 0.1s; }
+    .audio-wave span:nth-child(2) { height: 20px; animation-delay: 0.2s; }
+    .audio-wave span:nth-child(3) { height: 25px; animation-delay: 0.3s; }
+    .audio-wave span:nth-child(4) { height: 15px; animation-delay: 0.4s; }
+    .audio-wave span:nth-child(5) { height: 10px; animation-delay: 0.5s; }
+
+    @@keyframes wave {
+        from { transform: scaleY(1); }
+        to { transform: scaleY(2); }
+    }
+</style>
+
+@inject IJSRuntime JSRuntime
+
+@code {
+    [Parameter] public int PoiId { get; set; }
+    private POI? _poi;
+    private bool _isPlaying;
+
+    protected override void OnInitialized()
+    {
+        _poi = DataService.GetPoiById(PoiId);
+    }
+
+    private async Task TogglePlay()
+    {
+        if (!_isPlaying)
+        {
+            await JSRuntime.InvokeVoidAsync("eval", "document.getElementById('audioPlayer').play()");
+            _isPlaying = true;
+        }
+        else
+        {
+            await JSRuntime.InvokeVoidAsync("eval", "document.getElementById('audioPlayer').pause()");
+            _isPlaying = false;
+        }
+    }
+}
