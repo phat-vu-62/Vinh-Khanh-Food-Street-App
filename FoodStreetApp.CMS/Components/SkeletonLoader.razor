@@ -1,0 +1,28 @@
+<div class="skeleton-wrapper @Class" style="@Style">
+    @for (int i = 0; i < Count; i++)
+    {
+        <div class="skeleton-item mb-2" style="height: @Height; width: @Width; border-radius: @Radius;"></div>
+    }
+</div>
+
+@code {
+    [Parameter] public int Count { get; set; } = 1;
+    [Parameter] public string Height { get; set; } = "20px";
+    [Parameter] public string Width { get; set; } = "100%";
+    [Parameter] public string Radius { get; set; } = "4px";
+    [Parameter] public string Class { get; set; } = "";
+    [Parameter] public string Style { get; set; } = "";
+}
+
+<style>
+    .skeleton-item {
+        background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: skeleton-loading 1.5s infinite;
+    }
+
+    @keyframes skeleton-loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+</style>

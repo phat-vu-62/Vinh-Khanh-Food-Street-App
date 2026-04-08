@@ -284,71 +284,119 @@ public class AdminDataService : IAdminDataService
 
     public async Task<FoodStreetApp.CMS.Models.AnalyticsSummary> GetAnalyticsSummaryAsync(DateTime? startDate = null, DateTime? endDate = null)
     {
-        var query = _dbContext.UserHistories.AsNoTracking().AsQueryable();
+        var start = startDate?.ToUniversalTime();
+        var end = endDate?.ToUniversalTime();
 
-        if (startDate.HasValue)
-            query = query.Where(h => h.VisitedAtUtc >= startDate.Value.ToUniversalTime());
-        if (endDate.HasValue)
-            query = query.Where(h => h.VisitedAtUtc <= endDate.Value.ToUniversalTime());
+        var query = _dbContext.UserHistories.AsNoTracking();
 
-        var logs = await query.ToListAsync();
-        var pois = await _dbContext.Pois.AsNoTracking().ToDictionaryAsync(x => x.Id, x => x.Name);
+        if (start.HasValue) query = query.Where(h => h.VisitedAtUtc >= start.Value);
+        if (end.HasValue) query = query.Where(h => h.VisitedAtUtc <= end.Value);
 
-        var summary = new FoodStreetApp.CMS.Models.AnalyticsSummary
-        {
-            TotalAudioPlayed = logs.Count(l => (l.Action ?? "").Contains("audio", StringComparison.OrdinalIgnoreCase) || l.Action == "listen"),
-            TotalPoiViewed = logs.Count(l => (l.Action ?? "").Contains("viewed", StringComparison.OrdinalIgnoreCase)),
-            UniqueUsersCount = logs.Select(l => l.UserId).Distinct().Count(),
-            AvgDurationSeconds = logs.Any(l => l.DurationSeconds.HasValue) ? logs.Where(l => l.DurationSeconds.HasValue).Average(l => l.DurationSeconds!.Value) : 0
-        };
-
-        // Top POIs
-        summary.TopPois = logs.Where(l => pois.ContainsKey(l.PoiId))
-            .GroupBy(l => l.PoiId)
-            .Select(g => new FoodStreetApp.CMS.Models.TopPoiMetric
-            {
-                PoiId = g.Key,
-                PoiName = pois[g.Key],
-                Count = g.Count()
-            })
-            .OrderByDescending(x => x.Count)
-            .Take(5)
-            .ToList();
-
-        // Hot Spot
-        summary.HotSpotName = summary.TopPois.FirstOrDefault()?.PoiName ?? "N/A";
-
-        // Peak Hour
-        if (logs.Any())
-        {
-            var peak = logs.GroupBy(l => l.VisitedAtUtc.ToLocalTime().Hour)
-                .OrderByDescending(g => g.Count())
-                .First();
-            summary.PeakHour = $"{peak.Key:D2}:00 - {peak.Key + 1:D2}:00";
-        }
+        // Optimized DB-side aggregations
+        var totalAudio = await query.CountAsync(l => l.Action == "audio_played" || l.Action == "Listen");
+        var totalViews = await query.CountAsync(l => l.Action == "poi_viewed" || l.Action == "POI viewed");
+        var uniqueUsers = await query.Select(l => l.UserId).Distinct().CountAsync();
+        
+        var avgDuration = await query
+            .Where(l => l.DurationSeconds.HasValue && l.DurationSeconds > 0)
+            .AverageAsync(l => (double?)l.DurationSeconds) ?? 0;
 
         // Engagement Rate (> 10s)
-        var audioLogs = logs.Where(l => (l.Action ?? "").Contains("audio", StringComparison.OrdinalIgnoreCase) || l.Action == "listen").ToList();
-        if (audioLogs.Any())
+        var engagementBase = await query.CountAsync(l => l.Action == "audio_played" || l.Action == "Listen");
+        var highEngagement = await query.CountAsync(l => (l.Action == "audio_played" || l.Action == "Listen") && l.DurationSeconds > 10);
+        var engagementRate = engagementBase > 0 ? (double)highEngagement * 100 / engagementBase : 0;
+
+        // Top POIs (Shifted to DB grouping)
+        var topPoiData = await query
+            .GroupBy(l => l.PoiId)
+            .OrderByDescending(g => g.Count())
+            .Take(5)
+            .Select(g => new { g.Key, Count = g.Count() })
+            .ToListAsync();
+
+        var poiIds = topPoiData.Select(x => x.Key).ToList();
+        var poiNames = await _dbContext.Pois
+            .Where(p => poiIds.Contains(p.Id))
+            .ToDictionaryAsync(p => p.Id, p => p.Name);
+
+        var topPois = topPoiData.Select(x => new FoodStreetApp.CMS.Models.TopPoiMetric
         {
-            summary.EngagementRate = (double)audioLogs.Count(l => l.DurationSeconds > 10) * 100 / audioLogs.Count;
+            PoiId = x.Key,
+            PoiName = poiNames.ContainsKey(x.Key) ? poiNames[x.Key] : $"POI #{x.Key}",
+            Count = x.Count
+        }).ToList();
+
+        // Trends (Optimized to daily groupings in DB)
+        var trendStart = startDate?.Date ?? DateTime.UtcNow.Date.AddDays(-6);
+        var trends = new List<FoodStreetApp.CMS.Models.TrendPoint>();
+
+        for (var d = trendStart; d <= (endDate?.Date ?? DateTime.UtcNow.Date); d = d.AddDays(1))
+        {
+            var dayStart = d.ToUniversalTime();
+            var dayEnd = d.AddDays(1).ToUniversalTime();
+            
+            var views = await query.CountAsync(l => l.VisitedAtUtc >= dayStart && l.VisitedAtUtc < dayEnd && (l.Action == "poi_viewed" || l.Action == "POI viewed"));
+            var listens = await query.CountAsync(l => l.VisitedAtUtc >= dayStart && l.VisitedAtUtc < dayEnd && (l.Action == "audio_played" || l.Action == "Listen"));
+            
+            trends.Add(new FoodStreetApp.CMS.Models.TrendPoint { Date = d, Views = views, Listens = listens });
         }
 
-        // Daily Trends (Last 7 days if no range)
-        var trendStart = startDate ?? DateTime.UtcNow.Date.AddDays(-6);
-        var trendEnd = endDate ?? DateTime.UtcNow.Date;
+        // Peak Hour (Optimized)
+        var peakHourStr = "N/A";
+        var peakGroup = await query
+            .GroupBy(l => l.VisitedAtUtc.Hour)
+            .OrderByDescending(g => g.Count())
+            .Select(g => new { Hour = g.Key, Count = g.Count() })
+            .FirstOrDefaultAsync();
 
-        for (var d = trendStart.Date; d <= trendEnd.Date; d = d.AddDays(1))
+        if (peakGroup != null)
         {
-            summary.DailyTrends.Add(new FoodStreetApp.CMS.Models.TrendPoint
-            {
-                Date = d,
-                Views = logs.Count(l => l.VisitedAtUtc.ToLocalTime().Date == d.Date && (l.Action ?? "").Contains("viewed", StringComparison.OrdinalIgnoreCase)),
-                Listens = logs.Count(l => l.VisitedAtUtc.ToLocalTime().Date == d.Date && ((l.Action ?? "").Contains("audio", StringComparison.OrdinalIgnoreCase) || l.Action == "listen"))
-            });
+            peakHourStr = $"{peakGroup.Hour:D2}:00 - {peakGroup.Hour + 1:D2}:00";
         }
 
-        return summary;
+        return new FoodStreetApp.CMS.Models.AnalyticsSummary
+        {
+            TotalAudioPlayed = totalAudio,
+            TotalPoiViewed = totalViews,
+            UniqueUsersCount = uniqueUsers,
+            AvgDurationSeconds = avgDuration,
+            TopPois = topPois,
+            HotSpotName = topPois.FirstOrDefault()?.PoiName ?? "N/A",
+            PeakHour = peakHourStr,
+            EngagementRate = engagementRate,
+            DailyTrends = trends
+        };
+    }
+
+    public async Task<(IReadOnlyCollection<UserHistory> Items, int TotalCount)> GetUsageHistoriesPagedAsync(int page, int pageSize, DateTime? date = null, int? poiId = null, string? search = null)
+    {
+        var query = _dbContext.UserHistories.AsNoTracking().AsQueryable();
+
+        if (date.HasValue)
+        {
+            var utcStart = date.Value.Date.ToUniversalTime();
+            var utcEnd = utcStart.AddDays(1);
+            query = query.Where(h => h.VisitedAtUtc >= utcStart && h.VisitedAtUtc < utcEnd);
+        }
+
+        if (poiId.HasValue && poiId.Value > 0)
+        {
+            query = query.Where(h => h.PoiId == poiId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            query = query.Where(h => h.UserId.Contains(search) || h.Action.Contains(search));
+        }
+
+        var total = await query.CountAsync();
+        var items = await query.OrderByDescending(h => h.VisitedAtUtc)
+                              .Skip((page - 1) * pageSize)
+                              .Take(pageSize)
+                              .ToListAsync();
+
+        return (items, total);
     }
 }
+
 

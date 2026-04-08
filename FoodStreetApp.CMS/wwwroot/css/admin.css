@@ -436,8 +436,8 @@ body {
 
 /* Empty States */
 .empty-state-icon {
-    background: var(--bg-main);
-    color: var(--text-light);
+    background: var(--bg-light);
+    color: var(--text-muted);
     width: 64px;
     height: 64px;
     border-radius: 50%;
@@ -446,5 +446,22 @@ body {
     justify-content: center;
     margin-bottom: 1.5rem;
 }
+
+.border-dashed {
+    border-style: dashed !important;
+}
+
+/* Skeleton Loading Animation */
+.skeleton-item {
+    background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite linear;
+}
+
+@keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
 
 

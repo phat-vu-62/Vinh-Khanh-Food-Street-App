@@ -1,72 +1,89 @@
 @page "/"
+@using FoodStreetApp.CMS.Models
+@using FoodStreetApp.CMS.Components
 @inject IAdminDataService DataService
 @inject ToastService Toasts
 
 <div class="d-flex justify-content-between align-items-center mb-5">
     <div>
         <h1 class="h3 fw-bold mb-1">Tổng quan hệ thống</h1>
-        <p class="text-muted mb-0">Chào mừng trở lại! Dưới đây là tóm tắt hoạt động tại Phố ẩm thực Vinh Khánh.</p>
+        <p class="text-muted mb-0">Hoạt động thời gian thực tại Phố ẩm thực Vinh Khánh.</p>
     </div>
     <div class="d-flex gap-2">
-        <button class="btn btn-saas btn-saas-secondary" @onclick="LoadAsync"><i class="bi bi-arrow-clockwise"></i> Làm mới</button>
-        <button class="btn btn-saas btn-saas-primary" @onclick="TranslateAllPois" disabled="@_isTranslating">
+        <button class="btn btn-saas btn-saas-secondary" @onclick="LoadAsync"><i class="bi bi-arrow-clockwise me-1"></i> Làm mới</button>
+        <button class="btn btn-saas btn-saas-primary" @onclick="TranslateAllPois" disabled="@(_isTranslating || _isLoading)">
             @if (_isTranslating) { <span class="spinner-border spinner-border-sm me-2"></span> }
             <i class="bi bi-stars"></i> Dịch AI toàn bộ
         </button>
     </div>
 </div>
 
-<LoadingState IsLoading="_isLoading" Message="Đang xử lý dữ liệu..." />
-
-@if (!_isLoading)
+@if (_isLoading)
+{
+    <div class="row g-4 mb-5">
+        @for (int i = 0; i < 4; i++) {
+            <div class="col-md-3">
+                <div class="saas-card stats-card">
+                    <SkeletonLoader Height="20px" Width="60%" Class="mb-3" />
+                    <SkeletonLoader Height="32px" Width="80%" />
+                </div>
+            </div>
+        }
+    </div>
+    <div class="row g-4 mb-5">
+        <div class="col-lg-8"><div class="saas-card p-4"><SkeletonLoader Height="250px" /></div></div>
+        <div class="col-lg-4"><div class="saas-card p-4"><SkeletonLoader Height="250px" /></div></div>
+    </div>
+}
+else
 {
     <!-- 4 Summary Cards -->
     <div class="row g-4 mb-5">
         <div class="col-md-3">
-            <div class="saas-card stats-card">
+            <div class="saas-card stats-card border-primary">
                 <span class="stats-label">Tổng địa điểm (POI)</span>
                 <div class="d-flex align-items-baseline justify-content-between">
-                    <span class="stats-value">@Pois.Count</span>
-                    <span class="text-success small fw-bold">+@(Pois.Count > 0 ? (Pois.Count/5 + 1) : 0)%</span>
+                    <span class="stats-value">@_poiCount.ToString("N0")</span>
+                    <i class="bi bi-geo-alt text-primary"></i>
                 </div>
                 <div class="progress mt-3" style="height: 4px;">
-                    <div class="progress-bar bg-primary" style="width: 70%; background-color: var(--primary-color);"></div>
+                    <div class="progress-bar bg-primary" style="width: 100%;"></div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="saas-card stats-card">
+            <div class="saas-card stats-card border-success">
                 <span class="stats-label">Tệp âm thanh</span>
                 <div class="d-flex align-items-baseline justify-content-between">
-                    <span class="stats-value">@Audios.Count</span>
-                    <i class="bi bi-file-music text-muted"></i>
+                    <span class="stats-value">@_audioCount.ToString("N0")</span>
+                    <i class="bi bi-file-music text-success"></i>
                 </div>
                 <div class="progress mt-3" style="height: 4px;">
-                    <div class="progress-bar bg-success" style="width: 45%;"></div>
+                    <div class="progress-bar bg-success" style="width: 100%;"></div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="saas-card stats-card">
-                <span class="stats-label">Lộ trình du lịch</span>
-                <div class="d-flex align-items-baseline justify-content-between">
-                    <span class="stats-value">@Tours.Count</span>
-                    <span class="saas-badge badge-active">Active</span>
-                </div>
-                <div class="progress mt-3" style="height: 4px;">
-                    <div class="progress-bar bg-info" style="width: 85%;"></div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="saas-card stats-card">
+            <div class="saas-card stats-card border-info">
                 <span class="stats-label">Lượt tương tác</span>
                 <div class="d-flex align-items-baseline justify-content-between">
-                    <span class="stats-value">@Histories.Count</span>
-                    <span class="text-success small fw-bold">Trend ▲</span>
+                    <span class="stats-value">@_summary.TotalAudioPlayed.ToString("N0")</span>
+                    <span class="small text-info fw-bold">Live</span>
                 </div>
                 <div class="progress mt-3" style="height: 4px;">
-                    <div class="progress-bar bg-primary" style="width: 60%;"></div>
+                    <div class="progress-bar bg-info" style="width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="saas-card stats-card border-warning">
+                <span class="stats-label">Nghe trung bình</span>
+                <div class="d-flex align-items-baseline justify-content-between">
+                    <span class="stats-value">@_summary.AvgDurationSeconds.ToString("0.0")s</span>
+                    <i class="bi bi-clock-history text-warning"></i>
+                </div>
+                <div class="progress mt-3" style="height: 4px;">
+                    <div class="progress-bar bg-warning" style="width: 100%;"></div>
                 </div>
             </div>
         </div>
@@ -78,34 +95,22 @@
             <div class="saas-card p-4 h-100">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <div>
-                        <h6 class="fw-bold mb-0">Hoạt động người dùng</h6>
-                        <small class="text-muted">Theo dõi lượt truy cập theo thời gian</small>
+                        <h6 class="fw-bold mb-0">Biểu đồ hoạt động (7 ngày qua)</h6>
+                        <small class="text-muted">Cập nhật lúc: @_lastUpdated.ToString("HH:mm:ss")</small>
                     </div>
                 </div>
                 
                 <div class="chart-container py-3" style="height: 250px;">
-                    <svg width="100%" height="200" viewBox="0 0 800 200" preserveAspectRatio="none">
-                        <!-- Grid lines -->
-                        <line x1="0" y1="0" x2="800" y2="0" stroke="#f1f5f9" />
-                        <line x1="0" y1="50" x2="800" y2="50" stroke="#f1f5f9" />
-                        <line x1="0" y1="100" x2="800" y2="100" stroke="#f1f5f9" />
-                        <line x1="0" y1="150" x2="800" y2="150" stroke="#f1f5f9" />
+                    <svg width="100%" height="200" viewBox="0 0 1000 200" preserveAspectRatio="none">
+                        <line x1="0" y1="50" x2="1000" y2="50" stroke="#f1f5f9" />
+                        <line x1="0" y1="100" x2="1000" y2="100" stroke="#f1f5f9" />
+                        <line x1="0" y1="150" x2="1000" y2="150" stroke="#f1f5f9" />
                         
-                        <!-- Line Chart Path -->
-                        <path d="M 0 180 Q 100 150, 200 170 T 400 120 T 600 140 T 800 80" 
-                              fill="none" stroke="var(--primary-color)" stroke-width="3" />
-                        <path d="M 0 180 Q 100 150, 200 170 T 400 120 T 600 140 T 800 80 L 800 200 L 0 200 Z" 
-                              fill="url(#chartGradient)" opacity="0.1" />
-                        
-                        <defs>
-                            <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stop-color="var(--primary-color)" />
-                                <stop offset="100%" stop-color="white" />
-                            </linearGradient>
-                        </defs>
+                        <polyline points="@GenerateTrendPoints(true)" fill="none" stroke="var(--primary-color)" stroke-width="3" />
+                        <path d="M 0 200 L @GenerateTrendPoints(true) L 1000 200 Z" fill="var(--primary-color)" opacity="0.05" />
                     </svg>
-                    <div class="d-flex justify-content-between mt-3 px-1 small text-muted">
-                        <span>T. Hai</span><span>T. Ba</span><span>T. Tư</span><span>T. Năm</span><span>T. Sáu</span><span>T. Bảy</span><span>CN</span>
+                    <div class="d-flex justify-content-between mt-3 px-1 x-small text-muted">
+                        @foreach (var t in _summary.DailyTrends) { <span>@t.Date.ToString("dd/MM")</span> }
                     </div>
                 </div>
             </div>
@@ -114,31 +119,41 @@
         <!-- SVG Bar Chart: Top Locations -->
         <div class="col-lg-4">
             <div class="saas-card p-4 h-100">
-                <h6 class="fw-bold mb-4">Địa điểm dẫn đầu</h6>
+                <h6 class="fw-bold mb-4">Top địa điểm phổ biến</h6>
                 <div class="d-flex flex-column gap-4">
-                    @foreach (var p in TopPois.Take(5))
+                    @if (!_summary.TopPois.Any())
                     {
-                        <div>
-                            <div class="d-flex justify-content-between small mb-1">
-                                <span class="fw-semibold">@p.PoiName</span>
-                                <span class="text-muted">@p.Count lượt</span>
-                            </div>
-                            <div class="progress" style="height: 8px;">
-                                <div class="progress-bar bg-primary rounded-pill" 
-                                     style="width: @(Math.Min(100, (p.Count * 100 / (TopPois.FirstOrDefault()?.Count ?? 1))))%; background-color: var(--primary-color);"></div>
-                            </div>
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox mb-2" style="font-size: 2rem;"></i>
+                            <p class="small">Chưa có dữ liệu</p>
                         </div>
+                    }
+                    else
+                    {
+                        @foreach (var p in _summary.TopPois)
+                        {
+                            <div>
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span class="fw-semibold">@p.PoiName</span>
+                                    <span class="text-muted">@p.Count lượt</span>
+                                </div>
+                                <div class="progress" style="height: 12px; border-radius: 6px;">
+                                    <div class="progress-bar bg-primary" 
+                                         style="width: @(Math.Min(100, (p.Count * 100 / (_summary.TopPois.First().Count))))%;"></div>
+                                </div>
+                            </div>
+                        }
                     }
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Activity Panel -->
+    <!-- Latest Activity Table (Paged) -->
     <div class="saas-card p-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h6 class="fw-bold mb-0">Hoạt động mới nhất</h6>
-            <span class="small text-primary fw-bold cursor-pointer">Xem tất cả</span>
+            <a href="/history" class="small text-primary fw-bold text-decoration-none">Xem toàn bộ</a>
         </div>
         <div class="table-responsive">
             <table class="saas-table">
@@ -152,22 +167,20 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var h in Histories.Take(10))
+                    @foreach (var h in _latestHistories)
                     {
                         <tr>
                             <td>
                                 <div class="d-flex align-items-center gap-2">
-                                    <div class="bg-light rounded-circle small d-flex align-items-center justify-content-center" style="width:24px; height:24px;">
+                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width:28px; height:28px;">
                                         <i class="bi bi-person text-muted"></i>
                                     </div>
-                                    <span class="fw-medium">User-#@h.UserId?.Take(4)</span>
+                                    <span class="fw-medium small">Guest-@h.UserId?.Take(4)</span>
                                 </div>
                             </td>
-                            <td>
-                                <span class="saas-badge @(h.Action == "Listen" ? "badge-highlight" : "badge-inactive")">@h.Action</span>
-                            </td>
-                            <td>@Pois.FirstOrDefault(p => p.Id == h.PoiId)?.Name</td>
-                            <td>@(h.DurationSeconds ?? 0)s</td>
+                            <td><span class="saas-badge @(h.Action == "Listen" || h.Action == "audio_played" ? "badge-active" : "badge-highlight")">@h.Action</span></td>
+                            <td>@_poiNames.GetValueOrDefault(h.PoiId, $"POI #{h.PoiId}")</td>
+                            <td class="small fw-semibold">@(h.DurationSeconds ?? 0)s</td>
                             <td class="text-muted small">@h.VisitedAtUtc.ToLocalTime().ToString("HH:mm, dd/MM")</td>
                         </tr>
                     }
@@ -176,143 +189,61 @@
         </div>
     </div>
 }
-}
-}
 
 @code {
-    private IReadOnlyCollection<POI> Pois = [];
-    private IReadOnlyCollection<Audio> Audios = [];
-    private IReadOnlyCollection<Tour> Tours = [];
-    private IReadOnlyCollection<UserHistory> Histories = [];
-    private bool _isLoading;
+    private bool _isLoading = true;
     private bool _isTranslating;
-
-    // Analytics Data
-    private Dictionary<string, List<(double, double)>> UserRoutes = new();
-    private List<TopPoiStats> TopPois = new();
-    private List<HeatmapPoint> HeatmapPoints = new();
+    private AnalyticsSummary _summary = new();
+    private List<UserHistory> _latestHistories = new();
+    private Dictionary<int, string> _poiNames = new();
+    private int _poiCount;
+    private int _audioCount;
+    private DateTime _lastUpdated;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadAsync();
     }
 
-    private Task LoadAsync()
+    private async Task LoadAsync()
     {
         _isLoading = true;
+        _lastUpdated = DateTime.Now;
+        
         try
         {
-            Pois = DataService.GetPois();
-        }
-        catch { Pois = []; }
-
-        try
-        {
-            Audios = DataService.GetAudios();
-        }
-        catch { Audios = []; }
-
-        try
-        {
-            Tours = DataService.GetTours();
-        }
-        catch { Tours = []; }
-
-        try
-        {
-            Histories = DataService.GetUsageHistories();
-        }
-        catch { Histories = []; }
-
-        try
-        {
-            CalculateAnalytics();
+            var pois = DataService.GetPois();
+            _poiCount = pois.Count;
+            _poiNames = pois.ToDictionary(p => p.Id, p => p.Name);
+            _audioCount = DataService.GetAudios().Count;
+            
+            _summary = await DataService.GetAnalyticsSummaryAsync();
+            var paged = await DataService.GetUsageHistoriesPagedAsync(1, 10);
+            _latestHistories = paged.Items.ToList();
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"[DASHBOARD] Analytics error: {ex.Message}");
+            Toasts.Error($"Lỗi khi tải dữ liệu dashboard: {ex.Message}");
         }
-
-        _isLoading = false;
-        return Task.CompletedTask;
-    }
-
-    private void CalculateAnalytics()
-    {
-        // 1. Travel Route Tracking (ArrayList processing)
-        UserRoutes.Clear();
-        foreach (var history in Histories.OrderBy(h => h.VisitedAtUtc))
+        finally
         {
-            if (string.IsNullOrEmpty(history.UserId)) continue;
-            
-            var poi = Pois.FirstOrDefault(p => p.Id == history.PoiId);
-            if (poi != null)
-            {
-                if (!UserRoutes.ContainsKey(history.UserId))
-                {
-                    UserRoutes[history.UserId] = new List<(double, double)>(); // ArrayList analog
-                }
-                UserRoutes[history.UserId].Add((poi.Latitude, poi.Longitude));
-            }
-        }
-
-        // 2 & 3. Top POIs & Avg Listening Time
-        var listens = Histories.Where(h => h.Action == "audio_played" || h.Action == "Listen").GroupBy(h => h.PoiId).ToList();
-        TopPois.Clear();
-        var rnd = new Random(42);
-        
-        foreach (var group in listens)
-        {
-            var poi = Pois.FirstOrDefault(p => p.Id == group.Key);
-            if (poi != null)
-            {
-                // Calculating average listening time using real DurationSeconds
-                double avgTime = group.Any(h => h.DurationSeconds > 0) 
-                    ? group.Where(h => h.DurationSeconds > 0).Average(h => h.DurationSeconds.Value) 
-                    : 0;
-                    
-                if (avgTime == 0 && group.Count() > 0) 
-                    avgTime = rnd.NextDouble() * 90 + 30; // Fallback for old data
-                    
-                TopPois.Add(new TopPoiStats { PoiName = poi.Name, Count = group.Count(), AvgTime = avgTime });
-            }
-        }
-        
-        TopPois = TopPois.OrderByDescending(p => p.Count).Take(5).ToList();
-
-        // 4. Heatmap data
-        HeatmapPoints.Clear();
-        var interactionCounts = Histories.GroupBy(h => h.PoiId);
-        foreach(var grp in interactionCounts)
-        {
-            var poi = Pois.FirstOrDefault(p => p.Id == grp.Key);
-            if (poi != null)
-            {
-                HeatmapPoints.Add(new HeatmapPoint 
-                {
-                    Latitude = poi.Latitude, 
-                    Longitude = poi.Longitude, 
-                    Intensity = grp.Count(),
-                    Title = poi.Name
-                });
-            }
+            _isLoading = false;
         }
     }
 
     private async Task TranslateAllPois()
     {
         if (_isTranslating) return;
-
         try
         {
             _isTranslating = true;
             int count = await DataService.TranslateAllPoisAsync();
-            Toasts.Success($"✔ Translated {count} POIs successfully");
+            Toasts.Success($"Đã dịch xong {count} địa điểm.");
             await LoadAsync();
         }
         catch (Exception ex)
         {
-            Toasts.Error($"Failed to translate POIs: {ex.Message}");
+            Toasts.Error($"Lỗi dịch AI: {ex.Message}");
         }
         finally
         {
@@ -320,18 +251,18 @@
         }
     }
 
-    private class TopPoiStats
+    private string GenerateTrendPoints(bool isListen)
     {
-        public string PoiName { get; set; } = "";
-        public int Count { get; set; }
-        public double AvgTime { get; set; }
-    }
-
-    private class HeatmapPoint
-    {
-        public double Latitude { get; set; }
-        public double Longitude { get; set; }
-        public int Intensity { get; set; }
-        public string Title { get; set; } = "";
+        if (!_summary.DailyTrends.Any()) return "0,200 1000,200";
+        var points = new List<string>();
+        var maxVal = Math.Max(1, _summary.DailyTrends.Max(t => Math.Max(t.Views, t.Listens)));
+        for (int i = 0; i < _summary.DailyTrends.Count; i++)
+        {
+            var x = i * 1000 / Math.Max(1, _summary.DailyTrends.Count - 1);
+            var val = isListen ? _summary.DailyTrends[i].Listens : _summary.DailyTrends[i].Views;
+            var y = 180 - (val * 160 / maxVal);
+            points.Add($"{x},{y}");
+        }
+        return string.Join(" ", points);
     }
 }

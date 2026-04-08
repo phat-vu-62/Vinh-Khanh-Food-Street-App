@@ -45,5 +45,11 @@ public interface IAdminDataService
     /// Gets aggregated analytics metrics for the specified date range.
     /// </summary>
     Task<FoodStreetApp.CMS.Models.AnalyticsSummary> GetAnalyticsSummaryAsync(DateTime? startDate = null, DateTime? endDate = null);
+
+    /// <summary>
+    /// Gets a paged list of usage histories with optional filtering.
+    /// </summary>
+    Task<(IReadOnlyCollection<UserHistory> Items, int TotalCount)> GetUsageHistoriesPagedAsync(int page, int pageSize, DateTime? date = null, int? poiId = null, string? search = null);
 }
+
 
