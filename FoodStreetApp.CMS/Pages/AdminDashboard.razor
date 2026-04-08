@@ -11,10 +11,6 @@
     </div>
     <div class="d-flex gap-2">
         <button class="btn btn-saas btn-saas-secondary" @onclick="LoadAsync"><i class="bi bi-arrow-clockwise me-1"></i> Làm mới</button>
-        <button class="btn btn-saas btn-saas-primary" @onclick="TranslateAllPois" disabled="@(_isTranslating || _isLoading)">
-            @if (_isTranslating) { <span class="spinner-border spinner-border-sm me-2"></span> }
-            <i class="bi bi-stars"></i> Dịch AI toàn bộ
-        </button>
     </div>
 </div>
 
@@ -67,7 +63,7 @@ else
             <div class="saas-card stats-card border-info">
                 <span class="stats-label">Lượt tương tác</span>
                 <div class="d-flex align-items-baseline justify-content-between">
-                    <span class="stats-value">@_summary.TotalAudioPlayed.ToString("N0")</span>
+                    <span class="stats-value">@_summary.TotalPoiViewed.ToString("N0")</span>
                     <span class="small text-info fw-bold">Live</span>
                 </div>
                 <div class="progress mt-3" style="height: 4px;">
@@ -148,58 +144,11 @@ else
             </div>
         </div>
     </div>
-
-    <!-- Latest Activity Table (Paged) -->
-    <div class="saas-card p-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h6 class="fw-bold mb-0">Hoạt động mới nhất</h6>
-            <a href="/history" class="small text-primary fw-bold text-decoration-none">Xem toàn bộ</a>
-        </div>
-        <div class="table-responsive">
-            <table class="saas-table">
-                <thead>
-                    <tr>
-                        <th>Khách tham quan</th>
-                        <th>Hành động</th>
-                        <th>Địa điểm</th>
-                        <th>Nguồn (QR)</th>
-                        <th>Thời lượng</th>
-                        <th>Thời gian</th>
-
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var h in _latestHistories)
-                    {
-                        <tr>
-                            <td>
-                                <div class="d-flex align-items-center gap-2">
-                                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center" style="width:28px; height:28px;">
-                                        <i class="bi bi-person text-muted"></i>
-                                    </div>
-                                    <span class="fw-medium small">Guest-@h.UserId?.Take(4)</span>
-                                </div>
-                            </td>
-                            <td><span class="saas-badge @(h.Action == "Listen" || h.Action == "audio_played" ? "badge-active" : "badge-highlight")">@h.Action</span></td>
-                            <td>@_poiNames.GetValueOrDefault(h.PoiId, $"POI #{h.PoiId}")</td>
-                            <td class="small text-muted">@(h.QRCode != null ? h.QRCode.Split('?').Last() : "-")</td>
-                            <td class="small fw-semibold">@(h.DurationSeconds ?? 0)s</td>
-                            <td class="text-muted small">@h.VisitedAtUtc.ToLocalTime().ToString("HH:mm, dd/MM")</td>
-                        </tr>
-
-                    }
-                </tbody>
-            </table>
-        </div>
-    </div>
 }
 
 @code {
     private bool _isLoading = true;
-    private bool _isTranslating;
     private AnalyticsSummary _summary = new();
-    private List<UserHistory> _latestHistories = new();
-    private Dictionary<int, string> _poiNames = new();
     private int _poiCount;
     private int _audioCount;
     private DateTime _lastUpdated;
@@ -218,12 +167,9 @@ else
         {
             var pois = DataService.GetPois();
             _poiCount = pois.Count;
-            _poiNames = pois.ToDictionary(p => p.Id, p => p.Name);
             _audioCount = DataService.GetAudios().Count;
             
             _summary = await DataService.GetAnalyticsSummaryAsync();
-            var paged = await DataService.GetUsageHistoriesPagedAsync(1, 10);
-            _latestHistories = paged.Items.ToList();
         }
         catch (Exception ex)
         {
@@ -232,26 +178,6 @@ else
         finally
         {
             _isLoading = false;
-        }
-    }
-
-    private async Task TranslateAllPois()
-    {
-        if (_isTranslating) return;
-        try
-        {
-            _isTranslating = true;
-            int count = await DataService.TranslateAllPoisAsync();
-            Toasts.Success($"Đã dịch xong {count} địa điểm.");
-            await LoadAsync();
-        }
-        catch (Exception ex)
-        {
-            Toasts.Error($"Lỗi dịch AI: {ex.Message}");
-        }
-        finally
-        {
-            _isTranslating = false;
         }
     }
 

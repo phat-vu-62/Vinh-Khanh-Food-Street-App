@@ -16,15 +16,6 @@
     </div>
     
     <div class="d-flex gap-3">
-        <div class="saas-toggle-group">
-            <button class="saas-toggle-btn @(_activeTab == "analytics" ? "active" : "")" @onclick='() => SetTab("analytics")'>
-                <i class="bi bi-graph-up-arrow me-1"></i> Overview
-            </button>
-            <button class="saas-toggle-btn @(_activeTab == "logs" ? "active" : "")" @onclick='() => SetTab("logs")'>
-                <i class="bi bi-list-ul me-1"></i> Raw Logs
-            </button>
-        </div>
-        
         <div class="input-group shadow-sm" style="width: 240px;">
             <span class="input-group-text bg-white border-end-0 rounded-start-2"><i class="bi bi-calendar3 text-muted"></i></span>
             <InputDate class="form-control border-start-0 rounded-end-2 small" @bind-Value="_selectedDate" @bind-Value:after="OnFilterChanged" TValue="DateTime?" />
@@ -35,153 +26,21 @@
     </div>
 </div>
 
-@if (_activeTab == "analytics")
-{
-    @if (_isLoadingAnalytics)
-    {
-        <div class="row g-4 mb-4">
-            @for (int i = 0; i < 4; i++) {
-                <div class="col-md-3">
-                    <div class="saas-card stats-card">
-                        <SkeletonLoader Height="20px" Width="60%" Class="mb-3" />
-                        <SkeletonLoader Height="32px" Width="80%" />
-                    </div>
-                </div>
-            }
+<!-- Logs Module -->
+<div class="saas-card">
+    <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+        <div class="d-flex gap-2 align-items-center">
+            <span class="small fw-bold text-muted">Lọc theo:</span>
+            <select class="form-select form-select-sm border-subtle" style="width: 180px;" @bind="_selectedPoiId" @bind:after="OnFilterChanged">
+                <option value="0">Tất cả địa điểm</option>
+                @foreach (var p in _pois) { <option value="@p.Id">@p.Name</option> }
+            </select>
         </div>
-        <div class="row g-4">
-            <div class="col-lg-8"><div class="saas-card p-4"><SkeletonLoader Height="250px" /></div></div>
-            <div class="col-lg-4"><div class="saas-card p-4"><SkeletonLoader Height="250px" /></div></div>
+        <div class="input-group input-group-sm" style="width: 250px;">
+            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" class="form-control border-start-0" placeholder="Tìm ID hoặc hành động..." @bind="_searchTerm" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
         </div>
-    }
-    else if (_summary.TotalAudioPlayed == 0 && _summary.TotalPoiViewed == 0)
-    {
-        <div class="saas-card p-5 text-center mt-4 border-dashed">
-            <div class="empty-state-icon mx-auto">
-                <i class="bi bi-database-dash" style="font-size: 2rem;"></i>
-            </div>
-            <h5 class="fw-bold">Chưa có dữ liệu phân tích</h5>
-            <p class="text-muted small mx-auto" style="max-width: 450px;">
-                Hệ thống đang sẵn sàng thu thập. Dữ liệu báo cáo sẽ xuất hiện tại đây khi người dùng bắt đầu sử dụng ứng dụng hoặc quét mã QR tại các địa điểm.
-            </p>
-            <button class="btn btn-outline-primary btn-sm mt-3" @onclick="LoadAsync">Thử lại</button>
-        </div>
-    }
-    else
-    {
-        <!-- KPI Cards -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-3">
-                <div class="saas-card stats-card">
-                    <div class="d-flex justify-content-between">
-                        <span class="stats-label">Tổng lượt nghe</span>
-                        <i class="bi bi-headphones text-primary"></i>
-                    </div>
-                    <div class="stats-value">@_summary.TotalAudioPlayed.ToString("N0")</div>
-                    <div class="small text-success fw-bold"><i class="bi bi-arrow-up-short"></i> Live Sync</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="saas-card stats-card">
-                    <div class="d-flex justify-content-between">
-                        <span class="stats-label">Lượt xem địa điểm</span>
-                        <i class="bi bi-eye text-primary"></i>
-                    </div>
-                    <div class="stats-value">@_summary.TotalPoiViewed.ToString("N0")</div>
-                    <div class="small text-muted">Tương tác bản đồ</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="saas-card stats-card">
-                    <div class="d-flex justify-content-between">
-                        <span class="stats-label">Nghe trung bình</span>
-                        <i class="bi bi-stopwatch text-primary"></i>
-                    </div>
-                    <div class="stats-value">@_summary.AvgDurationSeconds.ToString("0.0")s</div>
-                    <div class="small @(_summary.EngagementRate > 50 ? "text-success" : "text-warning") fw-bold">
-                        Engagement: @_summary.EngagementRate.ToString("0")%
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="saas-card stats-card">
-                    <div class="d-flex justify-content-between">
-                        <span class="stats-label">Người dùng độc nhất</span>
-                        <i class="bi bi-people text-primary"></i>
-                    </div>
-                    <div class="stats-value">@_summary.UniqueUsersCount.ToString("N0")</div>
-                    <div class="small text-muted">Địa chỉ ID riêng biệt</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row g-4 mb-4">
-            <!-- Trend Line Chart -->
-            <div class="col-lg-8">
-                <div class="saas-card p-4 h-100">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <div>
-                            <h6 class="fw-bold mb-0">Xu hướng tương tác (7 ngày qua)</h6>
-                            <div class="d-flex gap-3 small">
-                                <span class="d-flex align-items-center gap-1"><span class="rounded-circle" style="width:8px; height:8px; background:var(--primary-color)"></span> Nghe</span>
-                                <span class="d-flex align-items-center gap-1"><span class="rounded-circle" style="width:8px; height:8px; background:#9ca3af"></span> Xem</span>
-                            </div>
-                        </div>
-                        <span class="x-small text-muted">Cập nhật: @_lastUpdated.ToString("HH:mm:ss")</span>
-                    </div>
-                    <div class="chart-container" style="height: 200px;">
-                        <svg width="100%" height="100%" viewBox="0 0 1000 200" preserveAspectRatio="none">
-                            <line x1="0" y1="50" x2="1000" y2="50" stroke="#f1f5f9" />
-                            <line x1="0" y1="100" x2="1000" y2="100" stroke="#f1f5f9" />
-                            <line x1="0" y1="150" x2="1000" y2="150" stroke="#f1f5f9" />
-                            <polyline points="@GenerateTrendPoints(true)" fill="none" stroke="var(--primary-color)" stroke-width="3" />
-                            <polyline points="@GenerateTrendPoints(false)" fill="none" stroke="#9ca3af" stroke-width="2" stroke-dasharray="5,5" />
-                        </svg>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-lg-4">
-                <div class="saas-card p-4 h-100">
-                    <h6 class="fw-bold mb-4">Thông tin Insight</h6>
-                    
-                    <div class="mb-4">
-                        <label class="small text-muted d-block mb-1">Địa điểm "Hot" nhất</label>
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="bg-primary-subtle text-primary rounded p-2"><i class="bi bi-fire"></i></div>
-                            <span class="fw-bold">@_summary.HotSpotName</span>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-4">
-                        <label class="small text-muted d-block mb-1">Khung giờ hoạt động mạnh</label>
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="bg-info-subtle text-info rounded p-2"><i class="bi bi-clock"></i></div>
-                            <span class="fw-bold">@_summary.PeakHour</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
-}
-else
-{
-    <!-- Logs Module -->
-    <div class="saas-card">
-        <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
-            <div class="d-flex gap-2 align-items-center">
-                <span class="small fw-bold text-muted">Lọc theo:</span>
-                <select class="form-select form-select-sm border-subtle" style="width: 180px;" @bind="_selectedPoiId" @bind:after="OnFilterChanged">
-                    <option value="0">Tất cả địa điểm</option>
-                    @foreach (var p in _pois) { <option value="@p.Id">@p.Name</option> }
-                </select>
-            </div>
-            <div class="input-group input-group-sm" style="width: 250px;">
-                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                <input type="text" class="form-control border-start-0" placeholder="Tìm ID hoặc hành động..." @bind="_searchTerm" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
-            </div>
-        </div>
+    </div>
 
         <div class="table-responsive">
             <table class="saas-table">
@@ -240,13 +99,10 @@ else
             </div>
         </div>
     </div>
-}
+</div>
 
 @code {
-    private string _activeTab = "analytics";
-    private bool _isLoadingAnalytics = true;
     private bool _isLoadingLogs = true;
-    private AnalyticsSummary _summary = new();
     private List<UserHistory> _pagedHistories = new();
     private List<POI> _pois = new();
     private DateTime _lastUpdated = DateTime.Now;
@@ -266,12 +122,6 @@ else
         await LoadAsync();
     }
 
-    private async Task SetTab(string tab)
-    {
-        _activeTab = tab;
-        await LoadAsync();
-    }
-
     private async Task LoadMetadataAsync()
     {
         try {
@@ -282,21 +132,7 @@ else
     private async Task LoadAsync()
     {
         _lastUpdated = DateTime.Now;
-        if (_activeTab == "analytics") await LoadAnalyticsAsync();
-        else await LoadLogsAsync();
-    }
-
-    private async Task LoadAnalyticsAsync()
-    {
-        _isLoadingAnalytics = true;
-        try {
-            _summary = await DataService.GetAnalyticsSummaryAsync(_selectedDate, _selectedDate?.AddDays(1).AddSeconds(-1));
-        } catch (Exception ex) {
-            Toasts.Error("Lỗi khi tải dữ liệu phân tích.");
-            _summary = new();
-        } finally {
-            _isLoadingAnalytics = false;
-        }
+        await LoadLogsAsync();
     }
 
     private async Task LoadLogsAsync()
@@ -346,18 +182,6 @@ else
         _ => "badge-inactive"
     };
 
-    private string GenerateTrendPoints(bool isListen)
-    {
-        if (!_summary.DailyTrends.Any()) return "0,200 1000,200";
-        var points = new List<string>();
-        var maxVal = Math.Max(10, _summary.DailyTrends.Max(t => Math.Max(t.Views, t.Listens)));
-        for (int i = 0; i < _summary.DailyTrends.Count; i++)
-        {
-            var x = i * 1000 / Math.Max(1, _summary.DailyTrends.Count - 1);
-            var val = isListen ? _summary.DailyTrends[i].Listens : _summary.DailyTrends[i].Views;
-            var y = 180 - (val * 160 / maxVal);
-            points.Add($"{x},{y}");
-        }
         return string.Join(" ", points);
     }
 }

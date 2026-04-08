@@ -90,11 +90,14 @@ else if (!_isLoading)
                         </div>
 
                         <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
-                            <div class="d-flex gap-2">
-                                <span class="saas-badge badge-highlight">
-                                    <i class="bi bi-translate me-1"></i>@GetTranslationCount(poi) Ngôn ngữ
-                                </span>
+                            <div class="d-flex gap-1 align-items-center">
+                                <span class="badge @(string.IsNullOrWhiteSpace(poi.NameVi) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Vietnamese">VI</span>
+                                <span class="badge @(string.IsNullOrWhiteSpace(poi.NameEn) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="English">EN</span>
+                                <span class="badge @(string.IsNullOrWhiteSpace(poi.NameZh) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Chinese">ZH</span>
+                                <span class="badge @(string.IsNullOrWhiteSpace(poi.NameKo) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Korean">KO</span>
+                                <span class="badge @(string.IsNullOrWhiteSpace(poi.NameJa) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Japanese">JA</span>
                             </div>
+                            <span class="x-small text-muted">@GetLastModified(poi)</span>
                         </div>
                     </div>
                 </div>
@@ -290,86 +293,7 @@ else if (!_isLoading)
                             </div>
                         </div>
 
-                        <!-- Section 4: Translations -->
-                        <div class="modal-section border-0">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <div class="modal-section-title mb-0"><i class="bi bi-translate"></i> Bản dịch đa ngôn ngữ</div>
-                                <button type="button" class="btn btn-saas btn-saas-secondary btn-sm" @onclick="TranslateInEditorAsync" disabled="@_isTranslating">
-                                    @if (_isTranslating) { <span class="spinner-border spinner-border-sm me-2"></span> }
-                                    <i class="bi bi-stars"></i> Tự động dịch AI (Tất cả)
-                                </button>
-                            </div>
 
-                            <div class="saas-tabs">
-                                <button type="button" class="saas-tab-item @(_activeTab == "en" ? "active" : "")" @onclick='() => _activeTab = "en"'>🇺🇸 Tiếng Anh</button>
-                                <button type="button" class="saas-tab-item @(_activeTab == "zh" ? "active" : "")" @onclick='() => _activeTab = "zh"'>🇨🇳 Tiếng Trung</button>
-                                <button type="button" class="saas-tab-item @(_activeTab == "ko" ? "active" : "")" @onclick='() => _activeTab = "ko"'>🇰🇷 Tiếng Hàn</button>
-                                <button type="button" class="saas-tab-item @(_activeTab == "ja" ? "active" : "")" @onclick='() => _activeTab = "ja"'>🇯🇵 Tiếng Nhật</button>
-                            </div>
-
-                            <div class="p-4 border rounded-4 bg-white shadow-sm">
-                                @if (_activeTab == "en")
-                                {
-                                    <div class="mb-3">
-                                        <label class="form-label-saas">Tên địa điểm (EN)</label>
-                                        <InputText class="form-control form-control-saas" @bind-Value="_form.NameEn" />
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label-saas">Mô tả (EN)</label>
-                                        <InputText class="form-control form-control-saas" @bind-Value="_form.DescriptionEn" />
-                                    </div>
-                                    <div>
-                                        <label class="form-label-saas">Nội dung thuyết minh (EN)</label>
-                                        <InputTextArea class="form-control form-control-saas" rows="2" @bind-Value="_form.TextContentEn" />
-                                    </div>
-                                }
-                                else if (_activeTab == "zh")
-                                {
-                                    <div class="mb-3">
-                                        <label class="form-label-saas">Tên địa điểm (ZH)</label>
-                                        <InputText class="form-control form-control-saas" @bind-Value="_form.NameZh" />
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label-saas">Mô tả (ZH)</label>
-                                        <InputText class="form-control form-control-saas" @bind-Value="_form.DescriptionZh" />
-                                    </div>
-                                    <div>
-                                        <label class="form-label-saas">Nội dung thuyết minh (ZH)</label>
-                                        <InputTextArea class="form-control form-control-saas" rows="2" @bind-Value="_form.TextContentZh" />
-                                    </div>
-                                }
-                                else if (_activeTab == "ko")
-                                {
-                                    <div class="mb-3">
-                                        <label class="form-label-saas">Tên địa điểm (KO)</label>
-                                        <InputText class="form-control form-control-saas" @bind-Value="_form.NameKo" />
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label-saas">Mô tả (KO)</label>
-                                        <InputText class="form-control form-control-saas" @bind-Value="_form.DescriptionKo" />
-                                    </div>
-                                    <div>
-                                        <label class="form-label-saas">Nội dung thuyết minh (KO)</label>
-                                        <InputTextArea class="form-control form-control-saas" rows="2" @bind-Value="_form.TextContentKo" />
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div class="mb-3">
-                                        <label class="form-label-saas">Tên địa điểm (JA)</label>
-                                        <InputText class="form-control form-control-saas" @bind-Value="_form.NameJa" />
-                                    </div>
-                                    <div class="mb-3">
-                                        <label class="form-label-saas">Mô tả (JA)</label>
-                                        <InputText class="form-control form-control-saas" @bind-Value="_form.DescriptionJa" />
-                                    </div>
-                                    <div>
-                                        <label class="form-label-saas">Nội dung thuyết minh (JA)</label>
-                                        <InputTextArea class="form-control form-control-saas" rows="2" @bind-Value="_form.TextContentJa" />
-                                    </div>
-                                }
-                            </div>
-                        </div>
 
                     </div>
 
@@ -629,68 +553,6 @@ else if (!_isLoading)
         }
     }
 
-    private async Task TranslateInEditorAsync()
-    {
-        if (_form.Id <= 0)
-        {
-            Toasts.Error("Vui lòng lưu địa điểm trước khi thực hiện dịch thuật AI.");
-            return;
-        }
-
-        try
-        {
-            _isTranslating = true;
-            StateHasChanged();
-
-            var translated = await DataService.TranslatePoiAsync(_form.Id);
-            if (translated != null)
-            {
-                _form.NameVi = translated.NameVi;
-                _form.NameEn = translated.NameEn;
-                _form.NameZh = translated.NameZh;
-                _form.NameKo = translated.NameKo;
-                _form.NameJa = translated.NameJa;
-                _form.DescriptionVi = translated.DescriptionVi;
-                _form.DescriptionEn = translated.DescriptionEn;
-                _form.DescriptionZh = translated.DescriptionZh;
-                _form.DescriptionKo = translated.DescriptionKo;
-                _form.DescriptionJa = translated.DescriptionJa;
-                
-                _form.TextContentVi = translated.TextContentVi;
-                _form.TextContentEn = translated.TextContentEn;
-                _form.TextContentZh = translated.TextContentZh;
-                _form.TextContentKo = translated.TextContentKo;
-                _form.TextContentJa = translated.TextContentJa;
-
-                Toasts.Success("AI đã hoàn tất bản dịch đa ngôn ngữ! 🌐");
-                _pois.Clear();
-                _pois.AddRange(DataService.GetPois());
-            }
-        }
-        finally
-        {
-            _isTranslating = false;
-            StateHasChanged();
-        }
-    }
-
-    private Task ToggleActiveAsync(POI poi, ChangeEventArgs args)
-    {
-        var value = args.Value is bool b && b;
-        try
-        {
-            poi.IsActive = value;
-            DataService.UpdatePoi(poi);
-            Toasts.Success("Đã cập nhật trạng thái hoạt động.");
-        }
-        catch
-        {
-            Toasts.Error("Không thể cập nhật trạng thái.");
-        }
-
-        return Task.CompletedTask;
-    }
-
     private void AskDelete(POI poi)
     {
         _deleteId = poi.Id;
@@ -731,30 +593,7 @@ else if (!_isLoading)
         return Task.CompletedTask;
     }
 
-    private async Task TranslatePoiSingleAsync(POI poi)
-    {
-        try
-        {
-            _isTranslating = true;
-            var translated = await DataService.TranslatePoiAsync(poi.Id);
-            if (translated != null)
-            {
-                Toasts.Success("Dịch thuật AI hoàn tất! 🌐");
-                await LoadAsync();
-            }
-        }
-        finally
-        {
-            _isTranslating = false;
-        }
-    }
-
-    private static int GetTranslationCount(POI poi)
-    {
-        var translated = new[] { poi.NameVi, poi.NameEn, poi.NameZh, poi.NameKo, poi.NameJa }
-            .Count(x => !string.IsNullOrWhiteSpace(x));
-        return Math.Max(0, translated - 1);
-    }
+    private string GetLastModified(POI poi) => "Updated"; // Simplified for now or could use a date if available
 
     private void CloseEditor()
     {

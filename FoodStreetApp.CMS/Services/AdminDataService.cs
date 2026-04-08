@@ -306,8 +306,9 @@ public class AdminDataService : IAdminDataService
         var highEngagement = await query.CountAsync(l => (l.Action == "audio_played" || l.Action == "Listen") && l.DurationSeconds > 10);
         var engagementRate = engagementBase > 0 ? (double)highEngagement * 100 / engagementBase : 0;
 
-        // Top POIs (Shifted to DB grouping)
+        // Top POIs (Filtered to only count Views/Scans to avoid over-counting during audio playback)
         var topPoiData = await query
+            .Where(l => l.Action == "qr_scanned" || l.Action == "poi_viewed" || l.Action == "POI viewed")
             .GroupBy(l => l.PoiId)
             .OrderByDescending(g => g.Count())
             .Take(5)
