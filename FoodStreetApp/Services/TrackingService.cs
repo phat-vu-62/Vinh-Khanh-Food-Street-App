@@ -15,9 +15,12 @@ namespace FoodStreetApp.Services
 
         public TrackingService()
         {
-            _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+            // PRO-GRADE DEBUG: Configure HttpClient with SSL bypass for Android/iOS if needed
+            HttpClientHandler handler = new HttpClientHandler();
+            handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
+
+            _httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
             
-            // Generate a GUID for anonymous user tracking if not already present
             _userId = Preferences.Get("tracking_user_id", string.Empty);
             if (string.IsNullOrEmpty(_userId))
             {
@@ -28,41 +31,57 @@ namespace FoodStreetApp.Services
 
         public async Task TrackEventAsync(int poiId, string action, int? durationSeconds = null, string? qrCode = null)
         {
+            var payload = new
+            {
+                UserId = _userId,
+                PoiId = poiId,
+                Action = action,
+                DurationSeconds = durationSeconds,
+                QRCode = qrCode,
+                VisitedAtUtc = DateTime.UtcNow
+            };
+
+            string json = JsonSerializer.Serialize(payload);
+            string url = "https://vinh-khanh-food-street-app.onrender.com/api/UsageHistory";
+
+
+            System.Diagnostics.Debug.WriteLine("====================================");
+            System.Diagnostics.Debug.WriteLine("[DEBUG-TRACK] ATTEMPTING SEND");
+            System.Diagnostics.Debug.WriteLine($"[DEBUG-TRACK] URL: {url}");
+            System.Diagnostics.Debug.WriteLine($"[DEBUG-TRACK] PAYLOAD: {json}");
+            System.Diagnostics.Debug.WriteLine("====================================");
+
             try
             {
-                var payload = new
-                {
-                    UserId = _userId,
-                    PoiId = poiId,
-                    Action = action,
-                    DurationSeconds = durationSeconds,
-                    QRCode = qrCode,
-                    VisitedAtUtc = DateTime.UtcNow
-                };
+                var response = await _httpClient.PostAsJsonAsync(url, payload);
 
-                // The CMS API endpoint for History
-                var trackingUrl = "https://vinh-khanh-food-street-app.onrender.com/api/history";
+                System.Diagnostics.Debug.WriteLine($"[DEBUG-TRACK] RESPONSE RECEIVED: {response.StatusCode}");
                 
-                System.Diagnostics.Debug.WriteLine($"[TRACKING] Sending {action} for POI {poiId} (QR: {qrCode})");
-                
-                // PRODUCTION FIX: We MUST await to ensure data reaches the server
-                var response = await _httpClient.PostAsJsonAsync(trackingUrl, payload);
-                
-                if (response.IsSuccessStatusCode)
+                var responseBody = await response.Content.ReadAsStringAsync();
+                System.Diagnostics.Debug.WriteLine($"[DEBUG-TRACK] RESPONSE BODY: {responseBody}");
+
+                if (!response.IsSuccessStatusCode)
                 {
-                    var responseBody = await response.Content.ReadAsStringAsync();
-                    System.Diagnostics.Debug.WriteLine($"[TRACKING] SUCCESS: {response.StatusCode} | Response: {responseBody}");
+                    System.Diagnostics.Debug.WriteLine($"[DEBUG-TRACK] ⚠️ SERVER REFUSED: {response.ReasonPhrase}");
                 }
                 else
                 {
-                    var errorBody = await response.Content.ReadAsStringAsync();
-                    System.Diagnostics.Debug.WriteLine($"[TRACKING] FAILURE: {response.StatusCode} | Error: {errorBody}");
+                    System.Diagnostics.Debug.WriteLine($"[DEBUG-TRACK] ✅ SUCCESS: Record should be in DB.");
                 }
+            }
+            catch (HttpRequestException httpEx)
+            {
+                System.Diagnostics.Debug.WriteLine($"[DEBUG-TRACK] ❌ NETWORK ERROR: {httpEx.Message}");
+            }
+            catch (TaskCanceledException)
+            {
+                System.Diagnostics.Debug.WriteLine("[DEBUG-TRACK] ❌ TIMEOUT: Server took > 30s");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[TRACKING] FATAL ERROR: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[DEBUG-TRACK] ❌ UNEXPECTED ERROR: {ex.GetType().Name} - {ex.Message}");
             }
+            System.Diagnostics.Debug.WriteLine("====================================");
         }
     }
 }

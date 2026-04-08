@@ -245,12 +245,41 @@ app.MapPut("/api/Tour/{id:int}", (int id, FoodStreetApp.Shared.Entities.Tour tou
 app.MapDelete("/api/Tour/{id:int}", (int id, IAdminDataService service) =>
     service.DeleteTour(id) ? Results.NoContent() : Results.NotFound());
 
-app.MapGet("/api/UsageHistory", (IAdminDataService service) => Results.Ok(service.GetUsageHistories()));
-app.MapPost("/api/UsageHistory", (FoodStreetApp.Shared.Entities.UserHistory history, IAdminDataService service) =>
+app.MapPost("/api/UsageHistory", async (FoodStreetApp.Shared.Entities.UserHistory history, IAdminDataService service, ILogger<Program> logger) =>
 {
+    var json = System.Text.Json.JsonSerializer.Serialize(history);
+    logger.LogInformation("[DEBUG-API] HIT: /api/UsageHistory");
+    logger.LogInformation("[DEBUG-API] PAYLOAD: {Payload}", json);
+
+    if (history.PoiId <= 0 || string.IsNullOrWhiteSpace(history.Action))
+    {
+        logger.LogWarning("[DEBUG-API] ⚠️ INVALID DATA: PoiId={PoiId}, Action={Action}", history.PoiId, history.Action);
+        return Results.BadRequest(new { error = "Invalid PoiId or Action" });
+    }
+
+    try
+    {
+        history.VisitedAtUtc = DateTime.UtcNow;
+        var created = service.AddUsageHistory(history);
+        logger.LogInformation("[DEBUG-API] ✅ SUCCESS: Record {Id} persisted", created.Id);
+        return Results.Created($"/api/UsageHistory/{created.Id}", created);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "[DEBUG-API] ❌ CRITICAL ERROR: {Message}", ex.Message);
+        return Results.Problem(ex.Message);
+    }
+});
+
+// Alias for compatibility
+app.MapPost("/api/history", async (FoodStreetApp.Shared.Entities.UserHistory history, IAdminDataService service, ILogger<Program> logger) => 
+{
+    var json = System.Text.Json.JsonSerializer.Serialize(history);
+    logger.LogInformation("[DEBUG-API] HIT: /api/history (Redirecting to UsageHistory)");
     var created = service.AddUsageHistory(history);
     return Results.Created($"/api/UsageHistory/{created.Id}", created);
 });
+
 
 app.MapGet("/api/sync/poi-actions", (string? sinceUtc, IAdminDataService service, CmsDbContext dbContext) =>
 {

@@ -9,6 +9,13 @@ namespace FoodStreetApp
             InitializeComponent();
         }
 
+        protected override void OnStart()
+        {
+            base.OnStart();
+        }
+
+
+
         protected override Window CreateWindow(IActivationState? activationState)
         {
             return new Window(new AppShell());

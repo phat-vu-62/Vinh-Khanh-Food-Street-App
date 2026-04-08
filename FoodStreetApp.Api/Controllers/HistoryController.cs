@@ -12,61 +12,75 @@ public class HistoryController : ControllerBase
 {
     private readonly CmsDbContext _dbContext;
     private readonly ILogger<HistoryController> _logger;
+    private readonly IConfiguration _configuration;
 
-    public HistoryController(CmsDbContext dbContext, ILogger<HistoryController> logger)
+    public HistoryController(CmsDbContext dbContext, ILogger<HistoryController> logger, IConfiguration configuration)
     {
         _dbContext = dbContext;
         _logger = logger;
+        _configuration = configuration;
     }
 
     [HttpPost]
     public async Task<IActionResult> TrackEvent([FromBody] UserHistory history)
     {
-        // 1. Log FULL request payload for production auditing
+        _logger.LogInformation("====================================");
+        _logger.LogInformation("[DEBUG-API] HIT: HistoryController.TrackEvent");
+        
         var jsonPayload = JsonSerializer.Serialize(history);
-        _logger.LogInformation("[Tracking] Received payload: {Payload}", jsonPayload);
+        _logger.LogInformation("[DEBUG-API] PAYLOAD: {Payload}", jsonPayload);
 
-        try
+        // Masked Connection string to verify correct DB
+        var conn = _configuration.GetConnectionString("Postgres") ?? "NULL";
+        var maskedConn = conn.Length > 20 ? conn.Substring(0, 20) + "..." : conn;
+        _logger.LogInformation("[DEBUG-API] DATABASE: {Conn}", maskedConn);
+
+        if (!ModelState.IsValid)
         {
-            // 2. Strict Production Validation
-            if (history.PoiId <= 0)
+            _logger.LogWarning("[DEBUG-API] ⚠️ MODEL STATE INVALID: {Errors}", 
+                string.Join(" | ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage)));
+            return BadRequest(ModelState);
+        }
+
+        if (history.PoiId <= 0 || string.IsNullOrWhiteSpace(history.Action))
             {
-                _logger.LogWarning("[Tracking] REFUSED: Invalid PoiId {PoiId}", history.PoiId);
-                return BadRequest(new { error = "PoiId must be a positive integer" });
+                _logger.LogWarning("[DEBUG-API] ⚠️ INVALID DATA: PoiId={PoiId}, Action={Action}", history.PoiId, history.Action);
+                return BadRequest(new { error = "Invalid PoiId or Action" });
             }
 
-            if (string.IsNullOrWhiteSpace(history.Action))
-            {
-                _logger.LogWarning("[Tracking] REFUSED: Missing Action for POI {PoiId}", history.PoiId);
-                return BadRequest(new { error = "Action is required" });
-            }
+            // Get count before
+            var countBefore = await _dbContext.UserHistories.CountAsync();
+            _logger.LogInformation("[DEBUG-API] Record count BEFORE: {Count}", countBefore);
 
-            // 3. Metadata Normalization
             history.VisitedAtUtc = DateTime.UtcNow;
-            
-            _logger.LogDebug("[Tracking] Persistence: Preparing to save to PostgreSQL...");
-
-            // 4. Guaranteed Database Write
             _dbContext.UserHistories.Add(history);
             
-            _logger.LogInformation("[Tracking] DB: Calling SaveChangesAsync...");
+            _logger.LogInformation("[DEBUG-API] Saving changes...");
             var result = await _dbContext.SaveChangesAsync();
+
+            // Get count after
+            var countAfter = await _dbContext.UserHistories.CountAsync();
+            _logger.LogInformation("[DEBUG-API] Record count AFTER: {Count}", countAfter);
 
             if (result > 0)
             {
-                _logger.LogInformation("[Tracking] SUCCESS: Record {Id} persisted in DB", history.Id);
+                _logger.LogInformation("[DEBUG-API] ✅ SUCCESS: Record {Id} persisted", history.Id);
                 return Ok(new { success = true, id = history.Id });
             }
             else
             {
-                _logger.LogError("[Tracking] FAILURE: No records were written to the database.");
-                return StatusCode(500, new { error = "Database write failed without error message" });
+                _logger.LogError("[DEBUG-API] ❌ FAILURE: SaveChangesAsync returned 0");
+                return StatusCode(500, new { error = "Save failed" });
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[Tracking] CRITICAL ERROR: Database persistence failed for POI {PoiId}", history.PoiId);
-            return StatusCode(500, new { error = "Internal server error", message = ex.Message });
+            _logger.LogError(ex, "[DEBUG-API] ❌ CRITICAL ERROR: {Message}", ex.Message);
+            return StatusCode(500, new { error = "Server error", message = ex.Message });
+        }
+        finally
+        {
+            _logger.LogInformation("====================================");
         }
     }
 }
