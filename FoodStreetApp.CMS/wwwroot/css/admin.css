@@ -379,3 +379,27 @@ body {
     color: var(--text-main);
     box-shadow: var(--shadow-sm);
 }
+
+/* Animations */
+@keyframes pulse-live {
+    0% { transform: scale(0.95); opacity: 0.8; }
+    70% { transform: scale(1); opacity: 1; }
+    100% { transform: scale(0.95); opacity: 0.8; }
+}
+
+.pulse-animation {
+    animation: pulse-live 2s infinite ease-in-out;
+}
+
+/* Status Badges */
+.saas-badge {
+    padding: 0.25rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.badge-active { background-color: #ecfdf5; color: #059669; border: 1px solid #d1fae5; }
+.badge-inactive { background-color: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; }
+.badge-highlight { background-color: #eff6ff; color: #2563eb; border: 1px solid #dbeafe; }
+

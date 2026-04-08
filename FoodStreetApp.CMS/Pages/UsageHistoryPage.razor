@@ -1,11 +1,16 @@
-@page "/usage-history"
+@page "/history"
 @inject IAdminDataService DataService
 @inject ToastService Toasts
 
 <div class="d-flex justify-content-between align-items-center mb-5">
     <div>
-        <h1 class="h3 fw-bold mb-1">Dữ liệu phân tích</h1>
-        <p class="text-muted mb-0">Theo dõi hành vi người dùng và hiệu quả nội dung trên hệ thống.</p>
+        <div class="d-flex align-items-center gap-2 mb-1">
+            <h1 class="h3 fw-bold mb-0">Dữ liệu phân tích</h1>
+            <span class="badge rounded-pill bg-success-subtle text-success border border-success-subtle small px-2">
+                <i class="bi bi-record-fill me-1 pulse-animation"></i> Real-time
+            </span>
+        </div>
+        <p class="text-muted mb-0">Theo dõi hành vi người dùng thực tế trên hệ thống.</p>
     </div>
     <div class="d-flex gap-2">
         <div class="input-group shadow-sm" style="width: 220px;">
@@ -24,9 +29,14 @@
     @if (_history.Count == 0)
     {
         <div class="saas-card p-5 text-center">
-            <i class="bi bi-clock-history text-light" style="font-size: 3rem;"></i>
-            <h5 class="fw-bold mt-4">Chưa có hoạt động nào trong thời gian này</h5>
-            <p class="text-muted small">Hãy chọn một mốc thời gian khác hoặc chờ dữ liệu mới.</p>
+            <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 80px; height: 80px;">
+                <i class="bi bi-database-dash text-muted" style="font-size: 2.5rem;"></i>
+            </div>
+            <h5 class="fw-bold">Chưa có dữ liệu người dùng</h5>
+            <p class="text-muted small mx-auto" style="max-width: 400px;">
+                Hệ thống đang sẵn sàng ghi nhận. Dữ liệu sẽ xuất hiện tại đây khi có người dùng tương tác với ứng dụng MAUI hoặc quét mã QR.
+            </p>
+            <button class="btn btn-outline-secondary btn-sm mt-2" @onclick="LoadAsync">Thử tải lại</button>
         </div>
     }
     else
@@ -149,59 +159,27 @@
 
         try
         {
-            _pois.AddRange(DataService.GetPois());
+            var pois = DataService.GetPois();
+            if (pois != null) _pois.AddRange(pois);
         }
         catch { /* POI table may be empty */ }
 
         try
         {
-            _history.AddRange(DataService.GetUsageHistories());
+            var histories = DataService.GetUsageHistories();
+            if (histories != null) _history.AddRange(histories);
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[USAGE] Cannot load histories: {ex.Message}");
-        }
-
-        if (_history.Count == 0 && _pois.Count > 0)
-        {
-            try
-            {
-                SeedMockHistory();
-                _history.Clear();
-                _history.AddRange(DataService.GetUsageHistories());
-            }
-            catch { /* seeding failed, show empty */ }
+            Toasts.Error("Không thể tải dữ liệu lịch sử.");
         }
 
         _isLoading = false;
-        await Task.CompletedTask;
+        StateHasChanged();
     }
 
-    private void SeedMockHistory()
-    {
-        if (_pois.Count == 0) return;
 
-        var firstPoiId = _pois[0].Id;
-        var now = DateTime.UtcNow;
-
-        DataService.AddUsageHistory(new UserHistory
-        {
-            UserId = "guest-001",
-            PoiId = firstPoiId,
-            Action = "POI viewed",
-            VisitedAtUtc = now.AddMinutes(-10)
-        });
-
-        DataService.AddUsageHistory(new UserHistory
-        {
-            UserId = "guest-001",
-            PoiId = firstPoiId,
-            Action = "Audio played",
-            VisitedAtUtc = now.AddMinutes(-7)
-        });
-
-        Toasts.Info("Đã khởi tạo lịch sử sử dụng giả lập.");
-    }
 
     private IEnumerable<UserHistory> GetFilteredHistory()
     {
