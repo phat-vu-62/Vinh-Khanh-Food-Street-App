@@ -1,8 +1,9 @@
 @page "/history"
+@using FoodStreetApp.CMS.Models
 @inject IAdminDataService DataService
 @inject ToastService Toasts
 
-<div class="d-flex justify-content-between align-items-center mb-5">
+<div class="d-flex justify-content-between align-items-end mb-4">
     <div>
         <div class="d-flex align-items-center gap-2 mb-1">
             <h1 class="h3 fw-bold mb-0">Dữ liệu phân tích</h1>
@@ -10,15 +11,24 @@
                 <i class="bi bi-record-fill me-1 pulse-animation"></i> Real-time
             </span>
         </div>
-        <p class="text-muted mb-0">Theo dõi hành vi người dùng thực tế trên hệ thống.</p>
+        <p class="text-muted mb-0">Theo dõi hành vi và hiệu suất nội dung trên toàn hệ thống.</p>
     </div>
-    <div class="d-flex gap-2">
-        <div class="input-group shadow-sm" style="width: 220px;">
-            <span class="input-group-text bg-white border-end-0 rounded-start-2"><i class="bi bi-calendar3 text-muted"></i></span>
-            <InputDate class="form-control border-start-0 rounded-end-2 small" @bind-Value="_selectedDate" @bind-Value:after="() => { _currentPage = 1; LoadAsync(); }" TValue="DateTime?" />
+    
+    <div class="d-flex gap-3">
+        <div class="saas-toggle-group">
+            <button class="saas-toggle-btn @(_activeTab == "analytics" ? "active" : "")" @onclick='() => SetTab("analytics")'>
+                <i class="bi bi-graph-up-arrow me-1"></i> Overview
+            </button>
+            <button class="saas-toggle-btn @(_activeTab == "logs" ? "active" : "")" @onclick='() => SetTab("logs")'>
+                <i class="bi bi-list-ul me-1"></i> Raw Logs
+            </button>
         </div>
-        <button class="btn btn-saas btn-saas-secondary shadow-sm" @onclick="ClearFilter" disabled="@(_selectedDate == null)"><i class="bi bi-x-lg me-1"></i> Xóa lọc</button>
-        <button class="btn btn-saas btn-saas-primary shadow-sm" @onclick="LoadAsync"><i class="bi bi-arrow-clockwise"></i> Làm mới</button>
+        
+        <div class="input-group shadow-sm" style="width: 240px;">
+            <span class="input-group-text bg-white border-end-0 rounded-start-2"><i class="bi bi-calendar3 text-muted"></i></span>
+            <InputDate class="form-control border-start-0 rounded-end-2 small" @bind-Value="_selectedDate" @bind-Value:after="LoadAsync" TValue="DateTime?" />
+        </div>
+        <button class="btn btn-saas btn-saas-secondary shadow-sm" @onclick="LoadAsync"><i class="bi bi-arrow-clockwise"></i></button>
     </div>
 </div>
 
@@ -26,67 +36,182 @@
 
 @if (!_isLoading)
 {
-    @if (_history.Count == 0)
+    @if (_activeTab == "analytics")
     {
-        <div class="saas-card p-5 text-center">
-            <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-4" style="width: 80px; height: 80px;">
-                <i class="bi bi-database-dash text-muted" style="font-size: 2.5rem;"></i>
+        @if (_summary.TotalAudioPlayed == 0 && _summary.TotalPoiViewed == 0)
+        {
+            <div class="saas-card p-5 text-center mt-4">
+                <div class="empty-state-icon mx-auto">
+                    <i class="bi bi-database-dash" style="font-size: 2rem;"></i>
+                </div>
+                <h5 class="fw-bold">Chưa có dữ liệu phân tích</h5>
+                <p class="text-muted small mx-auto" style="max-width: 450px;">
+                    Hệ thống đang sẵn sàng thu thập. Dữ liệu báo cáo sẽ xuất hiện tại đây khi người dùng bắt đầu sử dụng ứng dụng hoặc quét mã QR tại các địa điểm.
+                </p>
+                <button class="btn btn-outline-primary btn-sm mt-3" @onclick="LoadAsync">Cập nhật ngay</button>
             </div>
-            <h5 class="fw-bold">Chưa có dữ liệu người dùng</h5>
-            <p class="text-muted small mx-auto" style="max-width: 400px;">
-                Hệ thống đang sẵn sàng ghi nhận. Dữ liệu sẽ xuất hiện tại đây khi có người dùng tương tác với ứng dụng MAUI hoặc quét mã QR.
-            </p>
-            <button class="btn btn-outline-secondary btn-sm mt-2" @onclick="LoadAsync">Thử tải lại</button>
-        </div>
+        }
+        else
+        {
+            <!-- KPI Cards -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-3">
+                    <div class="saas-card stats-card">
+                        <div class="d-flex justify-content-between">
+                            <span class="stats-label">Tổng lượt nghe</span>
+                            <i class="bi bi-headphones text-primary"></i>
+                        </div>
+                        <div class="stats-value">@_summary.TotalAudioPlayed.ToString("N0")</div>
+                        <div class="small text-success fw-bold"><i class="bi bi-arrow-up-short"></i> Live Sync</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="saas-card stats-card">
+                        <div class="d-flex justify-content-between">
+                            <span class="stats-label">Lượt xem địa điểm</span>
+                            <i class="bi bi-eye text-primary"></i>
+                        </div>
+                        <div class="stats-value">@_summary.TotalPoiViewed.ToString("N0")</div>
+                        <div class="small text-muted">Tương tác bản đồ</div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="saas-card stats-card">
+                        <div class="d-flex justify-content-between">
+                            <span class="stats-label">Nghe trung bình</span>
+                            <i class="bi bi-stopwatch text-primary"></i>
+                        </div>
+                        <div class="stats-value">@_summary.AvgDurationSeconds.ToString("0.0")s</div>
+                        <div class="small @(_summary.EngagementRate > 50 ? "text-success" : "text-warning") fw-bold">
+                            Engagement: @_summary.EngagementRate.ToString("0")%
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="saas-card stats-card">
+                        <div class="d-flex justify-content-between">
+                            <span class="stats-label">Người dùng độc nhất</span>
+                            <i class="bi bi-people text-primary"></i>
+                        </div>
+                        <div class="stats-value">@_summary.UniqueUsersCount.ToString("N0")</div>
+                        <div class="small text-muted">Địa chỉ ID riêng biệt</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4 mb-4">
+                <!-- Trend Line Chart -->
+                <div class="col-lg-8">
+                    <div class="saas-card p-4 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h6 class="fw-bold mb-0">Xu hướng tương tác (7 ngày qua)</h6>
+                            <div class="d-flex gap-3 small">
+                                <span class="d-flex align-items-center gap-1"><span class="rounded-circle" style="width:8px; height:8px; background:var(--primary-color)"></span> Nghe</span>
+                                <span class="d-flex align-items-center gap-1"><span class="rounded-circle" style="width:8px; height:8px; background:#9ca3af"></span> Xem</span>
+                            </div>
+                        </div>
+                        <div class="chart-container" style="height: 200px;">
+                            <svg width="100%" height="100%" viewBox="0 0 1000 200" preserveAspectRatio="none">
+                                <!-- Grid Lines -->
+                                <line x1="0" y1="50" x2="1000" y2="50" stroke="#f1f5f9" />
+                                <line x1="0" y1="100" x2="1000" y2="100" stroke="#f1f5f9" />
+                                <line x1="0" y1="150" x2="1000" y2="150" stroke="#f1f5f9" />
+                                
+                                <polyline points="@GenerateTrendPoints(true)" fill="none" stroke="var(--primary-color)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                                <polyline points="@GenerateTrendPoints(false)" fill="none" stroke="#9ca3af" stroke-width="2" stroke-dasharray="5,5" />
+                                
+                                <!-- X-axis Labels -->
+                                @for(int i=0; i < _summary.DailyTrends.Count; i++)
+                                {
+                                    <text x="@(i * 1000 / Math.Max(1, _summary.DailyTrends.Count - 1))" y="195" text-anchor="middle" font-size="12" fill="#9ca3af">@_summary.DailyTrends[i].Date.ToString("dd/MM")</text>
+                                }
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Insights -->
+                <div class="col-lg-4">
+                    <div class="saas-card p-4 h-100">
+                        <h6 class="fw-bold mb-4">Thông tin Insight</h6>
+                        
+                        <div class="mb-4">
+                            <label class="small text-muted d-block mb-1">Địa điểm "Hot" nhất</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="bg-primary-subtle text-primary rounded p-2"><i class="bi bi-fire"></i></div>
+                                <span class="fw-bold">@_summary.HotSpotName</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="small text-muted d-block mb-1">Khung giờ hoạt động mạnh</label>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="bg-info-subtle text-info rounded p-2"><i class="bi bi-clock"></i></div>
+                                <span class="fw-bold">@_summary.PeakHour</span>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="small text-muted d-block mb-1">Tỷ lệ tương tác chất lượng</label>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="progress flex-grow-1" style="height: 8px;">
+                                    <div class="progress-bar bg-success" style="width: @_summary.EngagementRate%"></div>
+                                </div>
+                                <span class="fw-bold small">@_summary.EngagementRate.ToString("0")%</span>
+                            </div>
+                            <span class="x-small text-muted">Lượt nghe audio kéo dài trên 10 giây.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Top POIs Bar Chart -->
+            <div class="saas-card p-4">
+                <h6 class="fw-bold mb-4">Top 5 địa điểm thu hút nhất</h6>
+                <div class="d-flex flex-column gap-3">
+                    @foreach (var poi in _summary.TopPois)
+                    {
+                        var percentage = (poi.Count * 100 / Math.Max(1, _summary.TopPois.First().Count));
+                        <div>
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span class="fw-medium">@poi.PoiName</span>
+                                <span class="text-muted">@poi.Count lượt</span>
+                            </div>
+                            <div class="progress" style="height: 12px; border-radius: 4px; background: #f1f5f9;">
+                                <div class="progress-bar" style="width: @percentage%; background: linear-gradient(90deg, var(--primary-color), #60a5fa); border-radius: 4px;"></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
     }
     else
     {
-        <div class="row g-4 mb-5">
-            <!-- Avg Duration Metric -->
-            <div class="col-lg-4">
-                <div class="saas-card p-4 h-100">
-                    <span class="stats-label d-block mb-2">Thời lượng nghe trung bình</span>
-                    <div class="d-flex align-items-center gap-3">
-                        <span class="stats-value">@(_history.Any() ? _history.Average(h => h.DurationSeconds ?? 0).ToString("0.0") : "0")s</span>
-                        <span class="text-success small fw-bold">Active Engagement</span>
-                    </div>
-                    <div class="mt-4 pt-4 border-top">
-                        <div class="d-flex justify-content-between small text-muted mb-2">
-                            <span>Mục tiêu: 120s</span>
-                            <span>@((_history.Average(h => h.DurationSeconds ?? 0) * 100 / 120).ToString("0"))%</span>
-                        </div>
-                        <div class="progress" style="height: 6px;">
-                            <div class="progress-bar bg-primary" style="width: @(Math.Min(100, _history.Average(h => h.DurationSeconds ?? 0) * 100 / 120))%; background-color: var(--primary-color);"></div>
-                        </div>
-                    </div>
+        <!-- Logs Module -->
+        <div class="saas-card">
+            <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                <div class="d-flex gap-2 align-items-center">
+                    <span class="small fw-bold text-muted">Lọc theo:</span>
+                    <select class="form-select form-select-sm border-subtle" style="width: 180px;" @bind="_selectedPoiId" @bind:after="FilterLogs">
+                        <option value="0">Tất cả địa điểm</option>
+                        @foreach (var p in _pois)
+                        {
+                            <option value="@p.Id">@p.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="input-group input-group-sm" style="width: 250px;">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" class="form-control border-start-0" placeholder="Tìm User ID..." @bind="_searchTerm" @bind:event="oninput" @onkeyup="FilterLogs" />
                 </div>
             </div>
 
-            <!-- Action Distribution SVG -->
-            <div class="col-lg-8">
-                <div class="saas-card p-4 h-100">
-                    <h6 class="fw-bold mb-4">Mật độ tương tác (24h)</h6>
-                    <div class="chart-container" style="height: 120px;">
-                         <svg width="100%" height="80" preserveAspectRatio="none">
-                             <polyline points="0,60 50,40 100,55 150,20 200,30 250,10 300,50 350,45 400,15 450,35 500,25" 
-                                       fill="none" stroke="var(--primary-color)" stroke-width="2" />
-                             <path d="M0,60 50,40 100,55 150,20 200,30 250,10 300,50 350,45 400,15 450,35 500,25 V80 H0 Z" 
-                                   fill="var(--primary-soft)" />
-                         </svg>
-                         <div class="d-flex justify-content-between mt-2 small text-muted">
-                             <span>00:00</span><span>06:00</span><span>12:00</span><span>18:00</span><span>23:59</span>
-                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="saas-card overflow-hidden">
             <div class="table-responsive">
                 <table class="saas-table">
                     <thead>
                         <tr>
-                            <th>Người dùng</th>
+                            <th>User ID</th>
                             <th>Địa điểm</th>
                             <th>Hành động</th>
                             <th>Thời lượng</th>
@@ -94,54 +219,72 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (var h in GetPagedHistory())
+                        @if (!_filteredLogs.Any())
                         {
                             <tr>
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="bg-light rounded-circle small d-flex align-items-center justify-content-center" style="width:28px; height:28px;">
-                                            <i class="bi bi-fingerprint text-muted"></i>
-                                        </div>
-                                        <span class="fw-medium small text-dark">UID-@h.UserId?.Take(8)</span>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="saas-badge badge-inactive">@FindPoiName(h.PoiId)</span>
-                                </td>
-                                <td>
-                                    <span class="saas-badge @(h.Action == "Listen" ? "badge-active" : "badge-highlight")">
-                                        @h.Action.ToUpper()
-                                    </span>
-                                </td>
-                                <td class="small fw-semibold">@(h.DurationSeconds ?? 0) giây</td>
-                                <td class="text-end text-muted small">@h.VisitedAtUtc.ToLocalTime().ToString("HH:mm:ss, dd/MM")</td>
+                                <td colspan="5" class="text-center py-5 text-muted">Không tìm thấy bản ghi nào phù hợp.</td>
                             </tr>
+                        }
+                        else
+                        {
+                            @foreach (var log in _filteredLogs.Skip((_currentPage - 1) * _pageSize).Take(_pageSize))
+                            {
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="bg-light rounded-circle small d-flex align-items-center justify-content-center" style="width:28px; height:28px;">
+                                                <i class="bi bi-fingerprint text-muted"></i>
+                                            </div>
+                                            <code class="text-dark">@FormatUserId(log.UserId)</code>
+                                        </div>
+                                    </td>
+                                    <td><span class="fw-medium">@FindPoiName(log.PoiId)</span></td>
+                                    <td>
+                                        <span class="saas-badge @GetActionBadge(log.Action)">
+                                            @GetActionLabel(log.Action)
+                                        </span>
+                                    </td>
+                                    <td class="small fw-semibold">@(log.DurationSeconds ?? 0)s</td>
+                                    <td class="text-end text-muted small">@log.VisitedAtUtc.ToLocalTime().ToString("HH:mm:ss, dd/MM")</td>
+                                </tr>
+                            }
                         }
                     </tbody>
                 </table>
             </div>
-        </div>
 
-        @if (GetTotalHistoryPages() > 1)
-        {
-            <div class="d-flex justify-content-center align-items-center mt-5 gap-3">
-                <button class="btn btn-saas btn-saas-secondary btn-sm" disabled="@(_currentPage <= 1)" @onclick="() => _currentPage--">
-                    <i class="bi bi-chevron-left"></i>
-                </button>
-                <span class="small fw-bold">@_currentPage / @GetTotalHistoryPages()</span>
-                <button class="btn btn-saas btn-saas-secondary btn-sm" disabled="@(_currentPage >= GetTotalHistoryPages())" @onclick="() => _currentPage++">
-                    <i class="bi bi-chevron-right"></i>
-                </button>
-            </div>
-        }
+            @if (GetTotalLogPages() > 1)
+            {
+                <div class="p-3 border-top d-flex justify-content-between align-items-center bg-light-subtle">
+                    <span class="small text-muted">Hiển thị @Math.Min(_filteredLogs.Count, _pageSize) trong @_filteredLogs.Count bản ghi</span>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary btn-sm" disabled="@(_currentPage <= 1)" @onclick="() => _currentPage--"><i class="bi bi-chevron-left"></i></button>
+                        <span class="align-self-center mx-2 small fw-bold">Trang @_currentPage / @GetTotalLogPages()</span>
+                        <button class="btn btn-outline-secondary btn-sm" disabled="@(_currentPage >= GetTotalLogPages())" @onclick="() => _currentPage++"><i class="bi bi-chevron-right"></i></button>
+                    </div>
+                </div>
+            }
+        </div>
     }
 }
 
+<style>
+    .x-small { font-size: 0.75rem; }
+    .saas-badge { font-family: 'Inter', sans-serif; letter-spacing: 0.02em; }
+    .stats-card i { font-size: 1.25rem; opacity: 0.8; }
+    svg text { font-family: 'Inter', sans-serif; font-weight: 500; }
+</style>
+
 @code {
-    private readonly List<UserHistory> _history = [];
-    private readonly List<POI> _pois = [];
-    private bool _isLoading;
+    private string _activeTab = "analytics";
+    private bool _isLoading = true;
+    private AnalyticsSummary _summary = new();
+    private List<UserHistory> _rawLogs = new();
+    private List<UserHistory> _filteredLogs = new();
+    private List<POI> _pois = new();
+    
     private DateTime? _selectedDate;
+    private int _selectedPoiId = 0;
     private string _searchTerm = string.Empty;
     private int _currentPage = 1;
     private int _pageSize = 15;
@@ -151,86 +294,98 @@
         await LoadAsync();
     }
 
+    private async Task SetTab(string tab)
+    {
+        _activeTab = tab;
+        if (tab == "logs" && !_rawLogs.Any())
+        {
+            await LoadAsync();
+        }
+    }
+
     private async Task LoadAsync()
     {
         _isLoading = true;
-        _history.Clear();
-        _pois.Clear();
+        
+        // Parallel load to save time
+        var analyticsTask = DataService.GetAnalyticsSummaryAsync(_selectedDate, _selectedDate?.AddDays(1).AddSeconds(-1));
+        var logsTask = Task.Run(() => DataService.GetUsageHistories());
+        var poisTask = Task.Run(() => DataService.GetPois());
 
-        try
-        {
-            var pois = DataService.GetPois();
-            if (pois != null) _pois.AddRange(pois);
-        }
-        catch { /* POI table may be empty */ }
+        await Task.WhenAll(analyticsTask, logsTask, poisTask);
 
-        try
-        {
-            var histories = DataService.GetUsageHistories();
-            if (histories != null) _history.AddRange(histories);
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"[USAGE] Cannot load histories: {ex.Message}");
-            Toasts.Error("Không thể tải dữ liệu lịch sử.");
-        }
+        _summary = analyticsTask.Result;
+        _rawLogs = logsTask.Result.ToList();
+        _pois = poisTask.Result.ToList();
 
+        FilterLogs();
+        
         _isLoading = false;
         StateHasChanged();
     }
 
-
-
-    private IEnumerable<UserHistory> GetFilteredHistory()
+    private void FilterLogs()
     {
-        var query = _history.OrderByDescending(x => x.VisitedAtUtc).AsEnumerable();
+        _filteredLogs = _rawLogs.OrderByDescending(x => x.VisitedAtUtc).ToList();
+        
         if (_selectedDate.HasValue)
-        {
-            query = query.Where(x => x.VisitedAtUtc.ToLocalTime().Date == _selectedDate.Value.Date);
-        }
+            _filteredLogs = _filteredLogs.Where(x => x.VisitedAtUtc.ToLocalTime().Date == _selectedDate.Value.Date).ToList();
+            
+        if (_selectedPoiId != 0)
+            _filteredLogs = _filteredLogs.Where(x => x.PoiId == _selectedPoiId).ToList();
+            
         if (!string.IsNullOrWhiteSpace(_searchTerm))
-        {
-            var term = _searchTerm.Trim();
-            query = query.Where(x =>
-                (x.UserId ?? "").Contains(term, StringComparison.OrdinalIgnoreCase)
-                || FindPoiName(x.PoiId).Contains(term, StringComparison.OrdinalIgnoreCase)
-                || (x.Action ?? "").Contains(term, StringComparison.OrdinalIgnoreCase));
-        }
-        return query;
-    }
+            _filteredLogs = _filteredLogs.Where(x => FormatUserId(x.UserId).Contains(_searchTerm, StringComparison.OrdinalIgnoreCase)).ToList();
 
-    private IEnumerable<UserHistory> GetPagedHistory() => GetFilteredHistory().Skip((_currentPage - 1) * _pageSize).Take(_pageSize);
-
-    private int GetTotalHistoryPages() => (int)Math.Ceiling((double)GetFilteredHistory().Count() / _pageSize);
-
-    private Task ClearFilter()
-    {
-        _selectedDate = null;
-        _searchTerm = string.Empty;
         _currentPage = 1;
-        return LoadAsync();
     }
 
-    private string FindPoiName(int poiId) => _pois.FirstOrDefault(x => x.Id == poiId)?.Name ?? $"POI #{poiId}";
+    private int GetTotalLogPages() => (int)Math.Ceiling((double)_filteredLogs.Count / _pageSize);
 
-    private static string GetActionLabel(string? action) => string.IsNullOrWhiteSpace(action) ? "Không rõ" : (action.ToLowerInvariant() switch
-    {
-        "poi viewed" or "poi_viewed" => "Xem điểm",
-        "audio played" or "audio_played" => "Nghe âm thanh",
-        "route_entry" => "Vào tuyến",
-        "listen" => "Đã nghe",
-        _ => action
-    });
+    private string FindPoiName(int id) => _pois.FirstOrDefault(p => p.Id == id)?.Name ?? $"POI #{id}";
 
-    private static string GetActionBadge(string? action)
+    private string FormatUserId(string? uid)
     {
-        return action?.ToLowerInvariant() switch
+        if (string.IsNullOrEmpty(uid)) return "Guest";
+        // Handle the "System.Linq..." bug by taking only hex part if possible, or hashing it
+        if (uid.Contains("System.Linq")) return "Guest-Auto";
+        
+        return uid.Length > 8 ? $"Guest-{uid.Substring(0, 4)}" : $"Guest-{uid}";
+    }
+
+    private string GetActionLabel(string? action)
+    {
+        var a = action?.ToLowerInvariant() ?? "";
+        if (a.Contains("audio") || a == "listen") return "Nghe âm thanh";
+        if (a.Contains("viewed")) return "Xem địa điểm";
+        if (a.Contains("route")) return "Vào tuyến";
+        return action ?? "Tương tác";
+    }
+
+    private string GetActionBadge(string? action)
+    {
+        var a = action?.ToLowerInvariant() ?? "";
+        if (a.Contains("audio") || a == "listen") return "badge-active";
+        if (a.Contains("viewed")) return "badge-highlight";
+        return "badge-inactive";
+    }
+
+    private string GenerateTrendPoints(bool isListen)
+    {
+        if (!_summary.DailyTrends.Any()) return "0,200 1000,200";
+        
+        var points = new List<string>();
+        var maxVal = _summary.DailyTrends.Max(t => Math.Max(t.Views, t.Listens));
+        if (maxVal == 0) maxVal = 10; // Avoid division by zero
+
+        for (int i = 0; i < _summary.DailyTrends.Count; i++)
         {
-            "poi viewed" or "poi_viewed" => "text-bg-primary",
-            "audio played" or "audio_played" => "text-bg-success",
-            "route_entry" => "text-bg-info",
-            "listen" => "text-bg-success",
-            _ => "text-bg-secondary"
-        };
+            var x = i * 1000 / Math.Max(1, _summary.DailyTrends.Count - 1);
+            var val = isListen ? _summary.DailyTrends[i].Listens : _summary.DailyTrends[i].Views;
+            var y = 180 - (val * 160 / maxVal); // Leave some margin
+            points.Add($"{x},{y}");
+        }
+        
+        return string.Join(" ", points);
     }
 }

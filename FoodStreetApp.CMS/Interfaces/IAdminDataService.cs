@@ -40,4 +40,10 @@ public interface IAdminDataService
     /// Translates all POIs that are missing English translation and returns the total successfully translated count.
     /// </summary>
     Task<int> TranslateAllPoisAsync();
+
+    /// <summary>
+    /// Gets aggregated analytics metrics for the specified date range.
+    /// </summary>
+    Task<FoodStreetApp.CMS.Models.AnalyticsSummary> GetAnalyticsSummaryAsync(DateTime? startDate = null, DateTime? endDate = null);
 }
+

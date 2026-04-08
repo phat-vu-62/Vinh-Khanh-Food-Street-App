@@ -380,14 +380,44 @@ body {
     box-shadow: var(--shadow-sm);
 }
 
-/* Animations */
+/* SaaS Enhancements */
+.saas-card {
+    border: 1px solid var(--border-subtle);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02), 0 1px 2px rgba(0,0,0,0.04);
+}
+
+.saas-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+}
+
+.stats-card {
+    border-left: 4px solid var(--primary-color);
+}
+
+.bg-primary-subtle { background-color: rgba(0, 102, 204, 0.08) !important; }
+.bg-info-subtle { background-color: rgba(13, 202, 240, 0.08) !important; }
+.bg-success-subtle { background-color: rgba(25, 135, 84, 0.08) !important; }
+
+/* Dashboard Typography */
+.stats-value {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.04em;
+}
+
+.chart-container {
+    mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 100%);
+    overflow: hidden;
+}
+
 @keyframes pulse-live {
-    0% { transform: scale(0.95); opacity: 0.8; }
-    70% { transform: scale(1); opacity: 1; }
-    100% { transform: scale(0.95); opacity: 0.8; }
+    0% { opacity: 0.6; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.1); }
+    100% { opacity: 0.6; transform: scale(0.9); }
 }
 
 .pulse-animation {
+    color: #10b981;
     animation: pulse-live 2s infinite ease-in-out;
 }
 
@@ -397,9 +427,24 @@ body {
     border-radius: 9999px;
     font-size: 0.75rem;
     font-weight: 600;
+    display: inline-block;
 }
 
 .badge-active { background-color: #ecfdf5; color: #059669; border: 1px solid #d1fae5; }
 .badge-inactive { background-color: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; }
 .badge-highlight { background-color: #eff6ff; color: #2563eb; border: 1px solid #dbeafe; }
+
+/* Empty States */
+.empty-state-icon {
+    background: var(--bg-main);
+    color: var(--text-light);
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
 
