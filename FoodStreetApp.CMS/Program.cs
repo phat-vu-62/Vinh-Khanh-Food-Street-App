@@ -274,10 +274,28 @@ app.MapPost("/api/UsageHistory", async (FoodStreetApp.Shared.Entities.UserHistor
 // Alias for compatibility
 app.MapPost("/api/history", async (FoodStreetApp.Shared.Entities.UserHistory history, IAdminDataService service, ILogger<Program> logger) => 
 {
-    var json = System.Text.Json.JsonSerializer.Serialize(history);
-    logger.LogInformation("[DEBUG-API] HIT: /api/history (Redirecting to UsageHistory)");
-    var created = service.AddUsageHistory(history);
-    return Results.Created($"/api/UsageHistory/{created.Id}", created);
+    // 1. Logs for web debugging
+    logger.LogInformation("[Tracking] POI={PoiId} | Action={Action} | QR={QR}", 
+        history.PoiId, history.Action, history.QRCode ?? "None");
+
+    if (history.PoiId <= 0 || string.IsNullOrWhiteSpace(history.Action))
+    {
+        logger.LogWarning("[Tracking] ⚠️ INVALID DATA: PoiId={PoiId}, Action={Action}", history.PoiId, history.Action);
+        return Results.BadRequest(new { error = "Invalid PoiId or Action" });
+    }
+
+    try
+    {
+        // Enforce server-side timestamp for accuracy
+        history.VisitedAtUtc = DateTime.UtcNow.AddHours(7);
+        var created = service.AddUsageHistory(history);
+        return Results.Created($"/api/UsageHistory/{created.Id}", created);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "[Tracking] ❌ ERROR: {Message}", ex.Message);
+        return Results.Problem(ex.Message);
+    }
 });
 
 

@@ -66,6 +66,41 @@
         const playButton = document.getElementById(playButtonId);
         if (!playButton || !audioElement) return;
 
+        // --- TRACKING LOGIC ---
+        const poiId = window.location.pathname.split("/").pop();
+        console.log("[QR PAGE] Loaded poiId:", poiId);
+
+        let userId = localStorage.getItem("tracking_user_id");
+        if (!userId) {
+            userId = 'web-' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem("tracking_user_id", userId);
+        }
+
+        async function track(action, extra = {}) {
+            const payload = {
+                userId: userId,
+                poiId: parseInt(poiId),
+                action: action,
+                ...extra
+            };
+
+            console.log("[TRACKING] Sending:", payload);
+
+            try {
+                const res = await fetch("/api/history", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+                console.log("[TRACKING] " + (res.ok ? "Success" : "Failed") + " (Status: " + res.status + ")");
+            } catch (err) {
+                console.error("[TRACKING] ERROR:", err);
+            }
+        }
+
+        // 1. On page load (QR scan)
+        track("qr_scanned", { qrCode: window.location.href });
+
         window.audioState = {
             isPlaying: false,
             currentLang: 'vi',
@@ -82,6 +117,9 @@
                     window.audioState.isPlaying = false;
                     dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
                 } else {
+                    // 2. On play
+                    track("audio_played");
+
                     if (window.audioState.currentLang === 'vi' && window.audioState.audioUrl) {
                         const playPromise = audioElement.play();
                         if (playPromise !== undefined) {
@@ -107,6 +145,8 @@
                         u.onend = () => {
                             window.audioState.isPlaying = false;
                             dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
+                            // Also track voice completion
+                            track("audio_completed", { durationSeconds: 0 }); 
                         };
                         u.onerror = (e) => {
                             if (e.error !== 'interrupted') {
@@ -135,6 +175,8 @@
         audioElement.onended = () => {
             window.audioState.isPlaying = false;
             dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
+            // 3. On audio end
+            track("audio_completed", { durationSeconds: Math.round(audioElement.duration || 0) });
         };
         audioElement.onwaiting = () => dotNetHelper.invokeMethodAsync('OnBuffering', true);
         audioElement.oncanplay = () => dotNetHelper.invokeMethodAsync('OnBuffering', false);
