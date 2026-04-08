@@ -9,13 +9,14 @@ var builder = WebApplication.CreateBuilder(args);
 // Fix status 134 on Render/Linux by disabling file system watchers
 builder.Configuration.AddEnvironmentVariables();
 
-// Configure Port at builder stage - Using 8080 as primary default for .NET 10
-var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
-builder.Configuration["ASPNETCORE_URLS"] = $"http://*:{port}";
+// Configure Port & Protocol at builder stage - Dual Stack (v4/v6) and HTTP/1.1 for Proxy stability
+var port = int.Parse(Environment.GetEnvironmentVariable("PORT") ?? "10000");
 builder.WebHost.ConfigureKestrel(options => {
-    options.ListenAnyIP(int.Parse(port));
+    // Listen on all interfaces (IPv4 and IPv6) to avoid connection refused on some proxy networks
+    options.Listen(System.Net.IPAddress.Any, port, listenOptions => listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1);
+    options.Listen(System.Net.IPAddress.IPv6Any, port, listenOptions => listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1);
 });
-Console.WriteLine($"[STARTUP] Kestrel listening on all IPs at port: {port}");
+Console.WriteLine($"[STARTUP] Dual-Stack Kestrel (v4/v6) on Port {port} [HTTP/1.1 only]");
 
 
 
@@ -60,12 +61,21 @@ builder.Services.AddScoped<ToastService>();
 
 var app = builder.Build();
 
-// Global Request Logger Middleware - ENHANCED DEBUG VISIBILITY
+// Global Request Logger Middleware - DEEP DIAGNOSTIC VISIBILITY
 app.Use(async (context, next) =>
 {
     var host = context.Request.Host;
-    var proto = context.Request.Headers["X-Forwarded-Proto"].ToString() ?? "http";
+    var proto = context.Request.Headers["X-Forwarded-Proto"].ToString();
+    if (string.IsNullOrWhiteSpace(proto)) proto = context.Request.Scheme;
+    
     Console.WriteLine($"[REQUEST] {context.Request.Method} {proto}://{host}{context.Request.Path}{context.Request.QueryString}");
+    
+    // Log ALL headers on the next few requests to diagnose proxy issues
+    foreach (var header in context.Request.Headers)
+    {
+        Console.WriteLine($"  [HEADER] {header.Key}: {header.Value}");
+    }
+    
     await next();
 });
 
