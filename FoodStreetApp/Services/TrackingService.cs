@@ -15,7 +15,7 @@ namespace FoodStreetApp.Services
 
         public TrackingService()
         {
-            // PRO-GRADE DEBUG: Configure HttpClient with SSL bypass for Android/iOS if needed
+            // Configure HttpClient with SSL bypass for Android/iOS if needed (Render/Cert issues)
             HttpClientHandler handler = new HttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true;
 
@@ -31,57 +31,41 @@ namespace FoodStreetApp.Services
 
         public async Task TrackEventAsync(int poiId, string action, int? durationSeconds = null, string? qrCode = null)
         {
-            var payload = new
-            {
-                UserId = _userId,
-                PoiId = poiId,
-                Action = action,
-                DurationSeconds = durationSeconds,
-                QRCode = qrCode,
-                VisitedAtUtc = DateTime.UtcNow
-            };
-
-            string json = JsonSerializer.Serialize(payload);
-            string url = "https://vinh-khanh-food-street-app.onrender.com/api/UsageHistory";
-
-
-            System.Diagnostics.Debug.WriteLine("====================================");
-            System.Diagnostics.Debug.WriteLine("[DEBUG-TRACK] ATTEMPTING SEND");
-            System.Diagnostics.Debug.WriteLine($"[DEBUG-TRACK] URL: {url}");
-            System.Diagnostics.Debug.WriteLine($"[DEBUG-TRACK] PAYLOAD: {json}");
-            System.Diagnostics.Debug.WriteLine("====================================");
-
             try
             {
-                var response = await _httpClient.PostAsJsonAsync(url, payload);
-
-                System.Diagnostics.Debug.WriteLine($"[DEBUG-TRACK] RESPONSE RECEIVED: {response.StatusCode}");
-                
-                var responseBody = await response.Content.ReadAsStringAsync();
-                System.Diagnostics.Debug.WriteLine($"[DEBUG-TRACK] RESPONSE BODY: {responseBody}");
-
-                if (!response.IsSuccessStatusCode)
+                // BACKEND SOURCE OF TRUTH: We no longer send VisitedAtUtc from the client
+                var payload = new
                 {
-                    System.Diagnostics.Debug.WriteLine($"[DEBUG-TRACK] ⚠️ SERVER REFUSED: {response.ReasonPhrase}");
+                    UserId = _userId,
+                    PoiId = poiId,
+                    Action = action,
+                    DurationSeconds = durationSeconds,
+                    QRCode = qrCode
+                };
+
+                // UPDATED PRODUCTION URL: Ensuring we hit the correct endpoint on the CMS Host
+                var trackingUrl = "https://vinh-khanh-food-street-app.onrender.com/api/UsageHistory";
+                
+                // Detailed debug logging as requested
+                System.Diagnostics.Debug.WriteLine($"[DEBUG-TRACK] SENDING: {action} (POI:{poiId}, QR:{qrCode ?? "None"})");
+                
+                var response = await _httpClient.PostAsJsonAsync(trackingUrl, payload);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    var responseBody = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"[DEBUG-TRACK] SUCCESS: {response.StatusCode}");
                 }
                 else
                 {
-                    System.Diagnostics.Debug.WriteLine($"[DEBUG-TRACK] ✅ SUCCESS: Record should be in DB.");
+                    var errorBody = await response.Content.ReadAsStringAsync();
+                    System.Diagnostics.Debug.WriteLine($"[DEBUG-TRACK] FAILURE: {response.StatusCode} | Error: {errorBody}");
                 }
-            }
-            catch (HttpRequestException httpEx)
-            {
-                System.Diagnostics.Debug.WriteLine($"[DEBUG-TRACK] ❌ NETWORK ERROR: {httpEx.Message}");
-            }
-            catch (TaskCanceledException)
-            {
-                System.Diagnostics.Debug.WriteLine("[DEBUG-TRACK] ❌ TIMEOUT: Server took > 30s");
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"[DEBUG-TRACK] ❌ UNEXPECTED ERROR: {ex.GetType().Name} - {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"[DEBUG-TRACK] FATAL ERROR: {ex.Message}");
             }
-            System.Diagnostics.Debug.WriteLine("====================================");
         }
     }
 }

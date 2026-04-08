@@ -21,6 +21,8 @@ namespace FoodStreetApp.ViewModels
         private string _playStatus = "Play";
         private string? _autoPlay;
         private string? _skipGps;
+        private bool _poiViewTracked = false;
+        private bool _qrScannedTracked = false;
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -36,9 +38,7 @@ namespace FoodStreetApp.ViewModels
                 // If arriving from QR with AutoPlay=true, start playback immediately
                 if (_autoPlay == "True" || _autoPlay == "true")
                 {
-                    // Reset to avoid loops if property is reset
                     _autoPlay = "false";
-                    
                     MainThread.BeginInvokeOnMainThread(() =>
                     {
                         if (ToggleNarrationCommand.CanExecute(null))
@@ -46,18 +46,10 @@ namespace FoodStreetApp.ViewModels
                     });
                 }
 
-                // Track POI view event
-                if (_place?.PoiData != null)
-                {
-                    Task.Run(async () => {
-                        Console.WriteLine($"[TRACKING] Page load trigger for POI {_place.PoiData.Id}");
-                        await _trackingService.TrackEventAsync(_place.PoiData.Id, "poi_viewed");
-                    });
-                }
+                // Trigger unified tracking check
+                _ = TryTrackInteractionAsync();
             }
         }
-
-
 
         public string? AutoPlay { get => _autoPlay; set { _autoPlay = value; OnPropertyChanged(); } }
         public string? SkipGps { get => _skipGps; set { _skipGps = value; OnPropertyChanged(); } }
@@ -69,15 +61,45 @@ namespace FoodStreetApp.ViewModels
                 _qrCode = value; 
                 OnPropertyChanged(); 
                 
-                // Track QR source when property is set (lifecycle guaranteed ready)
-                if (!string.IsNullOrEmpty(_qrCode) && _place?.PoiData != null)
-                {
-                    Task.Run(async () => {
-                        await _trackingService.TrackEventAsync(_place.PoiData.Id, "qr_scanned", qrCode: _qrCode);
-                    });
-                }
+                // Trigger unified tracking check
+                _ = TryTrackInteractionAsync();
             } 
         }
+
+        /// <summary>
+        /// Unified method to handle tracking triggers. 
+        /// Resolves race conditions during Shell navigation property assignment.
+        /// </summary>
+        private async Task TryTrackInteractionAsync()
+        {
+            // We need the POI data before we can track anything
+            if (_place?.PoiData == null) return;
+
+            var poi = _place.PoiData;
+
+            // 1. Handle POI View Tracking (Once per page instance)
+            if (!_poiViewTracked)
+            {
+                _poiViewTracked = true;
+                
+                // MANDATORY LOGGING: Identify EXACTLY which POI is being tracked
+                Console.WriteLine($"[TRACKING] POI: {poi.Id} - {poi.Name}");
+                System.Diagnostics.Debug.WriteLine($"[TRACKING] VIEW: {poi.Id} - {poi.Name}");
+                
+                await _trackingService.TrackEventAsync(poi.Id, "poi_viewed");
+            }
+
+            // 2. Handle QR Scan Tracking (Once if QRCode is present)
+            if (!_qrScannedTracked && !string.IsNullOrEmpty(_qrCode))
+            {
+                _qrScannedTracked = true;
+                
+                System.Diagnostics.Debug.WriteLine($"[TRACKING] QR SCAN: {poi.Id} (URI: {_qrCode})");
+                
+                await _trackingService.TrackEventAsync(poi.Id, "qr_scanned", qrCode: _qrCode);
+            }
+        }
+
 
 
         public string PlayStatus
