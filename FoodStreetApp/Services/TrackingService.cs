@@ -39,7 +39,7 @@ namespace FoodStreetApp.Services
                 };
 
                 // The CMS API endpoint for UsageHistory
-                var trackingUrl = "https://vinh-khanh-food-street-app.onrender.com/api/UsageHistory";
+                var trackingUrl = "https://vinh-khanh-food-street-app.onrender.com/api/history";
                 
                 System.Diagnostics.Debug.WriteLine($"[TRACKING] Sending {action} for POI {poiId} (Duration: {durationSeconds}s)");
                 

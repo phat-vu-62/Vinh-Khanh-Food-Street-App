@@ -12,6 +12,8 @@ namespace FoodStreetApp.ViewModels
     public class FoodDetailViewModel : INotifyPropertyChanged
     {
         private readonly INarrationService _narrationService;
+        private readonly ITrackingService _trackingService;
+
         private FoodPlace? _place;
         private string _playStatus = "Play";
         private string? _autoPlay;
@@ -40,8 +42,15 @@ namespace FoodStreetApp.ViewModels
                             ToggleNarrationCommand.Execute(null);
                     });
                 }
+
+                // Track POI view event
+                if (_place?.PoiData != null)
+                {
+                    _ = _trackingService.TrackEventAsync(_place.PoiData.Id, "poi_viewed");
+                }
             }
         }
+
 
         public string? AutoPlay { get => _autoPlay; set { _autoPlay = value; OnPropertyChanged(); } }
         public string? SkipGps { get => _skipGps; set { _skipGps = value; OnPropertyChanged(); } }
@@ -59,9 +68,10 @@ namespace FoodStreetApp.ViewModels
         public ICommand ShowOnMapCommand { get; }
         public ICommand ToggleNarrationCommand { get; }
 
-        public FoodDetailViewModel(INarrationService narrationService)
+        public FoodDetailViewModel(INarrationService narrationService, ITrackingService trackingService)
         {
             _narrationService = narrationService;
+            _trackingService = trackingService;
             _narrationService.NarrationFinished += (s, e) =>
             {
                 MainThread.BeginInvokeOnMainThread(() =>
