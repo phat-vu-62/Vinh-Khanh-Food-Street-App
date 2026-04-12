@@ -370,7 +370,7 @@ public class AdminDataService : IAdminDataService
             .Select(g => new
             {
                 Date = g.Key,
-                Views = g.Count(l => l.Action == "poi_viewed" || l.Action == "POI viewed"),
+                Views = g.Count(l => l.Action == "poi_viewed" || l.Action == "POI viewed" || l.Action == "qr_scanned"),
                 Listens = g.Count(l => l.Action == "audio_played" || l.Action == "Listen")
             })
             .OrderBy(x => x.Date)
