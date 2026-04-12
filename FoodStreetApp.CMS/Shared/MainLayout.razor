@@ -1,6 +1,8 @@
 @inherits LayoutComponentBase
 @using FoodStreetApp.CMS.Services
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject CustomAuthStateProvider AuthProvider
 
 <div class="admin-shell">
     <AuthorizeView>
@@ -64,9 +66,9 @@
                                     </div>
                                     <span class="small fw-bold">@context.User.Identity?.Name</span>
                                     <span class="badge bg-info text-dark">@(context.User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value ?? "User")</span>
-                                    <a href="api/auth/logout" class="btn btn-sm btn-outline-danger ms-2">
+                                    <button @onclick="HandleLogout" class="btn btn-sm btn-outline-danger ms-2">
                                         <i class="bi bi-box-arrow-right"></i>
-                                    </a>
+                                    </button>
                                 </div>
                             </div>
                         </Authorized>
@@ -87,4 +89,11 @@
 <ToastHost />
 
 @code {
+    private async Task HandleLogout()
+    {
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "authToken");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userId");
+        AuthProvider.NotifyUserLogout();
+        NavigationManager.NavigateTo("/login");
+    }
 }

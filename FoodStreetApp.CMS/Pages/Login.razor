@@ -126,20 +126,27 @@
                     AuthProvider.NotifyUserAuthentication(result.Token);
 
                     // Redirect based on role
-                    if (result.Role == "admin") NavigationManager.NavigateTo("/admin");
+                    if (result.Role == "admin") NavigationManager.NavigateTo("/");
                     else if (result.Role == "owner") NavigationManager.NavigateTo("/owner");
                     else NavigationManager.NavigateTo("/");
                 }
             }
             else
             {
-                var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
-                errorMessage = error?.Message ?? "Đăng nhập thất bại. Kiểm tra lại thông tin.";
+                try 
+                {
+                    var error = await response.Content.ReadFromJsonAsync<ErrorResponse>();
+                    errorMessage = error?.Message ?? "Đăng nhập thất bại. Vui lòng kiểm tra lại.";
+                }
+                catch 
+                {
+                    errorMessage = "Tài khoản hoặc mật khẩu không chính xác.";
+                }
             }
         }
         catch (Exception ex)
         {
-            errorMessage = $"Lỗi kết nối server: {ex.Message}";
+            errorMessage = $"Lỗi kết nối: {ex.Message}";
         }
         finally
         {

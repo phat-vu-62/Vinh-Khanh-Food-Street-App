@@ -3,6 +3,7 @@
 @using FoodStreetApp.CMS.Components
 @inject IAdminDataService DataService
 @inject ToastService Toasts
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "admin")]
 
 <div class="d-flex justify-content-between align-items-center mb-5">
     <div>

@@ -1,4 +1,5 @@
 @page "/translations"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "admin")]
 @inject IAdminDataService DataService
 @inject ToastService Toasts
 

@@ -36,17 +36,17 @@ public class AuthController : ControllerBase
 
             if (user == null)
             {
-                return Unauthorized(new { message = "User not found or invalid credentials" });
+                return Unauthorized(new { message = "Tài khoản không tồn tại" });
             }
 
             if (string.IsNullOrEmpty(user.PasswordHash))
             {
-                return Unauthorized(new { message = "User has no password set" });
+                return Unauthorized(new { message = "Tài khoản chưa có mật khẩu" });
             }
 
             if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             {
-                return Unauthorized(new { message = "Invalid username or password" });
+                return Unauthorized(new { message = "Mật khẩu không chính xác" });
             }
 
             var token = GenerateJwtToken(user);
@@ -61,9 +61,8 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            // Log the exception in a real scenario
             Console.WriteLine($"[AUTH-ERROR] {ex.Message}");
-            return StatusCode(500, new { message = "An internal server error occurred during login" });
+            return StatusCode(500, new { message = "Lỗi máy chủ nội bộ khi đăng nhập" });
         }
     }
 

@@ -1,4 +1,5 @@
 @page "/qrcodes"
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "admin")]
 @namespace FoodStreetApp.CMS.Pages
 @using FoodStreetApp.CMS.Interfaces
 @using FoodStreetApp.Shared.DTOs
