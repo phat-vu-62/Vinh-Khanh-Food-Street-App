@@ -25,22 +25,46 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
-
-        if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        try
         {
-            return Unauthorized(new { message = "Invalid username or password" });
+            if (request == null || string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
+            {
+                return BadRequest(new { message = "Username and password are required" });
+            }
+
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
+
+            if (user == null)
+            {
+                return Unauthorized(new { message = "User not found or invalid credentials" });
+            }
+
+            if (string.IsNullOrEmpty(user.PasswordHash))
+            {
+                return Unauthorized(new { message = "User has no password set" });
+            }
+
+            if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            {
+                return Unauthorized(new { message = "Invalid username or password" });
+            }
+
+            var token = GenerateJwtToken(user);
+
+            return Ok(new
+            {
+                token,
+                username = user.Username,
+                role = user.Role,
+                userId = user.Id
+            });
         }
-
-        var token = GenerateJwtToken(user);
-
-        return Ok(new
+        catch (Exception ex)
         {
-            token,
-            username = user.Username,
-            role = user.Role,
-            userId = user.Id
-        });
+            // Log the exception in a real scenario
+            Console.WriteLine($"[AUTH-ERROR] {ex.Message}");
+            return StatusCode(500, new { message = "An internal server error occurred during login" });
+        }
     }
 
     private string GenerateJwtToken(User user)

@@ -62,24 +62,14 @@ builder.Services.AddScoped<IAdminDataService, AdminDataService>();
 builder.Services.AddScoped<IQRCodeService, QRCodeService>();
 builder.Services.AddScoped<ToastService>();
 
-// Auth Services - Switching to Cookies
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        options.LoginPath = "/login";
-        options.AccessDeniedPath = "/login";
-        options.Cookie.Name = "FoodStreetAuth";
-        options.ExpireTimeSpan = TimeSpan.FromDays(7);
-    });
-
-builder.Services.AddAuthorization(options =>
+// Auth Services - Switching to JWT with CustomAuthStateProvider
+builder.Services.AddScoped<CustomAuthStateProvider>();
+builder.Services.AddScoped<AuthenticationStateProvider>(s => s.GetRequiredService<CustomAuthStateProvider>());
+builder.Services.AddAuthorizationCore(options =>
 {
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("admin"));
     options.AddPolicy("OwnerOnly", policy => policy.RequireRole("owner"));
 });
-
-builder.Services.AddHttpContextAccessor();
-builder.Services.AddControllers(); // Needed for AuthController
 
 var app = builder.Build();
 
@@ -174,7 +164,8 @@ if (!app.Environment.IsDevelopment())
 app.UseStaticFiles();
 app.UseRouting();
 
-app.UseAuthentication();
+// Authentication middleware is handled by CustomAuthStateProvider in Blazor Server components
+// UseAuthorization still needed for MVC/API if any remain, but for Blazor Core:
 app.UseAuthorization();
 
 // Health Check endpoint for Render monitoring
@@ -389,7 +380,7 @@ app.MapGet("/api/sync/pois", (IAdminDataService service) =>
     return Results.Ok(result);
 });
 
-app.MapControllers(); // Secure Controllers for Login/Logout
+// app.MapControllers(); // Removed for JWT
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
