@@ -212,16 +212,7 @@ else if (!_isLoading)
                                         <ValidationMessage For="@(() => _form.Description)" class="text-danger small mt-1" />
                                     </div>
                                     <div class="row g-2">
-                                        <div class="col-6">
-                                            <label class="form-label-saas">Loại</label>
-                                            <InputSelect @bind-Value="_form.Type" class="form-select border-2">
-                                                @foreach (var t in Enum.GetValues<FoodStreetApp.Shared.Enums.POIType>())
-                                                {
-                                                    <option value="@t">@t.ToString()</option>
-                                                }
-                                            </InputSelect>
-                                        </div>
-                                        <div class="col-6">
+                                        <div class="col-12">
                                             <label class="form-label-saas">Trạng thái</label>
                                             <div class="form-check form-switch ps-5 pt-1">
                                                 <InputCheckbox class="form-check-input" @bind-Value="_form.IsActive" />
@@ -229,6 +220,7 @@ else if (!_isLoading)
                                             </div>
                                         </div>
                                     </div>
+
                                 </div>
                             </div>
                         </div>
@@ -254,52 +246,13 @@ else if (!_isLoading)
                             </div>
                         </div>
 
-                        <!-- AI Translation Features -->
-                        <div class="modal-section border-0 mb-0">
-                            <div class="modal-section-title d-flex justify-content-between align-items-center">
-                                <span><i class="bi bi-translate"></i> Bản dịch đa ngôn ngữ (AI)</span>
-                                <button type="button" class="btn btn-outline-primary btn-sm px-3" @onclick="TranslateWithAi" disabled="@_isTranslating">
-                                    @if (_isTranslating) { <span class="spinner-border spinner-border-sm me-2"></span> }
-                                    <i class="bi bi-stars"></i> Tự động dịch bằng AI
-                                </button>
-                            </div>
-                            <!-- Translation Tabs (Simplified) -->
-                            <div class="nav nav-tabs nav-tabs-saas mb-3">
-                                <button type="button" class="nav-link-saas @(_activeTab == "en" ? "active" : "")" @onclick='() => _activeTab = "en"'>Tiếng Anh</button>
-                                <button type="button" class="nav-link-saas @(_activeTab == "ko" ? "active" : "")" @onclick='() => _activeTab = "ko"'>Tiếng Hàn</button>
-                            </div>
-                            <div class="p-3 bg-light rounded-3">
-                                @if (_activeTab == "en")
-                                {
-                                    <div class="mb-2">
-                                        <label class="x-small fw-bold text-muted">Name (English)</label>
-                                        <InputText class="form-control form-control-sm border-2" @bind-Value="_form.NameEn" />
-                                    </div>
-                                    <div>
-                                        <label class="x-small fw-bold text-muted">Description (English)</label>
-                                        <InputTextArea class="form-control form-control-sm border-2" rows="2" @bind-Value="_form.DescriptionEn" />
-                                    </div>
-                                }
-                                else if (_activeTab == "ko")
-                                {
-                                    <div class="mb-2">
-                                        <label class="x-small fw-bold text-muted">Name (Korean)</label>
-                                        <InputText class="form-control form-control-sm border-2" @bind-Value="_form.NameKo" />
-                                    </div>
-                                    <div>
-                                        <label class="x-small fw-bold text-muted">Description (Korean)</label>
-                                        <InputTextArea class="form-control form-control-sm border-2" rows="2" @bind-Value="_form.DescriptionKo" />
-                                    </div>
-                                }
-                            </div>
-                        </div>
                     </div>
 
                     <div class="modal-footer px-5 py-4 border-top bg-light">
                         <button type="button" class="btn btn-saas btn-saas-secondary" @onclick="CloseEditor">Hủy</button>
                         <button type="submit" class="btn btn-saas btn-saas-primary shadow px-5" disabled="@_isLoadingSave">
                              @if (_isLoadingSave) { <span class="spinner-border spinner-border-sm me-1"></span> }
-                             <i class="bi bi-check-lg me-1"></i> Lưu & Gửi duyệt
+                             <i class="bi bi-check-lg me-1"></i> Gửi duyệt
                         </button>
                     </div>
                 </div>

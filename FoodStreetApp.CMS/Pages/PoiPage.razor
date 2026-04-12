@@ -532,12 +532,14 @@ else if (!_isLoading)
         }
     }
 
-    private void UpdateCoordinates(double lat, double lng)
+    [JSInvokable]
+    public void UpdateCoordinates(double lat, double lng)
     {
         _form.Latitude = Math.Round(lat, 6);
         _form.Longitude = Math.Round(lng, 6);
         StateHasChanged();
     }
+
 
     private async Task SyncManualCoordinatesToMap()
     {
