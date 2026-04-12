@@ -481,7 +481,7 @@ else if (!_isLoading)
                 OwnerId = _form.OwnerId,
                 ImageUrl = !string.IsNullOrEmpty(_form.ImageBase64) ? _form.ImageBase64 : _form.ImageUrl,
                 TextContent = _form.AudioMode == AudioSourceMode.TTS ? _form.TextContent : null,
-                IsApproved = true // Automatically approve for owners so it appears in App
+                IsApproved = false // Set to pending for admin approval
             };
 
             if (_isEditing) DataService.UpdatePoi(poi);
