@@ -345,15 +345,23 @@ public class AdminDataService : IAdminDataService
             .ToListAsync();
 
         var poiIds = topPoiData.Select(x => x.Key).ToList();
-        var poiNames = await _dbContext.Pois
+        var poiDetails = await _dbContext.Pois
             .Where(p => poiIds.Contains(p.Id))
-            .ToDictionaryAsync(p => p.Id, p => p.Name);
+            .ToDictionaryAsync(p => p.Id, p => p);
 
-        var topPois = topPoiData.Select(x => new FoodStreetApp.CMS.Models.TopPoiMetric
-        {
-            PoiId = x.Key,
-            PoiName = poiNames.GetValueOrDefault(x.Key, $"POI #{x.Key}"),
-            Count = x.Count
+        var topPois = topPoiData.Select(x => {
+            var p = poiDetails.GetValueOrDefault(x.Key);
+            return new FoodStreetApp.CMS.Models.TopPoiMetric
+            {
+                PoiId = x.Key,
+                PoiName = p?.Name ?? $"POI #{x.Key}",
+                Count = x.Count,
+                NameVi = p?.NameVi,
+                NameEn = p?.NameEn,
+                NameZh = p?.NameZh,
+                NameKo = p?.NameKo,
+                NameJa = p?.NameJa
+            };
         }).ToList();
 
         // 3. Daily Trends (FIXED: Single query instead of loop)

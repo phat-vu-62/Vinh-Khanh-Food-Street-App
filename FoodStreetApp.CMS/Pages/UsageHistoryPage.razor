@@ -142,7 +142,7 @@
             var result = await DataService.GetUsageHistoriesPagedAsync(_currentPage, _pageSize, _selectedDate, _selectedPoiId, _searchTerm);
             _pagedHistories = result.Items.ToList();
             _totalLogs = result.TotalCount;
-        } catch (Exception ex) {
+        } catch (Exception) {
             Toasts.Error("Lỗi khi tải lịch sử sử dụng.");
         } finally {
             _isLoadingLogs = false;

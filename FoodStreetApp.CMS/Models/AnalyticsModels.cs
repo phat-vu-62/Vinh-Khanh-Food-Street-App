@@ -24,6 +24,13 @@ public class TopPoiMetric
     public int PoiId { get; set; }
     public string PoiName { get; set; } = "Unknown";
     public int Count { get; set; }
+
+    // Language availability indicators
+    public string? NameVi { get; set; }
+    public string? NameEn { get; set; }
+    public string? NameZh { get; set; }
+    public string? NameKo { get; set; }
+    public string? NameJa { get; set; }
 }
 
 public class TrendPoint
