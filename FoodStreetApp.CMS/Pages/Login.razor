@@ -103,9 +103,15 @@
                     
                     AuthProvider.NotifyUserAuthentication(result.Token);
 
-                    // Redirect to root "/" which is protected and handles role-based display
-                    // The user specifically mentioned "/dashboard", I will use "/" as it is the defined route in this app.
-                    NavigationManager.NavigateTo("/");
+                    if (result.Role == "Owner")
+                    {
+                        NavigationManager.NavigateTo("/owner");
+                    }
+                    else
+                    {
+                        NavigationManager.NavigateTo("/");
+                    }
+
                 }
             }
             else
