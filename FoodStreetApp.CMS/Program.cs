@@ -136,6 +136,18 @@ _ = Task.Run(async () => {
             );
             Console.WriteLine("[DB-Background] Admin user seeded successfully.");
         }
+
+        var hasOwner = await dbContext.Users.AnyAsync(u => u.Username == "owner");
+        if (!hasOwner)
+        {
+            Console.WriteLine("[DB-Background] Seeding owner user...");
+            var ownerPasswordHash = BCrypt.Net.BCrypt.HashPassword("123456");
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "INSERT INTO \"Users\" (\"Id\", \"Username\", \"PasswordHash\", \"Role\") VALUES ({0}, {1}, {2}, {3})",
+                Guid.NewGuid(), "owner", ownerPasswordHash, "Owner"
+            );
+            Console.WriteLine("[DB-Background] Owner user seeded successfully.");
+        }
     }
     catch (Exception ex) {
         Console.WriteLine($"[DB Error] Background startup sync failed: {ex.Message}");

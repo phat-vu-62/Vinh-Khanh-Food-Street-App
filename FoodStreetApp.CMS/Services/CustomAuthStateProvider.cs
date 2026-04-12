@@ -19,7 +19,16 @@ public class CustomAuthStateProvider : AuthenticationStateProvider
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        string token = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "token");
+        string? token = null;
+        try
+        {
+            token = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "token");
+        }
+        catch
+        {
+            // JS Interop not available yet (e.g. pre-rendering)
+            return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+        }
 
         if (string.IsNullOrWhiteSpace(token))
         {

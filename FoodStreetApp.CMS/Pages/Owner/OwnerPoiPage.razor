@@ -340,7 +340,8 @@ else if (!_isLoading)
         
         if (Guid.TryParse(userIdClaim, out var id))
         {
-            if (_currentUserId != id)
+            // Always update current user and load, unless it's already exactly this user AND we've loaded before
+            if (_currentUserId != id || _pois.Count == 0 && !_isLoading)
             {
                 _currentUserId = id;
                 await LoadAsync();
@@ -480,7 +481,7 @@ else if (!_isLoading)
                 OwnerId = _form.OwnerId,
                 ImageUrl = !string.IsNullOrEmpty(_form.ImageBase64) ? _form.ImageBase64 : _form.ImageUrl,
                 TextContent = _form.AudioMode == AudioSourceMode.TTS ? _form.TextContent : null,
-                IsApproved = _isEditing ? _form.IsApproved : false // Force approval for new
+                IsApproved = true // Automatically approve for owners so it appears in App
             };
 
             if (_isEditing) DataService.UpdatePoi(poi);

@@ -50,7 +50,8 @@ public class AdminDataService : IAdminDataService
         item.Type = poi.Type;
 
         item.RadiusMeters = poi.RadiusMeters;
-        item.ImageUrl = poi.ImageUrl; // Adding missing ImageUrl mapping
+        item.ImageUrl = poi.ImageUrl;
+        item.OwnerId = poi.OwnerId;
 
         // Persist translation fields
         item.NameVi = poi.NameVi;
