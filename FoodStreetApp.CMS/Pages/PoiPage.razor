@@ -137,7 +137,7 @@ else if (!_isLoading)
             </button>
         </div>
     }
-}
+
 
 @if (_qrModalVisible)
 {
@@ -336,8 +336,11 @@ else if (!_isLoading)
               OnConfirm="DeleteConfirmedAsync"
               OnCancel="CancelDelete" />
 
+
+@code {
     [Parameter] [SupplyParameterFromQuery(Name = "filter")] public string? FilterParam { get; set; }
     private readonly List<POI> _pois = [];
+
     private bool _isLoading;
     private bool _isEditorOpen;
     private bool _isEditing;
