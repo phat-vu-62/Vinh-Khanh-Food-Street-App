@@ -62,6 +62,12 @@ builder.Services.AddScoped<IAdminDataService, AdminDataService>();
 builder.Services.AddScoped<IQRCodeService, QRCodeService>();
 builder.Services.AddScoped<ToastService>();
 
+// Register HttpClient for API
+builder.Services.AddScoped(sp => new HttpClient
+{
+    BaseAddress = new Uri("https://vinh-khanh-food-street-app.onrender.com/")
+});
+
 // Auth Services - Switching to JWT with CustomAuthStateProvider
 builder.Services.AddScoped<CustomAuthStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(s => s.GetRequiredService<CustomAuthStateProvider>());

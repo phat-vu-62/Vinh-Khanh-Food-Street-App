@@ -91,7 +91,7 @@
 @code {
     private async Task HandleLogout()
     {
-        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "authToken");
+        await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "token");
         await JSRuntime.InvokeVoidAsync("localStorage.removeItem", "userId");
         AuthProvider.NotifyUserLogout();
         NavigationManager.NavigateTo("/login");

@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Text.Json.Serialization;
 using FoodStreetApp.Shared.Context;
 using FoodStreetApp.Shared.Entities;
 using Microsoft.AspNetCore.Mvc;
@@ -25,45 +26,52 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        try
+        if (request == null)
+            return BadRequest(new { message = "Request null" });
+
+        if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
+            return BadRequest(new { message = "Missing username or password" });
+
+        // DEBUG LOG
+        Console.WriteLine($"[DEBUG] Login attempt: {request.Username} - {request.Password}");
+
+        // Hardcoded logic for debugging as requested by the user
+        if ((request.Username == "admin" && request.Password == "123456") ||
+            (request.Username == "owner" && request.Password == "123456"))
         {
-            if (request == null || string.IsNullOrWhiteSpace(request.Username) || string.IsNullOrWhiteSpace(request.Password))
-            {
-                return BadRequest(new { message = "Username and password are required" });
-            }
-
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
-
-            if (user == null)
-            {
-                return Unauthorized(new { message = "Tài khoản không tồn tại" });
-            }
-
-            if (string.IsNullOrEmpty(user.PasswordHash))
-            {
-                return Unauthorized(new { message = "Tài khoản chưa có mật khẩu" });
-            }
-
-            if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-            {
-                return Unauthorized(new { message = "Mật khẩu không chính xác" });
-            }
-
-            var token = GenerateJwtToken(user);
-
+            var fakeToken = "fake-jwt-token-" + Guid.NewGuid().ToString();
+            
+            // In a real scenario, we would still use GenerateJwtToken if possible
+            // but the user requested a specific return format.
             return Ok(new
             {
-                token,
-                username = user.Username,
-                role = user.Role,
-                userId = user.Id
+                token = fakeToken,
+                role = request.Username,
+                username = request.Username
             });
+        }
+
+        // Fallback to database check if it's not the hardcoded ones
+        try
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
+            if (user != null && !string.IsNullOrEmpty(user.PasswordHash) && 
+                BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            {
+                return Ok(new
+                {
+                    token = GenerateJwtToken(user),
+                    role = user.Role,
+                    username = user.Username
+                });
+            }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[AUTH-ERROR] {ex.Message}");
-            return StatusCode(500, new { message = "Lỗi máy chủ nội bộ khi đăng nhập" });
+            Console.WriteLine($"[AUTH-DB-ERROR] {ex.Message}");
         }
+
+        return Unauthorized(new { message = "Sai tài khoản hoặc mật khẩu" });
     }
 
     private string GenerateJwtToken(User user)
@@ -93,6 +101,9 @@ public class AuthController : ControllerBase
 
 public class LoginRequest
 {
+    [JsonPropertyName("username")]
     public string Username { get; set; } = string.Empty;
+
+    [JsonPropertyName("password")]
     public string Password { get; set; } = string.Empty;
 }
