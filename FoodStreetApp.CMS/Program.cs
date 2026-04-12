@@ -159,7 +159,7 @@ app.MapPost("/api/auth/login", async (JsonElement body, CmsDbContext db, IConfig
 
         Console.WriteLine($"[AUTH] Login attempt for: {username}");
 
-        // Hardcoded debug login (optional but kept for stability during migration)
+        // Hardcoded debug login
         if (string.Equals(username, "admin", StringComparison.OrdinalIgnoreCase) && password == "123456")
         {
             return Results.Ok(new { 
@@ -168,15 +168,28 @@ app.MapPost("/api/auth/login", async (JsonElement body, CmsDbContext db, IConfig
                 username = "admin" 
             });
         }
+        if (string.Equals(username, "owner", StringComparison.OrdinalIgnoreCase) && password == "123456")
+        {
+            return Results.Ok(new { 
+                token = GenerateToken("owner", "Owner", cfg), 
+                role = "Owner", 
+                username = "owner" 
+            });
+        }
 
         var user = await db.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
         if (user != null && !string.IsNullOrEmpty(user.PasswordHash))
         {
             if (BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
+                // Normalize role string to Capitalized for the frontend
+                var normalizedRole = user.Role;
+                if (string.Equals(normalizedRole, "admin", StringComparison.OrdinalIgnoreCase)) normalizedRole = "Admin";
+                if (string.Equals(normalizedRole, "owner", StringComparison.OrdinalIgnoreCase)) normalizedRole = "Owner";
+
                 return Results.Ok(new { 
-                    token = GenerateToken(user.Username, user.Role, cfg), 
-                    role = user.Role, 
+                    token = GenerateToken(user.Username, normalizedRole, cfg), 
+                    role = normalizedRole, 
                     username = user.Username 
                 });
             }
