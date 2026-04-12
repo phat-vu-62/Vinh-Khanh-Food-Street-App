@@ -19,6 +19,8 @@ public class AdminDataService : IAdminDataService
     }
 
     public IReadOnlyCollection<POI> GetPois() => _dbContext.Pois.OrderBy(x => x.Id).ToList();
+    public IReadOnlyCollection<POI> GetPoisByOwnerId(Guid ownerId) => _dbContext.Pois.Where(x => x.OwnerId == ownerId).OrderBy(x => x.Id).ToList();
+
 
     public POI? GetPoiById(int id) => _dbContext.Pois.FirstOrDefault(x => x.Id == id);
 
@@ -297,7 +299,7 @@ public class AdminDataService : IAdminDataService
         return translatedCount;
     }
 
-    public async Task<FoodStreetApp.CMS.Models.AnalyticsSummary> GetAnalyticsSummaryAsync(DateTime? startDate = null, DateTime? endDate = null)
+    public async Task<FoodStreetApp.CMS.Models.AnalyticsSummary> GetAnalyticsSummaryAsync(DateTime? startDate = null, DateTime? endDate = null, Guid? ownerId = null)
     {
         var start = startDate?.ToUniversalTime() ?? DateTime.UtcNow.Date.AddDays(-30).ToUniversalTime();
         var end = endDate?.ToUniversalTime() ?? DateTime.UtcNow.ToUniversalTime();
@@ -305,7 +307,19 @@ public class AdminDataService : IAdminDataService
         var query = _dbContext.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= start && h.VisitedAtUtc <= end);
 
+        // If ownerId is provided, filter history by the owner's POIs
+        if (ownerId.HasValue)
+        {
+            var myPoiIds = await _dbContext.Pois
+                .Where(p => p.OwnerId == ownerId.Value)
+                .Select(p => p.Id)
+                .ToListAsync();
+            
+            query = query.Where(h => myPoiIds.Contains(h.PoiId));
+        }
+
         // 1. Basic KPIs in fewer roundtrips
+
         var stats = await query
             .GroupBy(h => 1)
             .Select(g => new
@@ -384,8 +398,9 @@ public class AdminDataService : IAdminDataService
             PeakHour = peakHourStr,
             EngagementRate = stats.TotalAudio > 0 ? (double)stats.HighEngagement * 100 / stats.TotalAudio : 0,
             DailyTrends = trends,
-            PendingApprovals = await _dbContext.Pois.CountAsync(p => !p.IsApproved)
+            PendingApprovals = await _dbContext.Pois.CountAsync(p => !p.IsApproved && (!ownerId.HasValue || p.OwnerId == ownerId.Value))
         };
+
 
     }
 

@@ -5,6 +5,8 @@ namespace FoodStreetApp.CMS.Interfaces;
 public interface IAdminDataService
 {
     IReadOnlyCollection<POI> GetPois();
+    IReadOnlyCollection<POI> GetPoisByOwnerId(Guid ownerId);
+
     POI? GetPoiById(int id);
     POI AddPoi(POI poi);
     bool UpdatePoi(POI poi);
@@ -46,7 +48,8 @@ public interface IAdminDataService
     /// <summary>
     /// Gets aggregated analytics metrics for the specified date range.
     /// </summary>
-    Task<FoodStreetApp.CMS.Models.AnalyticsSummary> GetAnalyticsSummaryAsync(DateTime? startDate = null, DateTime? endDate = null);
+    Task<FoodStreetApp.CMS.Models.AnalyticsSummary> GetAnalyticsSummaryAsync(DateTime? startDate = null, DateTime? endDate = null, Guid? ownerId = null);
+
 
     /// <summary>
     /// Gets a paged list of usage histories with optional filtering.

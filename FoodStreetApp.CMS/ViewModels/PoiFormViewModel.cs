@@ -35,6 +35,8 @@ public class PoiFormViewModel
     public AudioSourceMode AudioMode { get; set; } = AudioSourceMode.File;
     public string? ImageUrl { get; set; }
     public string? ImageBase64 { get; set; }
+    public Guid? OwnerId { get; set; }
+
 
     // Translation fields
     public string? NameVi { get; set; }
