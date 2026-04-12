@@ -15,7 +15,7 @@
             <div class="text-center mb-4">
                 <i class="bi bi-egg-fried fs-1 text-primary"></i>
                 <h2 class="fw-bold mt-2">Food Street App</h2>
-                <p class="text-muted">Đăng nhập CMS (Debug Mode)</p>
+                <p class="text-muted">Đăng nhập CMS</p>
             </div>
 
             @if (!string.IsNullOrEmpty(errorMessage))
@@ -31,7 +31,7 @@
                     <label class="form-label text-muted small fw-bold">USERNAME</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0"><i class="bi bi-person"></i></span>
-                        <InputText @bind-Value="loginRequest.Username" class="form-control bg-light border-start-0" placeholder="admin / owner" required />
+                        <InputText @bind-Value="loginRequest.Username" class="form-control bg-light border-start-0" placeholder="Tài khoản" required />
                     </div>
                 </div>
 
@@ -39,7 +39,7 @@
                     <label class="form-label text-muted small fw-bold">PASSWORD</label>
                     <div class="input-group">
                         <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock"></i></span>
-                        <InputText @bind-Value="loginRequest.Password" type="password" class="form-control bg-light border-start-0" placeholder="123456" required />
+                        <InputText @bind-Value="loginRequest.Password" type="password" class="form-control bg-light border-start-0" placeholder="Mật khẩu" required />
                     </div>
                 </div>
 

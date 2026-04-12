@@ -156,6 +156,13 @@ else
                                     <span class="fw-semibold">@p.PoiName</span>
                                     <span class="text-muted">@p.Count lượt</span>
                                 </div>
+                                <div class="d-flex gap-1 align-items-center mb-1">
+                                    <span class="badge @(string.IsNullOrWhiteSpace(p.NameVi) || p.NameVi == p.PoiName ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Vietnamese">VI</span>
+                                    <span class="badge @(string.IsNullOrWhiteSpace(p.NameEn) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="English">EN</span>
+                                    <span class="badge @(string.IsNullOrWhiteSpace(p.NameZh) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Chinese">ZH</span>
+                                    <span class="badge @(string.IsNullOrWhiteSpace(p.NameKo) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Korean">KO</span>
+                                    <span class="badge @(string.IsNullOrWhiteSpace(p.NameJa) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Japanese">JA</span>
+                                </div>
                                 <div class="progress" style="height: 12px; border-radius: 6px;">
                                     <div class="progress-bar bg-primary" 
                                          style="width: @(Math.Min(100, (p.Count * 100 / (_summary.TopPois.First().Count))))%;"></div>
@@ -193,7 +200,7 @@ else
         try
         {
             // Move fast queries to a separate block if needed, but for now we defer everything heavy
-            _poiCount = DataService.GetPois().Count;
+            _poiCount = DataService.GetPois().Count(p => p.IsApproved);
             _audioCount = DataService.GetAudios().Count;
             
             _summary = await DataService.GetAnalyticsSummaryAsync();

@@ -113,8 +113,11 @@ else if (!_isLoading)
                             else
                             {
                                 <div class="d-flex gap-1 align-items-center">
-                                    <span class="badge @(string.IsNullOrWhiteSpace(poi.NameVi) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1">VI</span>
-                                    <span class="badge @(string.IsNullOrWhiteSpace(poi.NameEn) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1">EN</span>
+                                    <span class="badge @(string.IsNullOrWhiteSpace(poi.NameVi) || poi.NameVi == poi.Name ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Vietnamese">VI</span>
+                                    <span class="badge @(string.IsNullOrWhiteSpace(poi.NameEn) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="English">EN</span>
+                                    <span class="badge @(string.IsNullOrWhiteSpace(poi.NameZh) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Chinese">ZH</span>
+                                    <span class="badge @(string.IsNullOrWhiteSpace(poi.NameKo) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Korean">KO</span>
+                                    <span class="badge @(string.IsNullOrWhiteSpace(poi.NameJa) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Japanese">JA</span>
                                 </div>
                                 <span class="x-small text-muted text-uppercase">@poi.Type.ToString()</span>
                             }

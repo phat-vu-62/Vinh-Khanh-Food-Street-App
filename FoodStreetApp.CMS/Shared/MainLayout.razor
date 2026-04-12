@@ -76,7 +76,6 @@
                                         <i class="bi bi-person"></i>
                                     </div>
                                     <span class="small fw-bold">@context.User.Identity?.Name</span>
-                                    <span class="badge bg-info text-dark">@(context.User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value ?? "User")</span>
                                     <button @onclick="HandleLogout" class="btn btn-sm btn-outline-danger ms-2">
                                         <i class="bi bi-box-arrow-right"></i>
                                     </button>
