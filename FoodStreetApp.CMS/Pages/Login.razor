@@ -84,6 +84,7 @@
         try
         {
             // The relative path works because we set BaseAddress in Program.cs
+
             var response = await Http.PostAsJsonAsync("api/auth/login", loginRequest);
             
             // DEBUG LOGGING
@@ -103,7 +104,7 @@
                     
                     AuthProvider.NotifyUserAuthentication(result.Token);
 
-                    if (result.Role == "Owner")
+                    if (string.Equals(result.Role, "Owner", StringComparison.OrdinalIgnoreCase))
                     {
                         NavigationManager.NavigateTo("/owner");
                     }
@@ -111,6 +112,7 @@
                     {
                         NavigationManager.NavigateTo("/");
                     }
+
 
                 }
             }

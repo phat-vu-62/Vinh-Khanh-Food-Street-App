@@ -242,10 +242,57 @@ app.MapPost("/api/POI", (FoodStreetApp.Shared.Entities.POI poi, IAdminDataServic
     return Results.Created($"/api/POI/{created.Id}", created);
 });
 
+// 3. SYNCHRONIZATION ENDPOINTS (For Mobile App)
+app.MapGet("/api/sync/pois", async (CmsDbContext db) =>
+{
+    var pois = await db.Pois
+        // .Where(p => p.IsApproved && p.IsActive) // Recommendation: only sync approved
+        .ToListAsync();
+    return Results.Ok(pois.Select(MapToSyncDto));
+});
+
+app.MapGet("/api/sync/poi-actions", async (string sinceUtc, CmsDbContext db) =>
+{
+    if (!DateTime.TryParse(sinceUtc, out var since)) return Results.BadRequest("Invalid date");
+    var actions = await db.PoiSyncActions
+        .Include(a => a.Poi)
+        .Where(a => a.OccurredAtUtc > since.ToUniversalTime())
+        .ToListAsync();
+
+    return Results.Ok(actions.Select(a => new {
+        a.PoiId,
+        a.Action,
+        a.OccurredAtUtc,
+        Poi = a.Poi != null ? MapToSyncDto(a.Poi) : null
+    }));
+});
+
+static object MapToSyncDto(FoodStreetApp.Shared.Entities.POI p) => new
+{
+    Id = p.Id,
+    Name = p.Name,
+    Latitude = p.Latitude,
+    Longitude = p.Longitude,
+    Radius = p.RadiusMeters,
+    ApproachRadius = 200,
+    Priority = p.Id,
+    Rating = 4.5,
+    ReviewCount = 0,
+    Description = p.Description,
+    AudioFile = p.AudioUrl,
+    TtsText = p.TextContent,
+    TtsTextEn = p.TextContentEn,
+    TtsTextKo = p.TextContentKo,
+    TtsTextZh = p.TextContentZh,
+    TtsTextJa = p.TextContentJa,
+    UseTts = !string.IsNullOrEmpty(p.TextContent),
+    CooldownSeconds = 60,
+    IsActive = p.IsActive && p.IsApproved, 
+    ImageUrl = p.ImageUrl
+};
+
 app.MapGet("/api/Audio", (IAdminDataService service) => Results.Ok(service.GetAudios()));
 app.MapGet("/api/Tour", (IAdminDataService service) => Results.Ok(service.GetTours()));
-
-// ... remaining mappings can be added as needed or rely on existing services
 
 if (!app.Environment.IsDevelopment())
 {
@@ -260,3 +307,4 @@ app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
 app.Run();
+
