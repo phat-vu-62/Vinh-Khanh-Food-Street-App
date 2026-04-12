@@ -14,6 +14,7 @@ public class POI
     public bool IsActive { get; set; } = true;
     public POIType Type { get; set; } = POIType.Food;
     public string? ImageUrl { get; set; }
+    public int? OwnerId { get; set; }
 
     // Translated Fields
     public string? NameVi { get; set; }

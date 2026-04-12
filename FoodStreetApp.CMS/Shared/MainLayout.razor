@@ -1,36 +1,51 @@
 @inherits LayoutComponentBase
+@using FoodStreetApp.CMS.Services
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
 
 <div class="admin-shell">
-    <aside class="sidebar">
-        <div class="sidebar-logo">
-            <i class="bi bi-egg-fried"></i>
-            <span>FOODSTREET CMS</span>
-        </div>
-        
-        <nav class="d-flex flex-column gap-1">
-            <NavLink class="nav-item" href="" Match="NavLinkMatch.All">
-                <i class="bi bi-grid-1x2-fill"></i> Tổng quan
-            </NavLink>
-            <NavLink class="nav-item" href="poi">
-                <i class="bi bi-geo-alt-fill"></i> Địa điểm
-            </NavLink>
-            <NavLink class="nav-item" href="audio">
-                <i class="bi bi-file-earmark-music-fill"></i> Âm thanh
-            </NavLink>
-            <NavLink class="nav-item" href="translations">
-                <i class="bi bi-translate"></i> Bản dịch
-            </NavLink>
-            <NavLink class="nav-item" href="history">
-                <i class="bi bi-bar-chart-fill"></i> Lịch sử
-            </NavLink>
-            <NavLink class="nav-item" href="qrcodes">
-                <i class="bi bi-qr-code-scan"></i> Mã QR
-            </NavLink>
-            <NavLink class="nav-item" href="tours">
-                <i class="bi bi-map-fill"></i> Lộ trình
-            </NavLink>
-        </nav>
-    </aside>
+    <AuthorizeView>
+        <Authorized>
+            <aside class="sidebar">
+                <div class="sidebar-logo">
+                    <i class="bi bi-egg-fried"></i>
+                    <span>FOODSTREET CMS</span>
+                </div>
+                
+                <nav class="d-flex flex-column gap-1">
+                    <AuthorizeView Roles="admin" Context="adminContext">
+                        <NavLink class="nav-item" href="admin/dashboard" Match="NavLinkMatch.All">
+                            <i class="bi bi-grid-1x2-fill"></i> Tổng quan Admin
+                        </NavLink>
+                        <NavLink class="nav-item" href="poi">
+                            <i class="bi bi-geo-alt-fill"></i> Địa điểm
+                        </NavLink>
+                        <NavLink class="nav-item" href="audio">
+                            <i class="bi bi-file-earmark-music-fill"></i> Âm thanh
+                        </NavLink>
+                        <NavLink class="nav-item" href="translations">
+                            <i class="bi bi-translate"></i> Bản dịch
+                        </NavLink>
+                        <NavLink class="nav-item" href="history">
+                            <i class="bi bi-bar-chart-fill"></i> Lịch sử
+                        </NavLink>
+                        <NavLink class="nav-item" href="qrcodes">
+                            <i class="bi bi-qr-code-scan"></i> Mã QR
+                        </NavLink>
+                        <NavLink class="nav-item" href="tours">
+                            <i class="bi bi-map-fill"></i> Lộ trình
+                        </NavLink>
+                    </AuthorizeView>
+
+                    <AuthorizeView Roles="owner" Context="ownerContext">
+                        <NavLink class="nav-item" href="owner/dashboard" Match="NavLinkMatch.All">
+                            <i class="bi bi-grid-1x2-fill"></i> Owner Dashboard
+                        </NavLink>
+                    </AuthorizeView>
+                </nav>
+            </aside>
+        </Authorized>
+    </AuthorizeView>
 
     <main class="main-container">
         <header class="top-header">
@@ -40,13 +55,26 @@
                     <span class="badge bg-light text-muted border px-2 py-1">Vinh Khánh St.</span>
                 </div>
                 <div class="d-flex align-items-center gap-3">
-                    <button class="btn btn-link text-muted p-1"><i class="bi bi-bell"></i></button>
-                    <div class="d-flex align-items-center gap-2 ps-3 border-start">
-                        <div class="text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background-color: var(--primary-soft); color: var(--primary-color);">
-                            <i class="bi bi-person"></i>
-                        </div>
-                        <span class="small fw-bold">Adminstrator</span>
-                    </div>
+                    <AuthorizeView>
+                        <Authorized>
+                            <div class="d-flex align-items-center gap-3">
+                                <button class="btn btn-link text-muted p-1"><i class="bi bi-bell"></i></button>
+                                <div class="d-flex align-items-center gap-2 ps-3 border-start">
+                                    <div class="text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background-color: rgba(0, 210, 255, 0.1); color: #00d2ff;">
+                                        <i class="bi bi-person"></i>
+                                    </div>
+                                    <span class="small fw-bold">@context.User.Identity?.Name</span>
+                                    <span class="badge bg-info text-dark">@context.User.Claims.FirstOrDefault(c => c.Type == System.Security.Claims.ClaimTypes.Role)?.Value</span>
+                                    <button class="btn btn-sm btn-outline-danger ms-2" @onclick="HandleLogout">
+                                        <i class="bi bi-box-arrow-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </Authorized>
+                        <NotAuthorized>
+                            <a href="/login" class="btn btn-sm btn-primary">Sign In</a>
+                        </NotAuthorized>
+                    </AuthorizeView>
                 </div>
             </div>
         </header>
@@ -58,3 +86,11 @@
 </div>
 
 <ToastHost />
+
+@code {
+    private async Task HandleLogout()
+    {
+        await AuthService.Logout();
+        NavigationManager.NavigateTo("/login");
+    }
+}

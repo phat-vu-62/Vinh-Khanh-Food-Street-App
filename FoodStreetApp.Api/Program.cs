@@ -4,6 +4,10 @@ using FoodStreetApp.Api.Services;
 using FoodStreetApp.Shared.Entities;
 using FoodStreetApp.Shared.Context;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +27,37 @@ builder.Services.AddHttpClient<IGeminiTranslationService, GeminiTranslationServi
 builder.Services.AddSingleton<IGeofenceService, GeofenceService>();
 builder.Services.AddSingleton<INarrationEngine, NarrationEngine>();
 builder.Services.AddScoped<IQRCodeService, QRCodeService>();
+
+// JWT Authentication Configuration
+var jwtSettings = builder.Configuration.GetSection("Jwt");
+var key = Encoding.ASCII.GetBytes(jwtSettings["Key"]!);
+
+builder.Services.AddAuthentication(x =>
+{
+    x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(x =>
+{
+    x.RequireHttpsMetadata = false;
+    x.SaveToken = true;
+    x.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidAudience = jwtSettings["Audience"],
+        ClockSkew = TimeSpan.Zero
+    };
+});
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("admin"));
+    options.AddPolicy("OwnerOnly", policy => policy.RequireRole("owner"));
+});
 
 // Configure Port at builder stage - Clean and resilient for Render/Docker
 var port = Environment.GetEnvironmentVariable("PORT") ?? "10000";
@@ -73,6 +108,9 @@ app.MapGet("/qr/{poiId}", (int poiId) =>
     
     return Results.Content(html, "text/html");
 });
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 

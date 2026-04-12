@@ -3,6 +3,8 @@ using FoodStreetApp.Shared.Context;
 using FoodStreetApp.CMS.Services;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using Microsoft.AspNetCore.Components.Authorization;
+using FoodStreetApp.CMS.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,6 +60,11 @@ builder.Services.AddHttpClient<IGeminiTranslationService, GeminiTranslationServi
 builder.Services.AddScoped<IAdminDataService, AdminDataService>();
 builder.Services.AddScoped<IQRCodeService, QRCodeService>();
 builder.Services.AddScoped<ToastService>();
+
+// Auth Services
+builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddAuthorizationCore();
 
 var app = builder.Build();
 

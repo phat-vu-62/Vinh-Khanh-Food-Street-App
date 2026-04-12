@@ -1,0 +1,190 @@
+@page "/login"
+@using FoodStreetApp.CMS.Services
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<div class="login-container">
+    <div class="login-card">
+        <h1>Food Street App</h1>
+        <p>Please sign in to your account</p>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger">@errorMessage</div>
+        }
+
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input id="username" type="text" class="form-control" @bind="username" placeholder="Enter username" />
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input id="password" type="password" class="form-control" @bind="password" placeholder="Enter password" />
+        </div>
+
+        <button class="btn btn-primary w-100" @onclick="HandleLogin" disabled="@isProcessing">
+            @if (isProcessing)
+            {
+                <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                <span> Logging in...</span>
+            }
+            else
+            {
+                <span>Login</span>
+            }
+        </button>
+
+        <div class="seed-info">
+            <small>Demo: admin / 123456 or owner / 123456</small>
+        </div>
+    </div>
+</div>
+
+<style>
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 80vh;
+        background: radial-gradient(circle at top right, #1a1a2e, #16213e);
+        color: white;
+    }
+
+    .login-card {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        padding: 40px;
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+        width: 100%;
+        max-width: 400px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    h1 {
+        font-weight: 700;
+        margin-bottom: 10px;
+        background: linear-gradient(45deg, #00d2ff, #3a7bd5);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        text-align: center;
+    }
+
+    p {
+        text-align: center;
+        opacity: 0.7;
+        margin-bottom: 30px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 0.9rem;
+        opacity: 0.8;
+    }
+
+    .form-control {
+        background: rgba(0,0,0,0.2);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: white;
+        padding: 12px;
+        border-radius: 10px;
+        transition: all 0.3s;
+    }
+
+    .form-control:focus {
+        background: rgba(0,0,0,0.3);
+        border-color: #00d2ff;
+        box-shadow: 0 0 10px rgba(0, 210, 255, 0.3);
+        outline: none;
+    }
+
+    .btn-primary {
+        background: linear-gradient(45deg, #00d2ff, #3a7bd5);
+        border: none;
+        padding: 12px;
+        border-radius: 10px;
+        font-weight: 600;
+        margin-top: 10px;
+        transition: transform 0.2s;
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 210, 255, 0.4);
+    }
+
+    .alert {
+        padding: 12px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        font-size: 0.9rem;
+    }
+
+    .seed-info {
+        text-align: center;
+        margin-top: 20px;
+        opacity: 0.5;
+    }
+</style>
+
+@code {
+    private string username = "";
+    private string password = "";
+    private string errorMessage = "";
+    private bool isProcessing = false;
+
+    private async Task HandleLogin()
+    {
+        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+        {
+            errorMessage = "Username and password are required.";
+            return;
+        }
+
+        errorMessage = "";
+        isProcessing = true;
+
+        try
+        {
+            var success = await AuthService.Login(username, password);
+
+            if (success)
+            {
+                var role = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "userRole");
+                
+                if (role == "admin")
+                {
+                    NavigationManager.NavigateTo("/admin/dashboard");
+                }
+                else if (role == "owner")
+                {
+                    NavigationManager.NavigateTo("/owner/dashboard");
+                }
+                else
+                {
+                    NavigationManager.NavigateTo("/");
+                }
+            }
+            else
+            {
+                errorMessage = "Invalid username or password.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "An error occurred during login. Please try again.";
+            Console.WriteLine(ex.Message);
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+}

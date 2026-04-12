@@ -18,6 +18,7 @@ public class CmsDbContext : DbContext
     public DbSet<Translation> Translations => Set<Translation>();
     public DbSet<UserHistory> UserHistories => Set<UserHistory>();
     public DbSet<PoiSyncAction> PoiSyncActions => Set<PoiSyncAction>();
+    public DbSet<User> Users => Set<User>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -44,5 +45,11 @@ public class CmsDbContext : DbContext
 
         modelBuilder.Entity<PoiSyncAction>()
             .HasIndex(x => x.PoiId);
+
+        // Seed Users
+        modelBuilder.Entity<User>().HasData(
+            new User { Id = 1, Username = "admin", Role = "admin", PasswordHash = BCrypt.Net.BCrypt.HashPassword("123456") },
+            new User { Id = 2, Username = "owner", Role = "owner", PasswordHash = BCrypt.Net.BCrypt.HashPassword("123456") }
+        );
     }
 }
