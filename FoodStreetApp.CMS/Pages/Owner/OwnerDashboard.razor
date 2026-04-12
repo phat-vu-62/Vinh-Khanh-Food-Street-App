@@ -4,6 +4,7 @@
 @inject IAdminDataService AdminDataService
 @inject IJSRuntime JSRuntime
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "owner")]
+@inject AuthenticationStateProvider AuthStateProvider
 
 <div class="dashboard-container">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -154,12 +155,15 @@
 @code {
     private List<POI> myPois = new();
     private bool isLoading = true;
-    private int currentUserId;
+    private Guid currentUserId;
 
     protected override async Task OnInitializedAsync()
     {
-        var idStr = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "userId");
-        if (int.TryParse(idStr, out var id))
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var userIdClaim = user.FindFirst("userId")?.Value;
+        
+        if (Guid.TryParse(userIdClaim, out var id))
         {
             currentUserId = id;
             await LoadMyPois();
