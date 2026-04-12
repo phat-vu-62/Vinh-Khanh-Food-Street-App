@@ -27,13 +27,16 @@ public class CustomAuthStateProvider : AuthenticationStateProvider
         }
 
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("bearer", token);
-
-        return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity(ParseClaimsFromJwt(token), "jwt")));
+        var claims = ParseClaimsFromJwt(token);
+        var identity = new ClaimsIdentity(claims, "jwt", "unique_name", "role");
+        return new AuthenticationState(new ClaimsPrincipal(identity));
     }
 
     public void NotifyUserAuthentication(string token)
     {
-        var authenticatedUser = new ClaimsPrincipal(new ClaimsIdentity(ParseClaimsFromJwt(token), "jwt"));
+        var claims = ParseClaimsFromJwt(token);
+        var identity = new ClaimsIdentity(claims, "jwt", "unique_name", "role");
+        var authenticatedUser = new ClaimsPrincipal(identity);
         var authState = Task.FromResult(new AuthenticationState(authenticatedUser));
         NotifyAuthenticationStateChanged(authState);
     }

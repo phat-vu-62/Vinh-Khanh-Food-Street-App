@@ -3,7 +3,7 @@
 @using FoodStreetApp.CMS.Interfaces
 @inject IAdminDataService AdminDataService
 @inject IJSRuntime JSRuntime
-@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "owner")]
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
 @inject AuthenticationStateProvider AuthStateProvider
 
 <div class="dashboard-container">
