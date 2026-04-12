@@ -59,10 +59,40 @@ public class CustomAuthStateProvider : AuthenticationStateProvider
 
     private IEnumerable<Claim> ParseClaimsFromJwt(string jwt)
     {
+        var claims = new List<Claim>();
         var payload = jwt.Split('.')[1];
         var jsonBytes = ParseBase64WithoutPadding(payload);
         var keyValuePairs = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonBytes);
-        return keyValuePairs.Select(kvp => new Claim(kvp.Key, kvp.Value.ToString()));
+
+        if (keyValuePairs != null)
+        {
+            foreach (var kvp in keyValuePairs)
+            {
+                var value = kvp.Value.ToString();
+                if (value == null) continue;
+
+                // Handle array roles if present
+                if (value.Trim().StartsWith("["))
+                {
+                    var values = JsonSerializer.Deserialize<string[]>(value);
+                    if (values != null)
+                    {
+                        foreach (var val in values) claims.Add(new Claim(kvp.Key, val));
+                    }
+                }
+                else
+                {
+                    claims.Add(new Claim(kvp.Key, value));
+                }
+
+                // Map common JWT claims to standard claim types for better compatibility
+                if (kvp.Key == "role" || kvp.Key == "roles") 
+                    claims.Add(new Claim(ClaimTypes.Role, value));
+                if (kvp.Key == "unique_name" || kvp.Key == "sub")
+                    claims.Add(new Claim(ClaimTypes.Name, value));
+            }
+        }
+        return claims;
     }
 
     private byte[] ParseBase64WithoutPadding(string base64)

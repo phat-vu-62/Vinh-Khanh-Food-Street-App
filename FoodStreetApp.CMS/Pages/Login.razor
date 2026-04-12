@@ -106,11 +106,11 @@
 
                     if (string.Equals(result.Role, "Owner", StringComparison.OrdinalIgnoreCase))
                     {
-                        NavigationManager.NavigateTo("/owner");
+                        NavigationManager.NavigateTo("/owner", forceLoad: true);
                     }
                     else
                     {
-                        NavigationManager.NavigateTo("/");
+                        NavigationManager.NavigateTo("/", forceLoad: true);
                     }
 
 

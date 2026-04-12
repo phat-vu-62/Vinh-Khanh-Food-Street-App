@@ -65,15 +65,23 @@ builder.Services.AddScoped<IQRCodeService, QRCodeService>();
 builder.Services.AddScoped<ToastService>();
 
 // Register HttpClient for internal/external API calls
-builder.Services.AddScoped(sp => new HttpClient
+builder.Services.AddScoped(sp => 
 {
-    BaseAddress = new Uri("https://vinh-khanh-food-street-app.onrender.com/")
+    // If we're on Render, we use the public URL. Otherwise, we use localhost.
+    var isRender = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("RENDER"));
+    var baseUrl = isRender 
+        ? "https://vinh-khanh-food-street-app.onrender.com/" 
+        : $"http://localhost:{port}/";
+    
+    return new HttpClient { BaseAddress = new Uri(baseUrl) };
 });
 
-// Auth Services - Switching to JWT
+// Auth Services
+builder.Services.AddAuthentication(defaultScheme: "Cookies")
+    .AddCookie("Cookies");
 builder.Services.AddScoped<CustomAuthStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(s => s.GetRequiredService<CustomAuthStateProvider>());
-builder.Services.AddAuthorizationCore(options =>
+builder.Services.AddAuthorization(options =>
 {
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
     options.AddPolicy("OwnerOnly", policy => policy.RequireRole("Owner"));
