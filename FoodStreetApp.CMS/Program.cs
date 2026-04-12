@@ -311,6 +311,18 @@ static object MapToSyncDto(FoodStreetApp.Shared.Entities.POI p) => new
     ImageUrl = p.ImageUrl
 };
 
+// 4. USAGE HISTORY & TRACKING
+app.MapPost("/api/history", async (FoodStreetApp.Shared.Entities.UserHistory history, CmsDbContext db) =>
+{
+    if (history.PoiId <= 0 || string.IsNullOrEmpty(history.Action)) 
+        return Results.BadRequest("Invalid history data");
+
+    history.VisitedAtUtc = DateTime.UtcNow;
+    db.UserHistories.Add(history);
+    await db.SaveChangesAsync();
+    return Results.Ok(new { success = true });
+});
+
 app.MapGet("/api/Audio", (IAdminDataService service) => Results.Ok(service.GetAudios()));
 app.MapGet("/api/Tour", (IAdminDataService service) => Results.Ok(service.GetTours()));
 

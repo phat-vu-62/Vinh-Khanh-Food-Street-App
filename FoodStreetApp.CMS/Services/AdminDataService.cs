@@ -326,7 +326,7 @@ public class AdminDataService : IAdminDataService
             .Select(g => new
             {
                 TotalAudio = g.Count(l => l.Action == "audio_played" || l.Action == "Listen"),
-                TotalViews = g.Count(l => l.Action == "poi_viewed" || l.Action == "POI viewed"),
+                TotalViews = g.Count(l => l.Action == "poi_viewed" || l.Action == "POI viewed" || l.Action == "qr_scanned"),
                 HighEngagement = g.Count(l => (l.Action == "audio_played" || l.Action == "Listen") && l.DurationSeconds > 10),
                 AvgDuration = g.Where(l => l.DurationSeconds.HasValue && l.DurationSeconds > 0).Average(l => (double?)l.DurationSeconds) ?? 0,
                 UniqueUsers = g.Select(l => l.UserId).Distinct().Count()

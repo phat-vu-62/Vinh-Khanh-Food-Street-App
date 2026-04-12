@@ -44,7 +44,7 @@ namespace FoodStreetApp.Services
                 };
 
                 // UPDATED PRODUCTION URL: Ensuring we hit the correct endpoint on the CMS Host
-                var trackingUrl = "https://vinh-khanh-food-street-app.onrender.com/api/UsageHistory";
+                var trackingUrl = "https://vinh-khanh-food-street-app.onrender.com/api/history";
                 
                 // Detailed debug logging as requested
                 System.Diagnostics.Debug.WriteLine($"[DEBUG-TRACK] SENDING: {action} (POI:{poiId}, QR:{qrCode ?? "None"})");
