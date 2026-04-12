@@ -41,9 +41,13 @@
 
                     <AuthorizeView Roles="Owner" Context="ownerContext">
                         <NavLink class="nav-item" href="owner" Match="NavLinkMatch.All">
-                            <i class="bi bi-grid-1x2-fill"></i> Owner Dashboard
+                            <i class="bi bi-grid-1x2-fill"></i> Tổng quan
+                        </NavLink>
+                        <NavLink class="nav-item" href="owner/poi">
+                            <i class="bi bi-geo-alt-fill"></i> Địa điểm
                         </NavLink>
                     </AuthorizeView>
+
                 </nav>
             </aside>
         </Authorized>

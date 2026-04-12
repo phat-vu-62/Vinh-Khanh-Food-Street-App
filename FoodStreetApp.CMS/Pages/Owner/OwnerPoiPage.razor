@@ -1,0 +1,510 @@
+@page "/owner/poi"
+@inject IAdminDataService DataService
+@inject ToastService Toasts
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+@inject IConfiguration Configuration
+@inject AuthenticationStateProvider AuthStateProvider
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
+@using Microsoft.JSInterop
+@using Microsoft.AspNetCore.Components.Forms
+@using System.IO
+@using FoodStreetApp.Shared.Entities
+@using FoodStreetApp.CMS.ViewModels
+@using FoodStreetApp.CMS.Models
+
+<div class="d-flex justify-content-between align-items-center mb-5">
+    <div>
+        <h1 class="h3 fw-bold mb-1">Quản lý địa điểm của tôi</h1>
+        <p class="text-muted mb-0">Chỉnh sửa thông tin, tọa độ và xem trạng thái duyệt của các địa điểm bạn sở hữu.</p>
+    </div>
+    <button class="btn btn-saas btn-saas-primary shadow-sm" @onclick="StartCreate">
+        <i class="bi bi-plus-lg"></i> Thêm địa điểm mới
+    </button>
+</div>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-4 mb-5">
+    <div class="input-group" style="max-width:480px;">
+        <span class="input-group-text bg-white border-end-0 rounded-start-2 shadow-sm"><i class="bi bi-search text-muted"></i></span>
+        <input class="form-control border-start-0 rounded-end-2 shadow-sm" 
+               placeholder="Tìm kiếm địa điểm..." 
+               @bind="_searchTerm" 
+               @bind:event="oninput" 
+               @bind:after="() => { _currentPage = 1; }" />
+    </div>
+    <div class="d-flex align-items-center gap-3">
+        <span class="text-muted small">Hiển thị @GetPagedPois().Count() trên @GetFilteredPois().Count() mục</span>
+        <div class="btn-group shadow-sm rounded-2 overflow-hidden">
+            <button class="btn btn-saas btn-saas-secondary py-1 px-3 active border-0"><i class="bi bi-grid-fill"></i></button>
+            <button class="btn btn-saas btn-saas-secondary py-1 px-3 border-0"><i class="bi bi-list"></i></button>
+        </div>
+    </div>
+</div>
+
+<LoadingState IsLoading="_isLoading" Message="Đang tải danh sách..." />
+
+@if (!_isLoading && _pois.Count == 0)
+{
+    @if (string.IsNullOrWhiteSpace(_searchTerm))
+    {
+        <div class="saas-card p-5 text-center border-0 shadow-sm">
+            <i class="bi bi-geo-alt text-muted" style="font-size: 3rem;"></i>
+            <h5 class="fw-bold mt-3">Chưa có địa điểm nào</h5>
+            <p class="text-muted small">Hãy bắt đầu bằng cách tạo địa điểm đầu tiên cho cửa hàng của bạn.</p>
+            <button class="btn btn-saas btn-saas-primary mt-3" @onclick="StartCreate">Bắt đầu ngay</button>
+        </div>
+    }
+    else
+    {
+        <div class="text-center p-5">
+            <i class="bi bi-search text-muted fs-1"></i>
+            <p class="mt-2 text-muted">Không tìm thấy địa điểm nào khớp với từ khóa.</p>
+        </div>
+    }
+}
+else if (!_isLoading)
+{
+    <div class="row g-4">
+        @foreach (var poi in GetPagedPois())
+        {
+            <div class="col-md-6 col-xl-4">
+                <div class="saas-card gallery-card h-100 d-flex flex-column">
+                    <div class="position-relative">
+                        <img class="gallery-card-img" 
+                             src="@(string.IsNullOrEmpty(poi.ImageUrl) ? $"https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=80&sig={poi.Id}" : poi.ImageUrl)" 
+                             alt="@poi.Name" />
+                        <div class="position-absolute top-0 end-0 p-2 d-flex flex-column gap-1 align-items-end">
+                            <span class="saas-badge @(poi.IsActive ? "badge-active" : "badge-inactive") shadow-sm">
+                                @(poi.IsActive ? "● Hiển thị" : "○ Đã ẩn")
+                            </span>
+                            @if (!poi.IsApproved)
+                            {
+                                <span class="badge bg-danger shadow-sm py-1 px-2" style="font-size: 0.65rem;">
+                                    <i class="bi bi-clock-history me-1"></i> CHỜ DUYỆT
+                                </span>
+                            }
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 flex-grow-1 d-flex flex-column" style="min-height: 200px;">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h6 class="fw-bold text-dark mb-0 text-truncate" style="max-width: 80%;">@poi.Name</h6>
+                            <div class="dropdown">
+                                <button class="btn btn-link link-muted p-0" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0">
+                                    <li><button class="dropdown-item" @onclick="() => StartEdit(poi)"><i class="bi bi-pencil me-2"></i> Chỉnh sửa</button></li>
+                                    <li><button class="dropdown-item" @onclick="() => ShowQrCode(poi)"><i class="bi bi-qr-code me-2"></i> Xuất mã QR</button></li>
+                                    <li><button class="dropdown-item text-danger" @onclick="() => AskDelete(poi)"><i class="bi bi-trash me-2"></i> Xóa bỏ</button></li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <p class="text-muted small mb-3 flex-grow-1 line-clamp-2" style="height: 3rem; overflow: hidden;">
+                            @poi.Description
+                        </p>
+
+                        <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
+                            @if (!poi.IsApproved)
+                            {
+                                <span class="text-danger small fw-bold"><i class="bi bi-hourglass-split me-1"></i> Đang chờ Admin duyệt</span>
+                            }
+                            else
+                            {
+                                <div class="d-flex gap-1 align-items-center">
+                                    <span class="badge @(string.IsNullOrWhiteSpace(poi.NameVi) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1">VI</span>
+                                    <span class="badge @(string.IsNullOrWhiteSpace(poi.NameEn) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1">EN</span>
+                                </div>
+                                <span class="x-small text-muted">@poi.Type.ToString()</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (GetTotalPoiPages() > 1)
+{
+    <div class="d-flex justify-content-center align-items-center mt-5 gap-3">
+        <button class="btn btn-saas btn-saas-secondary" disabled="@(_currentPage <= 1)" @onclick="() => _currentPage--">
+            <i class="bi bi-chevron-left"></i>
+        </button>
+        <span class="small fw-bold text-muted">Trang @_currentPage / @GetTotalPoiPages()</span>
+        <button class="btn btn-saas btn-saas-secondary" disabled="@(_currentPage >= GetTotalPoiPages())" @onclick="() => _currentPage++">
+            <i class="bi bi-chevron-right"></i>
+        </button>
+    </div>
+}
+
+@if (_qrModalVisible)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(8px);">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content p-4 text-center border-0 shadow-lg rounded-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h4 class="modal-title fw-bold m-0"><i class="bi bi-qr-code text-primary"></i> Mã QR Địa điểm</h4>
+                    <button type="button" class="btn-close" @onclick="() => _qrModalVisible = false"></button>
+                </div>
+                <h5 class="fw-bold text-dark">@_selectedPoiForQr?.Name</h5>
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=@(Uri.EscapeDataString($"{NavigationManager.BaseUri.TrimEnd('/')}/listen/{_selectedPoiForQr?.Id}"))" 
+                     alt="QR Code" width="200" height="200" class="img-fluid my-4 p-2 bg-white rounded border" />
+                
+                <div class="d-grid gap-2">
+                     <a class="btn btn-primary shadow-sm" href="/listen/@_selectedPoiForQr?.Id" target="_blank">Xem Link trực tiếp</a>
+                     <button class="btn btn-link text-muted x-small text-decoration-none" @onclick="() => _qrModalVisible = false">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_isEditorOpen)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px);">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" style="max-width: 900px;">
+            <EditForm Model="_form" OnValidSubmit="SaveAsync" class="h-100 w-100">
+                <div class="modal-content border-0 shadow-lg" style="border-radius: 20px; overflow: hidden; height: auto; max-height: 90vh;">
+                    <DataAnnotationsValidator />
+                    
+                    <div class="modal-header px-5 py-4 border-bottom bg-white">
+                        <div>
+                            <h4 class="fw-bold text-dark m-0">@(_isEditing ? "🖊️ Chỉnh sửa địa điểm" : "✨ Thêm địa điểm mới")</h4>
+                            <p class="text-muted small mb-0">Cung cấp đầy đủ nội dung để thu hút khách hàng.</p>
+                        </div>
+                        <button type="button" class="btn-close" @onclick="CloseEditor"></button>
+                    </div>
+
+                    <div class="modal-body px-5 py-4">
+                        <div class="modal-section pt-0">
+                            <div class="modal-section-title"><i class="bi bi-info-circle"></i> Nội dung cơ bản</div>
+                            <div class="row g-4">
+                                <div class="col-md-5">
+                                    <label class="form-label-saas">Hình ảnh cửa hàng</label>
+                                    <div class="saas-dropzone position-relative overflow-hidden" style="height: 180px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                                        <InputFile OnChange="HandleImageSelected" class="position-absolute w-100 h-100 opacity-0" style="cursor: pointer; z-index: 2;" accept="image/*" />
+                                        @if (!string.IsNullOrEmpty(_form.ImageBase64))
+                                        {
+                                            <img src="@_form.ImageBase64" class="position-absolute w-100 h-100 object-fit-cover" style="z-index: 1;" />
+                                        }
+                                        else if (!string.IsNullOrEmpty(_form.ImageUrl))
+                                        {
+                                            <img src="@_form.ImageUrl" class="position-absolute w-100 h-100 object-fit-cover" style="z-index: 1;" />
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-image text-primary fs-1 mb-2"></i>
+                                            <p class="small text-muted mb-0">Nhấn để tải ảnh lên</p>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="col-md-7">
+                                    <div class="mb-4">
+                                        <label class="form-label-saas">Tên cửa hàng / Địa điểm</label>
+                                        <InputText class="form-control form-control-saas border-2" @bind-Value="_form.Name" />
+                                        <ValidationMessage For="@(() => _form.Name)" class="text-danger small mt-1" />
+                                    </div>
+                                    <div class="mb-4">
+                                        <label class="form-label-saas">Mô tả ngắn</label>
+                                        <InputTextArea class="form-control form-control-saas border-2" rows="3" @bind-Value="_form.Description" />
+                                        <ValidationMessage For="@(() => _form.Description)" class="text-danger small mt-1" />
+                                    </div>
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <label class="form-label-saas">Loại</label>
+                                            <InputSelect @bind-Value="_form.Type" class="form-select border-2">
+                                                @foreach (var t in Enum.GetValues<FoodStreetApp.Shared.Enums.POIType>())
+                                                {
+                                                    <option value="@t">@t.ToString()</option>
+                                                }
+                                            </InputSelect>
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label-saas">Trạng thái</label>
+                                            <div class="form-check form-switch ps-5 pt-1">
+                                                <InputCheckbox class="form-check-input" @bind-Value="_form.IsActive" />
+                                                <label class="form-check-label small text-muted">Hiển thị</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Map Section -->
+                        <div class="modal-section">
+                            <div class="modal-section-title"><i class="bi bi-geo-alt"></i> Tọa độ bản đồ</div>
+                            <div class="row g-4">
+                                <div class="col-md-8">
+                                    <div id="map-picker-container" class="rounded-3 border" style="height: 300px; z-index: 1;"></div>
+                                </div>
+                                <div class="col-md-4 d-flex flex-column gap-3">
+                                    <div>
+                                        <label class="form-label x-small fw-bold mb-1">LATITUDE</label>
+                                        <InputNumber class="form-control form-control-sm border-2" @bind-Value="_form.Latitude" step="any" @bind-Value:after="SyncManualCoordinatesToMap" />
+                                    </div>
+                                    <div>
+                                        <label class="form-label x-small fw-bold mb-1">LONGITUDE</label>
+                                        <InputNumber class="form-control form-control-sm border-2" @bind-Value="_form.Longitude" step="any" @bind-Value:after="SyncManualCoordinatesToMap" />
+                                    </div>
+                                    <p class="x-small text-muted mt-auto"><i class="bi bi-info-circle me-1"></i> Nhấp trực tiếp lên bản đồ để lấy tọa độ cửa hàng.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AI Translation Features -->
+                        <div class="modal-section border-0 mb-0">
+                            <div class="modal-section-title d-flex justify-content-between align-items-center">
+                                <span><i class="bi bi-translate"></i> Bản dịch đa ngôn ngữ (AI)</span>
+                                <button type="button" class="btn btn-outline-primary btn-sm px-3" @onclick="TranslateWithAi" disabled="@_isTranslating">
+                                    @if (_isTranslating) { <span class="spinner-border spinner-border-sm me-2"></span> }
+                                    <i class="bi bi-stars"></i> Tự động dịch bằng AI
+                                </button>
+                            </div>
+                            <!-- Translation Tabs (Simplified) -->
+                            <div class="nav nav-tabs nav-tabs-saas mb-3">
+                                <button type="button" class="nav-link-saas @(_activeTab == "en" ? "active" : "")" @onclick='() => _activeTab = "en"'>Tiếng Anh</button>
+                                <button type="button" class="nav-link-saas @(_activeTab == "ko" ? "active" : "")" @onclick='() => _activeTab = "ko"'>Tiếng Hàn</button>
+                            </div>
+                            <div class="p-3 bg-light rounded-3">
+                                @if (_activeTab == "en")
+                                {
+                                    <div class="mb-2">
+                                        <label class="x-small fw-bold text-muted">Name (English)</label>
+                                        <InputText class="form-control form-control-sm border-2" @bind-Value="_form.NameEn" />
+                                    </div>
+                                    <div>
+                                        <label class="x-small fw-bold text-muted">Description (English)</label>
+                                        <InputTextArea class="form-control form-control-sm border-2" rows="2" @bind-Value="_form.DescriptionEn" />
+                                    </div>
+                                }
+                                else if (_activeTab == "ko")
+                                {
+                                    <div class="mb-2">
+                                        <label class="x-small fw-bold text-muted">Name (Korean)</label>
+                                        <InputText class="form-control form-control-sm border-2" @bind-Value="_form.NameKo" />
+                                    </div>
+                                    <div>
+                                        <label class="x-small fw-bold text-muted">Description (Korean)</label>
+                                        <InputTextArea class="form-control form-control-sm border-2" rows="2" @bind-Value="_form.DescriptionKo" />
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer px-5 py-4 border-top bg-light">
+                        <button type="button" class="btn btn-saas btn-saas-secondary" @onclick="CloseEditor">Hủy</button>
+                        <button type="submit" class="btn btn-saas btn-saas-primary shadow px-5" disabled="@_isLoadingSave">
+                             @if (_isLoadingSave) { <span class="spinner-border spinner-border-sm me-1"></span> }
+                             <i class="bi bi-check-lg me-1"></i> Lưu & Gửi duyệt
+                        </button>
+                    </div>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+<ConfirmModal Visible="_confirmDeleteVisible"
+              Title="Xóa địa điểm"
+              Message="Bạn có chắc chắn muốn xóa địa điểm này không? Dữ liệu sẽ mất vĩnh viễn."
+              OnConfirm="DeleteConfirmedAsync"
+              OnCancel="CancelDelete" />
+
+@code {
+    private List<POI> _pois = [];
+    private bool _isLoading;
+    private bool _isEditorOpen;
+    private bool _isEditing;
+    private bool _isTranslating;
+    private bool _isLoadingSave;
+    private string _activeTab = "en";
+    private bool _confirmDeleteVisible;
+    private bool _qrModalVisible;
+    private POI? _selectedPoiForQr;
+    private int? _deleteId;
+    private PoiFormViewModel _form = new();
+    private string _searchTerm = string.Empty;
+    private int _currentPage = 1;
+    private int _pageSize = 9;
+    private bool _mapInitialized;
+    private Guid _currentUserId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var userIdClaim = user.FindFirst("userId")?.Value;
+        
+        if (Guid.TryParse(userIdClaim, out var id))
+        {
+            _currentUserId = id;
+            await LoadAsync();
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_isEditorOpen && !_mapInitialized)
+        {
+            _mapInitialized = true;
+            await Task.Delay(500); 
+            await JS.InvokeVoidAsync("initMapPicker", DotNetObjectReference.Create(this), _form.Latitude, _form.Longitude);
+        }
+    }
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _isLoading = true;
+            _pois = DataService.GetPoisByOwnerId(_currentUserId).ToList();
+        }
+        catch
+        {
+            Toasts.Error("Lỗi khi tải dữ liệu.");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private IEnumerable<POI> GetFilteredPois()
+    {
+        var q = _pois.AsEnumerable();
+        if (!string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            q = q.Where(p => p.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase));
+        }
+        return q;
+    }
+
+    private IEnumerable<POI> GetPagedPois() => GetFilteredPois().Skip((_currentPage - 1) * _pageSize).Take(_pageSize);
+    private int GetTotalPoiPages() => (int)Math.Ceiling((double)GetFilteredPois().Count() / _pageSize);
+
+    private void StartCreate()
+    {
+        _isEditing = false;
+        _mapInitialized = false;
+        _form = new PoiFormViewModel { 
+            OwnerId = _currentUserId, 
+            IsActive = true, 
+            IsApproved = false,
+            Latitude = 10.762622, // Default Vinh Khanh center
+            Longitude = 106.702214
+        };
+        _isEditorOpen = true;
+    }
+
+    private void StartEdit(POI poi)
+    {
+        _isEditing = true;
+        _mapInitialized = false;
+        _form = new PoiFormViewModel
+        {
+            Id = poi.Id,
+            Name = poi.Name,
+            Description = poi.Description,
+            Latitude = poi.Latitude,
+            Longitude = poi.Longitude,
+            IsActive = poi.IsActive,
+            Type = poi.Type,
+            ImageUrl = poi.ImageUrl,
+            OwnerId = poi.OwnerId ?? _currentUserId,
+            IsApproved = poi.IsApproved,
+            NameEn = poi.NameEn,
+            DescriptionEn = poi.DescriptionEn,
+            NameKo = poi.NameKo,
+            DescriptionKo = poi.DescriptionKo
+        };
+        _isEditorOpen = true;
+    }
+
+    private async Task HandleImageSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            var resizedImage = await file.RequestImageFileAsync("image/png", 300, 300);
+            using var ms = new MemoryStream();
+            await resizedImage.OpenReadStream(1024 * 1024 * 5).CopyToAsync(ms);
+            _form.ImageBase64 = $"data:image/png;base64,{Convert.ToBase64String(ms.ToArray())}";
+            Toasts.Success("Đã tải ảnh lên! ✨");
+        }
+    }
+
+    private async Task TranslateWithAi()
+    {
+        if (string.IsNullOrWhiteSpace(_form.Name) || string.IsNullOrWhiteSpace(_form.Description))
+        {
+            Toasts.Error("Vui lòng nhập tên và mô tả tiếng Việt trước.");
+            return;
+        }
+
+        try
+        {
+            _isTranslating = true;
+            // Simplified AI translation mocking logic since we are porting parity
+            await Task.Delay(1500); 
+            _form.NameEn = "[AI] " + _form.Name;
+            _form.DescriptionEn = "[AI Translated] " + _form.Description;
+            Toasts.Success("Đã dịch xong bằng AI! 🤖");
+        }
+        catch { Toasts.Error("Dịch AI thất bại."); }
+        finally { _isTranslating = false; }
+    }
+
+    [JSInvokable]
+    public void UpdateCoordinates(double lat, double lng)
+    {
+        _form.Latitude = Math.Round(lat, 6);
+        _form.Longitude = Math.Round(lng, 6);
+        StateHasChanged();
+    }
+
+    private async Task SyncManualCoordinatesToMap() => await JS.InvokeVoidAsync("setMapLocation", _form.Latitude, _form.Longitude);
+
+    private async Task SaveAsync()
+    {
+        try
+        {
+            _isLoadingSave = true;
+            var poi = new POI
+            {
+                Id = _form.Id,
+                Name = _form.Name,
+                Description = _form.Description,
+                Latitude = _form.Latitude,
+                Longitude = _form.Longitude,
+                IsActive = _form.IsActive,
+                Type = _form.Type,
+                OwnerId = _form.OwnerId,
+                ImageUrl = !string.IsNullOrEmpty(_form.ImageBase64) ? _form.ImageBase64 : _form.ImageUrl,
+                NameEn = _form.NameEn,
+                DescriptionEn = _form.DescriptionEn,
+                NameKo = _form.NameKo,
+                DescriptionKo = _form.DescriptionKo,
+                IsApproved = _isEditing ? _form.IsApproved : false // Force approval for new
+            };
+
+            if (_isEditing) DataService.UpdatePoi(poi);
+            else DataService.AddPoi(poi);
+
+            _isEditorOpen = false;
+            Toasts.Success("Đã lưu địa điểm thành công! 🚀");
+            await LoadAsync();
+        }
+        catch { Toasts.Error("Lỗi khi lưu."); }
+        finally { _isLoadingSave = false; }
+    }
+
+    private void CloseEditor() { _isEditorOpen = false; _mapInitialized = false; }
+    private void ShowQrCode(POI poi) { _selectedPoiForQr = poi; _qrModalVisible = true; }
+    private void AskDelete(POI poi) { _deleteId = poi.Id; _confirmDeleteVisible = true; }
+    private async Task DeleteConfirmedAsync() { if (_deleteId.HasValue) { DataService.DeletePoi(_deleteId.Value); Toasts.Success("Đã xóa."); await LoadAsync(); } _confirmDeleteVisible = false; }
+    private void CancelDelete() => _confirmDeleteVisible = false;
+}
