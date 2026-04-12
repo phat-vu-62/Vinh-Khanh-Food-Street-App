@@ -19,28 +19,39 @@
     </button>
 </div>
 
+<div class="mb-5">
+    <div class="nav nav-pills gap-2 p-1 bg-light rounded-pill d-inline-flex shadow-sm">
+        <button class="nav-link rounded-pill px-4 @(!_filterPending ? "active bg-primary text-white" : "text-muted")" @onclick="() => SetPendingFilter(false)">
+            <i class="bi bi-collection-fill me-2"></i> Tất cả
+        </button>
+        <button class="nav-link rounded-pill px-4 @(_filterPending ? "active bg-danger text-white border-danger" : "text-muted")" @onclick="() => SetPendingFilter(true)">
+            <i class="bi bi-shield-lock-fill me-2"></i> Chờ duyệt
+            @if (_pois.Count(x => !x.IsApproved) > 0)
+            {
+                <span class="badge rounded-pill bg-danger ms-2">@_pois.Count(x => !x.IsApproved)</span>
+            }
+        </button>
+    </div>
+</div>
+
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-4 mb-5">
     <div class="input-group" style="max-width:480px;">
         <span class="input-group-text bg-white border-end-0 rounded-start-2 shadow-sm"><i class="bi bi-search text-muted"></i></span>
         <input class="form-control border-start-0 rounded-end-2 shadow-sm" 
-               placeholder="Tìm kiếm theo tên hoặc mô tả..." 
+               placeholder="Tìm kiếm địa điểm..." 
                @bind="_searchTerm" 
                @bind:event="oninput" 
                @bind:after="() => { _currentPage = 1; }" />
     </div>
     <div class="d-flex align-items-center gap-3">
-        <div class="form-check form-check-inline mb-0 small">
-            <input class="form-check-input" type="checkbox" id="pendingFilter" checked="@(_filterPending)" @onchange="TogglePendingFilter">
-            <label class="form-check-label text-muted" for="pendingFilter">Chỉ hiện chờ duyệt</label>
-        </div>
         <span class="text-muted small">Hiển thị @GetPagedPois().Count() trên @GetFilteredPois().Count() mục</span>
-
         <div class="btn-group shadow-sm rounded-2 overflow-hidden">
             <button class="btn btn-saas btn-saas-secondary py-1 px-3 active border-0"><i class="bi bi-grid-fill"></i></button>
             <button class="btn btn-saas btn-saas-secondary py-1 px-3 border-0"><i class="bi bi-list"></i></button>
         </div>
     </div>
 </div>
+
 
 <LoadingState IsLoading="_isLoading" Message="Đang tải danh sách..." />
 
@@ -109,15 +120,25 @@ else if (!_isLoading)
                         </div>
 
                         <div class="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
-                            <div class="d-flex gap-1 align-items-center">
-                                <span class="badge @(string.IsNullOrWhiteSpace(poi.NameVi) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Vietnamese">VI</span>
-                                <span class="badge @(string.IsNullOrWhiteSpace(poi.NameEn) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="English">EN</span>
-                                <span class="badge @(string.IsNullOrWhiteSpace(poi.NameZh) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Chinese">ZH</span>
-                                <span class="badge @(string.IsNullOrWhiteSpace(poi.NameKo) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Korean">KO</span>
-                                <span class="badge @(string.IsNullOrWhiteSpace(poi.NameJa) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Japanese">JA</span>
-                            </div>
-                            <span class="x-small text-muted">@GetLastModified(poi)</span>
+                            @if (!poi.IsApproved)
+                            {
+                                <button class="btn btn-sm btn-success w-100 shadow-sm fw-bold" @onclick="() => ApproveAsync(poi.Id)">
+                                    <i class="bi bi-check-circle me-1"></i> DUYỆT ĐỊA ĐIỂM
+                                </button>
+                            }
+                            else
+                            {
+                                <div class="d-flex gap-1 align-items-center">
+                                    <span class="badge @(string.IsNullOrWhiteSpace(poi.NameVi) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Vietnamese">VI</span>
+                                    <span class="badge @(string.IsNullOrWhiteSpace(poi.NameEn) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="English">EN</span>
+                                    <span class="badge @(string.IsNullOrWhiteSpace(poi.NameZh) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Chinese">ZH</span>
+                                    <span class="badge @(string.IsNullOrWhiteSpace(poi.NameKo) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Korean">KO</span>
+                                    <span class="badge @(string.IsNullOrWhiteSpace(poi.NameJa) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Japanese">JA</span>
+                                </div>
+                                <span class="x-small text-muted">@GetLastModified(poi)</span>
+                            }
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -641,12 +662,13 @@ else if (!_isLoading)
         _mapInitialized = false;
     }
 
-    private void TogglePendingFilter(ChangeEventArgs e)
+    private void SetPendingFilter(bool pending)
     {
-        _filterPending = (bool?)e.Value ?? false;
+        _filterPending = pending;
         _currentPage = 1;
         StateHasChanged();
     }
+
 
     private async Task ApproveAsync(int id)
     {
