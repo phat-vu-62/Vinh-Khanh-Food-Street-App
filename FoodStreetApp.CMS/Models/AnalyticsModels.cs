@@ -16,6 +16,7 @@ public class AnalyticsSummary
     public string HotSpotName { get; set; } = "N/A";
     public string PeakHour { get; set; } = "N/A";
     public double EngagementRate { get; set; } // % of listen > 10s
+    public int PendingApprovals { get; set; }
 }
 
 public class TopPoiMetric

@@ -9,6 +9,8 @@ public interface IAdminDataService
     POI AddPoi(POI poi);
     bool UpdatePoi(POI poi);
     bool DeletePoi(int id);
+    Task<bool> ApprovePoiAsync(int id);
+
 
     IReadOnlyCollection<Audio> GetAudios();
     Audio? GetAudioById(int id);

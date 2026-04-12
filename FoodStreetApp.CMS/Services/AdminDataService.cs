@@ -44,7 +44,9 @@ public class AdminDataService : IAdminDataService
         item.Longitude = poi.Longitude;
         item.AudioUrl = poi.AudioUrl;
         item.IsActive = poi.IsActive;
+        item.IsApproved = poi.IsApproved;
         item.Type = poi.Type;
+
         item.RadiusMeters = poi.RadiusMeters;
         item.ImageUrl = poi.ImageUrl; // Adding missing ImageUrl mapping
 
@@ -86,6 +88,19 @@ public class AdminDataService : IAdminDataService
         TrackPoiAction(deletedId, "Deleted");
         return true;
     }
+
+    public async Task<bool> ApprovePoiAsync(int id)
+    {
+        var item = await _dbContext.Pois.FirstOrDefaultAsync(x => x.Id == id);
+        if (item is null) return false;
+
+        item.IsApproved = true;
+        item.IsActive = true; // Automatically activate when approved
+        await _dbContext.SaveChangesAsync();
+        TrackPoiAction(item.Id, "Approved");
+        return true;
+    }
+
 
     private void TrackPoiAction(int poiId, string action)
     {
@@ -368,8 +383,10 @@ public class AdminDataService : IAdminDataService
             HotSpotName = topPois.FirstOrDefault()?.PoiName ?? "N/A",
             PeakHour = peakHourStr,
             EngagementRate = stats.TotalAudio > 0 ? (double)stats.HighEngagement * 100 / stats.TotalAudio : 0,
-            DailyTrends = trends
+            DailyTrends = trends,
+            PendingApprovals = await _dbContext.Pois.CountAsync(p => !p.IsApproved)
         };
+
     }
 
     public async Task<(IReadOnlyCollection<UserHistory> Items, int TotalCount)> GetUsageHistoriesPagedAsync(int page, int pageSize, DateTime? date = null, int? poiId = null, string? search = null)

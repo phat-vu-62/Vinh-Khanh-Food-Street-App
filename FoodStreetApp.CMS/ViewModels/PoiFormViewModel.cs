@@ -26,6 +26,8 @@ public class PoiFormViewModel
     
     public string? AudioUrl { get; set; }
     public bool IsActive { get; set; } = true;
+    public bool IsApproved { get; set; } = true;
+
     public int RadiusMeters { get; set; } = 15;
     public POIType Type { get; set; } = POIType.Food;
 

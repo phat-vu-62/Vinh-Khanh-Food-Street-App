@@ -12,6 +12,8 @@ public class POI
     public double Longitude { get; set; }
     public int RadiusMeters { get; set; } = 15;
     public bool IsActive { get; set; } = true;
+    public bool IsApproved { get; set; } = true;
+
     public POIType Type { get; set; } = POIType.Food;
     public string? ImageUrl { get; set; }
     public Guid? OwnerId { get; set; }

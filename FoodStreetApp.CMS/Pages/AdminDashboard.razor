@@ -37,9 +37,9 @@ else
 {
     <!-- 4 Summary Cards -->
     <div class="row g-4 mb-5">
-        <div class="col-md-3">
+        <div class="col-xl col-md-4">
             <div class="saas-card stats-card border-primary">
-                <span class="stats-label">Tổng địa điểm (POI)</span>
+                <span class="stats-label">Tổng địa điểm</span>
                 <div class="d-flex align-items-baseline justify-content-between">
                     <span class="stats-value">@_poiCount.ToString("N0")</span>
                     <i class="bi bi-geo-alt text-primary"></i>
@@ -49,7 +49,7 @@ else
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-xl col-md-4">
             <div class="saas-card stats-card border-success">
                 <span class="stats-label">Tệp âm thanh</span>
                 <div class="d-flex align-items-baseline justify-content-between">
@@ -61,7 +61,26 @@ else
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-xl col-md-4">
+            <div class="saas-card stats-card border-danger @(_summary.PendingApprovals > 0 ? "shadow-sm border-2 animate__animated animate__pulse animate__infinite" : "opacity-75")">
+                <span class="stats-label">Địa điểm chờ duyệt</span>
+                <div class="d-flex align-items-baseline justify-content-between">
+                    <span class="stats-value">@_summary.PendingApprovals</span>
+                    <i class="bi bi-shield-check @(_summary.PendingApprovals > 0 ? "text-danger" : "text-muted")"></i>
+                </div>
+                <div class="mt-3">
+                    @if (_summary.PendingApprovals > 0)
+                    {
+                        <a href="/poi?filter=pending" class="text-danger x-small fw-bold text-decoration-none">Duyệt ngay <i class="bi bi-arrow-right"></i></a>
+                    }
+                    else
+                    {
+                        <span class="text-muted x-small">Đã duyệt tất cả</span>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-xl col-md-6">
             <div class="saas-card stats-card border-info">
                 <span class="stats-label">Lượt tương tác</span>
                 <div class="d-flex align-items-baseline justify-content-between">
@@ -73,7 +92,7 @@ else
                 </div>
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-xl col-md-6">
             <div class="saas-card stats-card border-warning">
                 <span class="stats-label">Nghe trung bình</span>
                 <div class="d-flex align-items-baseline justify-content-between">
@@ -86,6 +105,7 @@ else
             </div>
         </div>
     </div>
+
 
     <div class="row g-4 mb-5">
         <!-- SVG Line Chart: Activity -->
