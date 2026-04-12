@@ -162,16 +162,18 @@ app.MapPost("/api/auth/login", async (JsonElement body, CmsDbContext db, IConfig
         // Hardcoded debug login
         if (string.Equals(username, "admin", StringComparison.OrdinalIgnoreCase) && password == "123456")
         {
+            var adminUser = await db.Users.FirstOrDefaultAsync(u => u.Username == "admin");
             return Results.Ok(new { 
-                token = GenerateToken("admin", "Admin", cfg), 
+                token = GenerateToken(adminUser?.Id.ToString() ?? Guid.Empty.ToString(), "admin", "Admin", cfg), 
                 role = "Admin", 
                 username = "admin" 
             });
         }
         if (string.Equals(username, "owner", StringComparison.OrdinalIgnoreCase) && password == "123456")
         {
+            var ownerUser = await db.Users.FirstOrDefaultAsync(u => u.Username == "owner");
             return Results.Ok(new { 
-                token = GenerateToken("owner", "Owner", cfg), 
+                token = GenerateToken(ownerUser?.Id.ToString() ?? Guid.Empty.ToString(), "owner", "Owner", cfg), 
                 role = "Owner", 
                 username = "owner" 
             });
@@ -188,7 +190,7 @@ app.MapPost("/api/auth/login", async (JsonElement body, CmsDbContext db, IConfig
                 if (string.Equals(normalizedRole, "owner", StringComparison.OrdinalIgnoreCase)) normalizedRole = "Owner";
 
                 return Results.Ok(new { 
-                    token = GenerateToken(user.Username, normalizedRole, cfg), 
+                    token = GenerateToken(user.Id.ToString(), user.Username, normalizedRole, cfg), 
                     role = normalizedRole, 
                     username = user.Username 
                 });
@@ -204,7 +206,7 @@ app.MapPost("/api/auth/login", async (JsonElement body, CmsDbContext db, IConfig
     }
 });
 
-string GenerateToken(string username, string role, IConfiguration cfg)
+string GenerateToken(string userId, string username, string role, IConfiguration cfg)
 {
     var jwtSettings = cfg.GetSection("Jwt");
     var key = Encoding.ASCII.GetBytes(jwtSettings["Key"]!);
@@ -213,7 +215,10 @@ string GenerateToken(string username, string role, IConfiguration cfg)
     {
         Subject = new ClaimsIdentity(new[]
         {
+            new Claim("userId", userId),
             new Claim("unique_name", username),
+            new Claim(ClaimTypes.Name, username),
+            new Claim(ClaimTypes.Role, role),
             new Claim("role", role)
         }),
         Expires = DateTime.UtcNow.AddDays(7),
@@ -224,6 +229,7 @@ string GenerateToken(string username, string role, IConfiguration cfg)
     var token = tokenHandler.CreateToken(tokenDescriptor);
     return tokenHandler.WriteToken(token);
 }
+
 
 // 2. POI & DATA ENDPOINTS
 app.MapGet("/api/POI", (IAdminDataService service) => Results.Ok(service.GetPois()));

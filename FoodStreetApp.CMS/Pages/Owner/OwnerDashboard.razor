@@ -166,20 +166,39 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await CheckAuthAndLoad();
+    }
+
+    private async Task CheckAuthAndLoad()
+    {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         var userIdClaim = user.FindFirst("userId")?.Value;
         
         if (Guid.TryParse(userIdClaim, out var id))
         {
-            _currentUserId = id;
-            await LoadAsync();
+            if (_currentUserId != id)
+            {
+                _currentUserId = id;
+                await LoadAsync();
+            }
         }
         else
         {
             _isLoading = false;
         }
     }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Re-check after render because JS runtime is now available to retrieve token from localStorage
+            await CheckAuthAndLoad();
+            StateHasChanged();
+        }
+    }
+
 
     private async Task LoadAsync()
     {

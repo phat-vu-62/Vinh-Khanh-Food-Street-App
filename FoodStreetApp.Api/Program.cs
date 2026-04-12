@@ -21,6 +21,8 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<IPOIService, POIService>();
 builder.Services.AddScoped<ITourService, TourService>();
 builder.Services.AddScoped<IAudioService, AudioService>();
+builder.Services.AddScoped(typeof(IRepository<>), typeof(EfRepository<>));
+
 
 builder.Services.AddHttpClient<IGeminiTranslationService, GeminiTranslationService>();
 

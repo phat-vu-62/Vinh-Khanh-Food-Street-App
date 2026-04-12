@@ -1,6 +1,10 @@
+using System;
 using FoodStreetApp.Api.Interfaces;
 using FoodStreetApp.Shared.Entities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+
+
 
 namespace FoodStreetApp.Api.Controllers;
 
@@ -13,7 +17,8 @@ public class POIController : ControllerBase
     private readonly IQRCodeService _qrCodeService;
 
     // Helper to get current user ID and role
-    private int CurrentUserId => int.Parse(User.FindFirst("userId")?.Value ?? "0");
+    private Guid CurrentUserId => Guid.Parse(User.FindFirst("userId")?.Value ?? Guid.Empty.ToString());
+
     private bool IsAdmin => User.IsInRole("admin");
 
     public POIController(IPOIService service, IQRCodeService qrCodeService)
