@@ -116,7 +116,7 @@ else if (!_isLoading)
                                     <span class="badge @(string.IsNullOrWhiteSpace(poi.NameVi) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1">VI</span>
                                     <span class="badge @(string.IsNullOrWhiteSpace(poi.NameEn) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1">EN</span>
                                 </div>
-                                <span class="x-small text-muted">@poi.Type.ToString()</span>
+                                <span class="x-small text-muted text-uppercase">@poi.Type.ToString()</span>
                             }
                         </div>
                     </div>
@@ -178,56 +178,100 @@ else if (!_isLoading)
                     </div>
 
                     <div class="modal-body px-5 py-4">
+                        <!-- Section 1: Basic Information -->
                         <div class="modal-section pt-0">
-                            <div class="modal-section-title"><i class="bi bi-info-circle"></i> Nội dung cơ bản</div>
+                            <div class="modal-section-title"><i class="bi bi-info-circle"></i> Thông tin cơ bản</div>
                             <div class="row g-4">
                                 <div class="col-md-5">
-                                    <label class="form-label-saas">Hình ảnh cửa hàng</label>
-                                    <div class="saas-dropzone position-relative overflow-hidden" style="height: 180px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                                    <label class="form-label-saas">Hình ảnh đại diện</label>
+                                    <div class="saas-dropzone position-relative overflow-hidden" style="height: 160px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
                                         <InputFile OnChange="HandleImageSelected" class="position-absolute w-100 h-100 opacity-0" style="cursor: pointer; z-index: 2;" accept="image/*" />
                                         @if (!string.IsNullOrEmpty(_form.ImageBase64))
                                         {
-                                            <img src="@_form.ImageBase64" class="position-absolute w-100 h-100 object-fit-cover" style="z-index: 1;" />
+                                            <img src="@_form.ImageBase64" class="position-absolute w-100 h-100" style="object-fit: cover; z-index: 1;" />
                                         }
                                         else if (!string.IsNullOrEmpty(_form.ImageUrl))
                                         {
-                                            <img src="@_form.ImageUrl" class="position-absolute w-100 h-100 object-fit-cover" style="z-index: 1;" />
+                                            <img src="@_form.ImageUrl" class="position-absolute w-100 h-100" style="object-fit: cover; z-index: 1;" />
                                         }
                                         else
                                         {
-                                            <i class="bi bi-image text-primary fs-1 mb-2"></i>
-                                            <p class="small text-muted mb-0">Nhấn để tải ảnh lên</p>
+                                            <i class="bi bi-cloud-arrow-up text-primary fs-2 mb-2 d-inline-block"></i>
+                                            <p class="small text-muted mb-0">Nhấn để chọn ảnh</p>
                                         }
                                     </div>
                                 </div>
                                 <div class="col-md-7">
                                     <div class="mb-4">
-                                        <label class="form-label-saas">Tên cửa hàng / Địa điểm</label>
-                                        <InputText class="form-control form-control-saas border-2" @bind-Value="_form.Name" />
+                                        <label class="form-label-saas">Tên địa điểm</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-end-0"><i class="bi bi-tag text-muted"></i></span>
+                                            <InputText class="form-control form-control-saas border-start-0" @bind-Value="_form.Name" placeholder="Ví dụ: Ốc Oanh Vinh Khánh" />
+                                        </div>
                                         <ValidationMessage For="@(() => _form.Name)" class="text-danger small mt-1" />
                                     </div>
                                     <div class="mb-4">
                                         <label class="form-label-saas">Mô tả ngắn</label>
-                                        <InputTextArea class="form-control form-control-saas border-2" rows="3" @bind-Value="_form.Description" />
+                                        <InputText class="form-control form-control-saas" @bind-Value="_form.Description" placeholder="Tóm tắt nét đặc sắc của địa điểm..." />
                                         <ValidationMessage For="@(() => _form.Description)" class="text-danger small mt-1" />
                                     </div>
-                                    <div class="row g-2">
-                                        <div class="col-12">
-                                            <label class="form-label-saas">Trạng thái</label>
-                                            <div class="form-check form-switch ps-5 pt-1">
-                                                <InputCheckbox class="form-check-input" @bind-Value="_form.IsActive" />
-                                                <label class="form-check-label small text-muted">Hiển thị</label>
-                                            </div>
+                                    <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded-3">
+                                        <div>
+                                            <div class="fw-bold small">Trạng thái hoạt động</div>
+                                            <div class="text-muted x-small">Địa điểm sẽ hiển thị với khách du lịch</div>
+                                        </div>
+                                        <div class="form-check form-switch ps-0">
+                                            <InputCheckbox class="form-check-input" style="width: 3em; height: 1.5em; cursor: pointer;" id="isActiveCheck" @bind-Value="_form.IsActive" />
                                         </div>
                                     </div>
-
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Map Section -->
+                        <!-- Section 2: Audio & Narration -->
                         <div class="modal-section">
-                            <div class="modal-section-title"><i class="bi bi-geo-alt"></i> Tọa độ bản đồ</div>
+                            <div class="modal-section-title"><i class="bi bi-mic"></i> Âm thanh & Thuyết minh</div>
+                            <div class="mb-4">
+                                <label class="form-label-saas">Nguồn âm thanh</label>
+                                <div class="saas-toggle-group">
+                                    <button type="button" class="saas-toggle-btn @(_form.AudioMode == AudioSourceMode.File ? "active" : "")" 
+                                            @onclick="() => _form.AudioMode = AudioSourceMode.File">
+                                        <i class="bi bi-file-earmark-music me-1"></i> Tải lên File
+                                    </button>
+                                    <button type="button" class="saas-toggle-btn @(_form.AudioMode == AudioSourceMode.TTS ? "active" : "")" 
+                                            @onclick="() => _form.AudioMode = AudioSourceMode.TTS">
+                                        <i class="bi bi-chat-text me-1"></i> Sử dụng AI (TTS)
+                                    </button>
+                                </div>
+                            </div>
+
+                            @if (_form.AudioMode == AudioSourceMode.File)
+                            {
+                                <div class="p-4 border rounded-3 bg-light">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="flex-grow-1">
+                                            <label class="form-label small fw-bold text-muted mb-1">Đường dẫn file (URL)</label>
+                                            <InputText class="form-control form-control-sm" @bind-Value="_form.AudioUrl" placeholder="https://storage.google.com/..." />
+                                        </div>
+                                        <div class="pt-3">
+                                            <button type="button" class="btn btn-saas btn-saas-secondary btn-sm" title="Nghe thử"><i class="bi bi-play-fill"></i></button>
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 x-small text-muted"><i class="bi bi-info-circle me-1"></i> Hỗ trợ định dạng MP3, AAC, OGG.</div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="p-4 border rounded-3 bg-light">
+                                    <label class="form-label small fw-bold text-muted mb-1">Nội dung thuyết minh (Tiếng Việt)</label>
+                                    <InputTextArea id="narration-text" class="form-control form-control-sm" rows="3" @bind-Value="_form.TextContent" placeholder="Nhập nội dung để AI tự động chuyển thành giọng nói..." />
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Section 3: Location & Map -->
+                        <div class="modal-section">
+                            <div class="modal-section-title"><i class="bi bi-geo-alt"></i> Vị trí & Tọa độ</div>
                             <div class="row g-4">
                                 <div class="col-md-8">
                                     <div id="map-picker-container" class="rounded-3 border" style="height: 300px; z-index: 1;"></div>
@@ -245,7 +289,6 @@ else if (!_isLoading)
                                 </div>
                             </div>
                         </div>
-
                     </div>
 
                     <div class="modal-footer px-5 py-4 border-top bg-light">
@@ -272,9 +315,7 @@ else if (!_isLoading)
     private bool _isLoading;
     private bool _isEditorOpen;
     private bool _isEditing;
-    private bool _isTranslating;
     private bool _isLoadingSave;
-    private string _activeTab = "en";
     private bool _confirmDeleteVisible;
     private bool _qrModalVisible;
     private POI? _selectedPoiForQr;
@@ -348,7 +389,8 @@ else if (!_isLoading)
             IsActive = true, 
             IsApproved = false,
             Latitude = 10.762622, // Default Vinh Khanh center
-            Longitude = 106.702214
+            Longitude = 106.702214,
+            AudioMode = AudioSourceMode.File
         };
         _isEditorOpen = true;
     }
@@ -364,15 +406,15 @@ else if (!_isLoading)
             Description = poi.Description,
             Latitude = poi.Latitude,
             Longitude = poi.Longitude,
+            AudioUrl = poi.AudioUrl,
             IsActive = poi.IsActive,
             Type = poi.Type,
             ImageUrl = poi.ImageUrl,
             OwnerId = poi.OwnerId ?? _currentUserId,
             IsApproved = poi.IsApproved,
-            NameEn = poi.NameEn,
-            DescriptionEn = poi.DescriptionEn,
-            NameKo = poi.NameKo,
-            DescriptionKo = poi.DescriptionKo
+            TextContent = poi.TextContent,
+            AudioMode = string.IsNullOrEmpty(poi.AudioUrl) && !string.IsNullOrEmpty(poi.TextContent) 
+                         ? AudioSourceMode.TTS : AudioSourceMode.File
         };
         _isEditorOpen = true;
     }
@@ -388,27 +430,6 @@ else if (!_isLoading)
             _form.ImageBase64 = $"data:image/png;base64,{Convert.ToBase64String(ms.ToArray())}";
             Toasts.Success("Đã tải ảnh lên! ✨");
         }
-    }
-
-    private async Task TranslateWithAi()
-    {
-        if (string.IsNullOrWhiteSpace(_form.Name) || string.IsNullOrWhiteSpace(_form.Description))
-        {
-            Toasts.Error("Vui lòng nhập tên và mô tả tiếng Việt trước.");
-            return;
-        }
-
-        try
-        {
-            _isTranslating = true;
-            // Simplified AI translation mocking logic since we are porting parity
-            await Task.Delay(1500); 
-            _form.NameEn = "[AI] " + _form.Name;
-            _form.DescriptionEn = "[AI Translated] " + _form.Description;
-            Toasts.Success("Đã dịch xong bằng AI! 🤖");
-        }
-        catch { Toasts.Error("Dịch AI thất bại."); }
-        finally { _isTranslating = false; }
     }
 
     [JSInvokable]
@@ -433,14 +454,12 @@ else if (!_isLoading)
                 Description = _form.Description,
                 Latitude = _form.Latitude,
                 Longitude = _form.Longitude,
+                AudioUrl = _form.AudioMode == AudioSourceMode.File ? _form.AudioUrl : null,
                 IsActive = _form.IsActive,
                 Type = _form.Type,
                 OwnerId = _form.OwnerId,
                 ImageUrl = !string.IsNullOrEmpty(_form.ImageBase64) ? _form.ImageBase64 : _form.ImageUrl,
-                NameEn = _form.NameEn,
-                DescriptionEn = _form.DescriptionEn,
-                NameKo = _form.NameKo,
-                DescriptionKo = _form.DescriptionKo,
+                TextContent = _form.AudioMode == AudioSourceMode.TTS ? _form.TextContent : null,
                 IsApproved = _isEditing ? _form.IsApproved : false // Force approval for new
             };
 
