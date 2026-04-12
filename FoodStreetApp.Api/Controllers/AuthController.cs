@@ -33,37 +33,52 @@ public class AuthController : ControllerBase
             return BadRequest(new { message = "Missing username or password" });
 
         // DEBUG LOG
-        Console.WriteLine($"[DEBUG] Login attempt: {request.Username} - {request.Password}");
+        Console.WriteLine($"[DEBUG] Login attempt: {request.Username}");
 
-        // Hardcoded logic for debugging as requested by the user
-        if ((request.Username == "admin" && request.Password == "123456") ||
-            (request.Username == "owner" && request.Password == "123456"))
+        // Hardcoded logic for debugging - Case-insensitive username check
+        if (string.Equals(request.Username, "admin", StringComparison.OrdinalIgnoreCase) && request.Password == "123456")
         {
-            var fakeToken = "fake-jwt-token-" + Guid.NewGuid().ToString();
-            
-            // In a real scenario, we would still use GenerateJwtToken if possible
-            // but the user requested a specific return format.
+            Console.WriteLine("[DEBUG] Hardcoded ADMIN success");
             return Ok(new
             {
-                token = fakeToken,
-                role = request.Username,
-                username = request.Username
+                token = "fake-jwt-token-" + Guid.NewGuid().ToString(),
+                role = "Admin",
+                username = "admin"
+            });
+        }
+        
+        if (string.Equals(request.Username, "owner", StringComparison.OrdinalIgnoreCase) && request.Password == "123456")
+        {
+            Console.WriteLine("[DEBUG] Hardcoded OWNER success");
+            return Ok(new
+            {
+                token = "fake-jwt-token-" + Guid.NewGuid().ToString(),
+                role = "Owner",
+                username = "owner"
             });
         }
 
-        // Fallback to database check if it's not the hardcoded ones
+        // Fallback to database check
         try
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == request.Username);
-            if (user != null && !string.IsNullOrEmpty(user.PasswordHash) && 
-                BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == request.Username.ToLower());
+            
+            Console.WriteLine($"[DEBUG] DB Lookup for {request.Username}: {(user != null ? "FOUND" : "NOT FOUND")}");
+            
+            if (user != null && !string.IsNullOrEmpty(user.PasswordHash))
             {
-                return Ok(new
+                bool isValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
+                Console.WriteLine($"[DEBUG] Password Verify: {isValid}");
+                
+                if (isValid)
                 {
-                    token = GenerateJwtToken(user),
-                    role = user.Role,
-                    username = user.Username
-                });
+                    return Ok(new
+                    {
+                        token = GenerateJwtToken(user),
+                        role = user.Role == "admin" ? "Admin" : (user.Role == "owner" ? "Owner" : user.Role),
+                        username = user.Username
+                    });
+                }
             }
         }
         catch (Exception ex)

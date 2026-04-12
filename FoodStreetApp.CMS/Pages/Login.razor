@@ -99,7 +99,7 @@
 
                 if (result != null && !string.IsNullOrEmpty(result.Token))
                 {
-                    await JSRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", result.Token);
+                    await JSRuntime.InvokeVoidAsync("localStorage.setItem", "token", result.Token);
                     
                     AuthProvider.NotifyUserAuthentication(result.Token);
 

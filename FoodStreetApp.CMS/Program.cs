@@ -155,6 +155,21 @@ _ = Task.Run(async () => {
         ";
         
         await dbContext.Database.ExecuteSqlRawAsync(sqlInit);
+        
+        // Explicit Admin Seeding (Ensures user exists even if migrations were already run)
+        var hasAdmin = await dbContext.Users.AnyAsync(u => u.Username == "admin");
+        if (!hasAdmin)
+        {
+            Console.WriteLine("[DB-Background] Seeding admin user...");
+            var adminPasswordHash = BCrypt.Net.BCrypt.HashPassword("123456");
+            var adminId = Guid.NewGuid(); // Or use a static Guid if preferred
+            await dbContext.Database.ExecuteSqlRawAsync(
+                "INSERT INTO \"Users\" (\"Id\", \"Username\", \"PasswordHash\", \"Role\") VALUES ({0}, {1}, {2}, {3})",
+                adminId, "admin", adminPasswordHash, "Admin"
+            );
+            Console.WriteLine("[DB-Background] Admin user seeded successfully.");
+        }
+        
         Console.WriteLine("[DB-Background] Database initialization complete.");
     }
     catch (Exception ex) {

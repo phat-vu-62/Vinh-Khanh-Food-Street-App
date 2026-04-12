@@ -51,8 +51,8 @@ public class CmsDbContext : DbContext
         var ownerId = Guid.Parse("00000000-0000-0000-0000-000000000002");
 
         modelBuilder.Entity<User>().HasData(
-            new User { Id = adminId, Username = "admin", Role = "admin", PasswordHash = BCrypt.Net.BCrypt.HashPassword("123456") },
-            new User { Id = ownerId, Username = "owner", Role = "owner", PasswordHash = BCrypt.Net.BCrypt.HashPassword("123456") }
+            new User { Id = adminId, Username = "admin", Role = "Admin", PasswordHash = BCrypt.Net.BCrypt.HashPassword("123456") },
+            new User { Id = ownerId, Username = "owner", Role = "Owner", PasswordHash = BCrypt.Net.BCrypt.HashPassword("123456") }
         );
     }
 }
