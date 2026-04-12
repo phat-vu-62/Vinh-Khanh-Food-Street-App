@@ -22,7 +22,7 @@
 <div class="mb-5">
     <div class="nav nav-pills gap-2 p-1 bg-light rounded-pill d-inline-flex shadow-sm">
         <button class="nav-link rounded-pill px-4 @(!_filterPending ? "active bg-primary text-white" : "text-muted")" @onclick="() => SetPendingFilter(false)">
-            <i class="bi bi-collection-fill me-2"></i> Tất cả
+            <i class="bi bi-check-circle-fill me-2"></i> Đã duyệt
         </button>
         <button class="nav-link rounded-pill px-4 @(_filterPending ? "active bg-danger text-white border-danger" : "text-muted")" @onclick="() => SetPendingFilter(true)">
             <i class="bi bi-shield-lock-fill me-2"></i> Chờ duyệt
@@ -129,7 +129,7 @@ else if (!_isLoading)
                             else
                             {
                                 <div class="d-flex gap-1 align-items-center">
-                                    <span class="badge @(string.IsNullOrWhiteSpace(poi.NameVi) || poi.NameVi == poi.Name ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Vietnamese">VI</span>
+                                    <span class="badge @(string.IsNullOrWhiteSpace(poi.Name) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Vietnamese">VI</span>
                                     <span class="badge @(string.IsNullOrWhiteSpace(poi.NameEn) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="English">EN</span>
                                     <span class="badge @(string.IsNullOrWhiteSpace(poi.NameZh) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Chinese">ZH</span>
                                     <span class="badge @(string.IsNullOrWhiteSpace(poi.NameKo) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Korean">KO</span>
@@ -387,6 +387,10 @@ else if (!_isLoading)
         if (_filterPending)
         {
             q = q.Where(x => !x.IsApproved);
+        }
+        else
+        {
+            q = q.Where(x => x.IsApproved);
         }
 
         if (!string.IsNullOrWhiteSpace(_searchTerm))

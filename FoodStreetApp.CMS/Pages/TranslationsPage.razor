@@ -158,7 +158,7 @@
             var data = DataService.GetPois();
             if (data != null)
             {
-                _pois.AddRange(data);
+                _pois.AddRange(data.Where(x => x.IsApproved));
             }
         }
         catch (Exception ex)

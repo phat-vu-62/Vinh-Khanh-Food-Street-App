@@ -23,6 +23,21 @@
     </button>
 </div>
 
+<div class="mb-5">
+    <div class="nav nav-pills gap-2 p-1 bg-light rounded-pill d-inline-flex shadow-sm">
+        <button class="nav-link rounded-pill px-4 @(!_filterPending ? "active bg-primary text-white" : "text-muted")" @onclick="() => SetPendingFilter(false)">
+            <i class="bi bi-check-circle-fill me-2"></i> Đã duyệt
+        </button>
+        <button class="nav-link rounded-pill px-4 @(_filterPending ? "active bg-danger text-white border-danger" : "text-muted")" @onclick="() => SetPendingFilter(true)">
+            <i class="bi bi-shield-lock-fill me-2"></i> Chờ duyệt
+            @if (_pois.Count(x => !x.IsApproved) > 0)
+            {
+                <span class="badge rounded-pill bg-danger ms-2">@_pois.Count(x => !x.IsApproved)</span>
+            }
+        </button>
+    </div>
+</div>
+
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-4 mb-5">
     <div class="input-group" style="max-width:480px;">
         <span class="input-group-text bg-white border-end-0 rounded-start-2 shadow-sm"><i class="bi bi-search text-muted"></i></span>
@@ -113,7 +128,7 @@ else if (!_isLoading)
                             else
                             {
                                 <div class="d-flex gap-1 align-items-center">
-                                    <span class="badge @(string.IsNullOrWhiteSpace(poi.NameVi) || poi.NameVi == poi.Name ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Vietnamese">VI</span>
+                                    <span class="badge @(string.IsNullOrWhiteSpace(poi.Name) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Vietnamese">VI</span>
                                     <span class="badge @(string.IsNullOrWhiteSpace(poi.NameEn) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="English">EN</span>
                                     <span class="badge @(string.IsNullOrWhiteSpace(poi.NameZh) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Chinese">ZH</span>
                                     <span class="badge @(string.IsNullOrWhiteSpace(poi.NameKo) ? "bg-light text-muted" : "bg-success-subtle text-success") border x-small px-1" title="Korean">KO</span>
@@ -328,6 +343,7 @@ else if (!_isLoading)
     private int _currentPage = 1;
     private int _pageSize = 9;
     private bool _mapInitialized;
+    private bool _filterPending;
     private Guid _currentUserId;
 
     protected override async Task OnInitializedAsync()
@@ -393,12 +409,29 @@ else if (!_isLoading)
 
     private IEnumerable<POI> GetFilteredPois()
     {
-        var q = _pois.AsEnumerable();
+        var q = _pois.OrderByDescending(x => x.Id).AsEnumerable();
+        
+        if (_filterPending)
+        {
+            q = q.Where(x => !x.IsApproved);
+        }
+        else
+        {
+            q = q.Where(x => x.IsApproved);
+        }
+
         if (!string.IsNullOrWhiteSpace(_searchTerm))
         {
             q = q.Where(p => p.Name.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase));
         }
         return q;
+    }
+
+    private void SetPendingFilter(bool pending)
+    {
+        _filterPending = pending;
+        _currentPage = 1;
+        StateHasChanged();
     }
 
     private IEnumerable<POI> GetPagedPois() => GetFilteredPois().Skip((_currentPage - 1) * _pageSize).Take(_pageSize);
