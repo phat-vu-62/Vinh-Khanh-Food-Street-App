@@ -47,9 +47,12 @@ public class CmsDbContext : DbContext
             .HasIndex(x => x.PoiId);
 
         // Seed Users
+        var adminId = Guid.Parse("00000000-0000-0000-0000-000000000001");
+        var ownerId = Guid.Parse("00000000-0000-0000-0000-000000000002");
+
         modelBuilder.Entity<User>().HasData(
-            new User { Id = 1, Username = "admin", Role = "admin", PasswordHash = BCrypt.Net.BCrypt.HashPassword("123456") },
-            new User { Id = 2, Username = "owner", Role = "owner", PasswordHash = BCrypt.Net.BCrypt.HashPassword("123456") }
+            new User { Id = adminId, Username = "admin", Role = "admin", PasswordHash = BCrypt.Net.BCrypt.HashPassword("123456") },
+            new User { Id = ownerId, Username = "owner", Role = "owner", PasswordHash = BCrypt.Net.BCrypt.HashPassword("123456") }
         );
     }
 }

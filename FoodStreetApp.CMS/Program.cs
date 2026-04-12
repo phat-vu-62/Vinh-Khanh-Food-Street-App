@@ -5,6 +5,9 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using Microsoft.AspNetCore.Components.Authorization;
 using FoodStreetApp.CMS.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Components.Authorization;
+using FoodStreetApp.CMS.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,10 +64,24 @@ builder.Services.AddScoped<IAdminDataService, AdminDataService>();
 builder.Services.AddScoped<IQRCodeService, QRCodeService>();
 builder.Services.AddScoped<ToastService>();
 
-// Auth Services
-builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
-builder.Services.AddScoped<AuthService>();
-builder.Services.AddAuthorizationCore();
+// Auth Services - Switching to Cookies
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/login";
+        options.AccessDeniedPath = "/login";
+        options.Cookie.Name = "FoodStreetAuth";
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
+    });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("admin"));
+    options.AddPolicy("OwnerOnly", policy => policy.RequireRole("owner"));
+});
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddControllers(); // Needed for AuthController
 
 var app = builder.Build();
 
@@ -158,6 +175,9 @@ if (!app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 app.UseRouting();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Health Check endpoint for Render monitoring
 // Redundant health check removed as it is now mapped at the top for faster response
@@ -371,6 +391,7 @@ app.MapGet("/api/sync/pois", (IAdminDataService service) =>
     return Results.Ok(result);
 });
 
+app.MapControllers(); // Secure Controllers for Login/Logout
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
