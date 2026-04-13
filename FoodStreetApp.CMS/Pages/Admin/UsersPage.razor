@@ -273,94 +273,53 @@
         }
         else if (_editUser != null)
         {
-            <div class="row g-0">
-                <!-- Left panel: Profile summary, avatar, and gradient -->
-                <div class="col-md-5 bg-primary text-white p-5 d-flex flex-column align-items-center justify-content-center" style="background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%); position: relative; overflow: hidden; min-height: 400px;">
-                    <!-- background decorations -->
-                    <div class="position-absolute rounded-circle bg-white opacity-10" style="width: 250px; height: 250px; top: -50px; left: -50px;"></div>
-                    <div class="position-absolute rounded-circle bg-white opacity-10" style="width: 300px; height: 300px; bottom: -100px; right: -50px;"></div>
-                    
-                    <div class="position-relative z-1 text-center w-100">
-                        <div class="rounded-circle bg-white text-primary d-flex align-items-center justify-content-center shadow-lg mb-4 mx-auto" style="width: 120px; height: 120px; font-size: 3.5rem;">
-                            <i class="bi bi-person-fill"></i>
-                        </div>
-                        <h4 class="fw-bold mb-1">@(!string.IsNullOrEmpty(_editUser.FullName) ? _editUser.FullName : _editUser.Username)</h4>
-                        <div class="badge bg-white text-primary px-3 py-2 rounded-pill mt-2 shadow-sm"><i class="bi bi-shield-check me-1"></i> Owner Account</div>
-                        
-                        <div class="mt-5 pt-3 border-top border-light border-opacity-25 text-start w-100">
-                            <div class="d-flex align-items-center mb-3">
-                                <i class="bi bi-calendar3 me-3 fs-5 opacity-75"></i>
-                                <div>
-                                    <div class="x-small opacity-75 text-uppercase fw-bold">Ngày tham gia</div>
-                                    <div class="small">@_editUser.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy")</div>
-                                </div>
-                            </div>
-                            <div class="d-flex align-items-center mt-3">
-                                <i class="bi bi-person-badge me-3 fs-5 opacity-75"></i>
-                                <div>
-                                    <div class="x-small opacity-75 text-uppercase fw-bold">Tên đăng nhập hệ thống</div>
-                                    <div class="small">@@@_editUser.Username</div>
-                                </div>
-                            </div>
-                        </div>
+            <div class="p-5">
+                <div class="text-center mb-5">
+                    <div class="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 80px; height: 80px; font-size: 2rem;">
+                        <i class="bi bi-person-fill"></i>
                     </div>
+                    <h5 class="fw-bold mb-1">@(!string.IsNullOrEmpty(_editUser.FullName) ? _editUser.FullName : _editUser.Username)</h5>
+                    <div class="text-muted small">@@@_editUser.Username</div>
                 </div>
                 
-                <!-- Right panel: Edit form -->
-                <div class="col-md-7 p-5 bg-white d-flex flex-column justify-content-center">
-                    <h5 class="fw-bold mb-4 text-dark"><i class="bi bi-pencil-square text-primary me-2"></i> Chỉnh sửa thông tin</h5>
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">HỌ VÀ TÊN</label>
+                        <input type="text" class="form-control" placeholder="Họ và tên..." @bind="_editUser.FullName" />
+                    </div>
                     
-                    <div class="row g-4">
-                        <div class="col-12">
-                            <label class="form-label small fw-bold text-muted mb-2">HỌ VÀ TÊN</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0 py-2 px-3"><i class="bi bi-person text-muted"></i></span>
-                                <input type="text" class="form-control bg-light border-start-0 ps-0 py-2 fw-medium text-dark" placeholder="Nhập họ và tên..." @bind="_editUser.FullName" />
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted mb-2">SỐ ĐIỆN THOẠI</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0 py-2 px-3"><i class="bi bi-telephone text-muted"></i></span>
-                                <input type="tel" class="form-control bg-light border-start-0 ps-0 py-2 fw-medium text-dark" placeholder="Ví dụ: 09..." @bind="_editUser.PhoneNumber" />
-                            </div>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted mb-2">ĐỊA CHỈ EMAIL</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0 py-2 px-3"><i class="bi bi-envelope text-muted"></i></span>
-                                <input type="email" class="form-control bg-light border-start-0 ps-0 py-2 fw-medium text-dark" placeholder="Email liên hệ..." @bind="_editUser.Email" />
-                            </div>
-                        </div>
-                        
-                        <div class="col-12 mt-4 pt-4 border-top">
-                            <div class="d-flex justify-content-between align-items-end mb-2">
-                                <label class="form-label small fw-bold text-muted mb-0">ĐỔI TÙY CHỌN BẢO MẬT</label>
-                                <span class="x-small text-muted">Để trống nếu giữ nguyên</span>
-                            </div>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-end-0 py-2 px-3"><i class="bi bi-key text-muted"></i></span>
-                                <input type="text" class="form-control bg-light border-start-0 ps-0 py-2 fw-medium text-dark" placeholder="Nhập mật khẩu mới..." @bind="_editPassword" />
-                            </div>
-                        </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">SỐ ĐIỆN THOẠI</label>
+                        <input type="tel" class="form-control" placeholder="Ví dụ: 09..." @bind="_editUser.PhoneNumber" />
                     </div>
-                
-                    @if (!string.IsNullOrEmpty(_editError))
-                    {
-                        <div class="alert alert-danger py-2 small mt-4 mb-0"><i class="bi bi-exclamation-triangle-fill me-2"></i> @_editError</div>
-                    }
+                    
+                    <div class="col-md-6">
+                        <label class="form-label small fw-bold text-muted">ĐỊA CHỈ EMAIL</label>
+                        <input type="email" class="form-control" placeholder="Email liên hệ..." @bind="_editUser.Email" />
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-end mb-2">
+                            <label class="form-label small fw-bold text-muted mb-0">MẬT KHẨU MỚI</label>
+                            <span class="x-small text-muted">Để trống nếu không đổi</span>
+                        </div>
+                        <input type="text" class="form-control" placeholder="Mật khẩu mới..." @bind="_editPassword" />
+                    </div>
+                </div>
+            
+                @if (!string.IsNullOrEmpty(_editError))
+                {
+                    <div class="alert alert-danger py-2 small mt-4 mb-0">@_editError</div>
+                }
 
-                    <div class="mt-5">
-                        <button class="btn btn-primary btn-lg rounded-pill w-100 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2" @onclick="UpdateUser" disabled="@_isEditing" style="background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 100%); border: none; padding-top: 12px; padding-bottom: 12px;">
-                            @if (_isEditing)
-                            {
-                                <span class="spinner-border spinner-border-sm"></span>
-                            }
-                            <i class="bi bi-check-circle"></i> LUƯ THAY ĐỔI VÀO HỆ THỐNG
-                        </button>
-                    </div>
+                <div class="mt-5 text-center">
+                    <button class="btn btn-primary rounded-pill px-5 py-2 fw-bold" @onclick="UpdateUser" disabled="@_isEditing">
+                        @if (_isEditing)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        Lưu Thông Tin
+                    </button>
                 </div>
             </div>
         }
