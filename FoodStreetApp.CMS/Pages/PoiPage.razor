@@ -102,7 +102,11 @@ else if (!_isLoading)
                                     {
                                         <li><button class="dropdown-item text-success fw-bold" @onclick="() => ApproveAsync(poi.Id)"><i class="bi bi-check-circle me-2"></i> Duyệt ngay</button></li>
                                     }
-                                    <li><button class="dropdown-item" @onclick="() => ShowQrCode(poi)"><i class="bi bi-qr-code me-2"></i> Xuất mã QR</button></li>
+                                    else
+                                    {
+                                        <li><button class="dropdown-item text-warning" @onclick="() => UnapproveAsync(poi.Id)"><i class="bi bi-x-circle me-2"></i> Hủy duyệt</button></li>
+                                        <li><button class="dropdown-item" @onclick="() => ShowQrCode(poi)"><i class="bi bi-qr-code me-2"></i> Xuất mã QR</button></li>
+                                    }
                                     <li><button class="dropdown-item text-danger" @onclick="() => AskDelete(poi)"><i class="bi bi-trash me-2"></i> Xóa bỏ</button></li>
 
                                 </ul>
@@ -689,6 +693,27 @@ else if (!_isLoading)
             else
             {
                 Toasts.Error("Không thể duyệt địa điểm.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Toasts.Error($"Lỗi: {ex.Message}");
+        }
+    }
+
+    private async Task UnapproveAsync(int id)
+    {
+        try
+        {
+            var success = await DataService.UnapprovePoiAsync(id);
+            if (success)
+            {
+                Toasts.Success("Đã hủy duyệt địa điểm.");
+                await LoadAsync();
+            }
+            else
+            {
+                Toasts.Error("Không thể hủy duyệt địa điểm.");
             }
         }
         catch (Exception ex)

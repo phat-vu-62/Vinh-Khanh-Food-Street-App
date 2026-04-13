@@ -104,6 +104,18 @@ public class AdminDataService : IAdminDataService
         return true;
     }
 
+    public async Task<bool> UnapprovePoiAsync(int id)
+    {
+        var item = await _dbContext.Pois.FirstOrDefaultAsync(x => x.Id == id);
+        if (item is null) return false;
+
+        item.IsApproved = false;
+        item.IsActive = false; // Automatically deactivate when unapproved
+        await _dbContext.SaveChangesAsync();
+        TrackPoiAction(item.Id, "Unapproved");
+        return true;
+    }
+
 
     private void TrackPoiAction(int poiId, string action)
     {

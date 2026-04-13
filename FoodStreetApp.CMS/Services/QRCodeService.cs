@@ -25,7 +25,7 @@ public class QRCodeService : IQRCodeService
     public async Task<IEnumerable<RestaurantQRCodeDto>> GetRestaurantQRCodesAsync(string baseUri)
     {
         // For Blazor Server, we can use Task.FromResult or just run synchronously since GetPois is sync in this service
-        var pois = _adminDataService.GetPois();
+        var pois = _adminDataService.GetPois().Where(p => p.IsApproved);
         var dtos = new List<RestaurantQRCodeDto>();
 
         foreach (var poi in pois)
