@@ -154,17 +154,7 @@ _ = Task.Run(async () => {
             Console.WriteLine("[DB-Background] Admin user seeded successfully.");
         }
 
-        var hasOwner = await dbContext.Users.AnyAsync(u => u.Username == "owner");
-        if (!hasOwner)
-        {
-            Console.WriteLine("[DB-Background] Seeding owner user...");
-            var ownerPasswordHash = BCrypt.Net.BCrypt.HashPassword("123456");
-            await dbContext.Database.ExecuteSqlRawAsync(
-                "INSERT INTO \"Users\" (\"Id\", \"Username\", \"PasswordHash\", \"Role\") VALUES ({0}, {1}, {2}, {3})",
-                Guid.NewGuid(), "owner", ownerPasswordHash, "Owner"
-            );
-            Console.WriteLine("[DB-Background] Owner user seeded successfully.");
-        }
+
     }
     catch (Exception ex) {
         Console.WriteLine($"[DB Error] Background startup sync failed: {ex.Message}");
@@ -198,15 +188,7 @@ app.MapPost("/api/auth/login", async (JsonElement body, CmsDbContext db, IConfig
                 username = "admin" 
             });
         }
-        if (string.Equals(username, "owner", StringComparison.OrdinalIgnoreCase) && password == "123456")
-        {
-            var ownerUser = await db.Users.FirstOrDefaultAsync(u => u.Username == "owner");
-            return Results.Ok(new { 
-                token = GenerateToken(ownerUser?.Id.ToString() ?? Guid.Empty.ToString(), "owner", "Owner", cfg), 
-                role = "Owner", 
-                username = "owner" 
-            });
-        }
+
 
         var user = await db.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
         if (user != null && !string.IsNullOrEmpty(user.PasswordHash))
@@ -502,8 +484,8 @@ app.MapPost("/api/auth/users", async (JsonElement body, CmsDbContext db) =>
         if (string.IsNullOrWhiteSpace(username))
             return Results.BadRequest(new { message = "Username là bắt buộc" });
 
-        if (!System.Text.RegularExpressions.Regex.IsMatch(username, @"^(\+84|0)[0-9]{8,10}$"))
-            return Results.BadRequest(new { message = "Username (Số điện thoại) không hợp lệ" });
+        if (!string.IsNullOrWhiteSpace(phone) && !System.Text.RegularExpressions.Regex.IsMatch(phone, @"^(\+84|0)[0-9]{8,10}$"))
+            return Results.BadRequest(new { message = "Số điện thoại không hợp lệ" });
 
         if (!string.IsNullOrWhiteSpace(email) && !System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
             return Results.BadRequest(new { message = "Email không đúng định dạng" });
