@@ -27,7 +27,7 @@
                            FontSize="14"
                            Margin="0,4,0,0" />
                     <Slider x:Name="UpdateFrequencySlider"
-                            Minimum="3"
+                            Minimum="1"
                             Maximum="30"
                             Value="{Binding UpdateFrequency, Mode=TwoWay}" />
                     <HorizontalStackLayout HorizontalOptions="Center" Spacing="4">
@@ -55,7 +55,7 @@
                            FontSize="14"
                            Margin="0,4,0,0" />
                     <Slider x:Name="DefaultRadiusSlider"
-                            Minimum="20"
+                            Minimum="5"
                             Maximum="200"
                             Value="{Binding DefaultRadius, Mode=TwoWay}" />
                     <HorizontalStackLayout HorizontalOptions="Center" Spacing="4">
