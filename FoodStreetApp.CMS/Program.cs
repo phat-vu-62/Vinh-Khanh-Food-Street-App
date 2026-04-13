@@ -494,34 +494,26 @@ app.MapPost("/api/auth/users", async (JsonElement body, CmsDbContext db) =>
 });
 
 // Get ALL revenue stats (real data from DB)
-// Only count revenue for APPROVED POIs — unapproved = refunded
+// Get ALL revenue stats (real data from DB)
+// Calculates revenue based on actual transactions
 app.MapGet("/api/auth/revenue", async (CmsDbContext db) =>
 {
-    var all = await db.UserHistories
-        .Where(h => h.Amount.HasValue && h.Amount > 0)
-        .ToListAsync();
+    var all = await db.UserHistories.ToListAsync();
 
-    // Get approved POI IDs
-    var approvedPoiIds = await db.Pois
-        .Where(p => p.IsApproved)
-        .Select(p => p.Id)
-        .ToListAsync();
+    // Registration revenue always counts
+    var registerRevenue = all.Where(x => x.Action == "register_merchant" && x.Amount > 0).Sum(x => x.Amount ?? 0);
 
-    // Registration revenue always counts (account was created regardless)
-    var registerRevenue = all.Where(x => x.Action == "register_merchant").Sum(x => x.Amount ?? 0);
+    // Listen revenue counts explicitly paid positive amounts
+    var listenRevenue = all.Where(x => x.Action == "payment_listen" && x.Amount > 0).Sum(x => x.Amount ?? 0);
 
-    // Listen revenue: only for approved POIs
-    var listenAll = all.Where(x => x.Action == "payment_listen").ToList();
-    var listenRevenue = listenAll.Where(x => approvedPoiIds.Contains(x.PoiId)).Sum(x => x.Amount ?? 0);
-    var listenRefund = listenAll.Where(x => !approvedPoiIds.Contains(x.PoiId)).Sum(x => x.Amount ?? 0);
+    // Create POI revenue includes ALL create POI payments (approved + pending)
+    var createPoiRevenue = all.Where(x => x.Action == "payment_create_poi" && x.Amount > 0).Sum(x => x.Amount ?? 0);
 
-    // Create POI revenue: only for approved POIs
-    var createAll = all.Where(x => x.Action == "payment_create_poi").ToList();
-    var createPoiRevenue = createAll.Where(x => x.PoiId == 0 || approvedPoiIds.Contains(x.PoiId)).Sum(x => x.Amount ?? 0);
-    var createPoiRefund = createAll.Where(x => x.PoiId != 0 && !approvedPoiIds.Contains(x.PoiId)).Sum(x => x.Amount ?? 0);
+    // Total refund is the absolute sum of all negative transaction amounts
+    var totalRefund = Math.Abs(all.Where(x => x.Amount < 0).Sum(x => x.Amount ?? 0));
 
-    var totalRefund = listenRefund + createPoiRefund;
-    var totalRevenue = registerRevenue + listenRevenue + createPoiRevenue;
+    // Total Revenue is gross revenue MINUS total refunds
+    var totalRevenue = registerRevenue + listenRevenue + createPoiRevenue - totalRefund;
 
     return Results.Ok(new
     {
@@ -530,9 +522,9 @@ app.MapGet("/api/auth/revenue", async (CmsDbContext db) =>
         ListenRevenue = listenRevenue,
         CreatePoiRevenue = createPoiRevenue,
         TotalRefund = totalRefund,
-        TotalRegistrations = all.Count(x => x.Action == "register_merchant"),
-        TotalListenPayments = listenAll.Count(x => approvedPoiIds.Contains(x.PoiId)),
-        TotalCreatePoiPayments = createAll.Count(x => x.PoiId == 0 || approvedPoiIds.Contains(x.PoiId))
+        TotalRegistrations = all.Count(x => x.Action == "register_merchant" && x.Amount > 0),
+        TotalListenPayments = all.Count(x => x.Action == "payment_listen" && x.Amount > 0),
+        TotalCreatePoiPayments = all.Count(x => x.Action == "payment_create_poi" && x.Amount > 0)
     });
 });
 

@@ -86,7 +86,24 @@ public class AdminDataService : IAdminDataService
         }
 
         var deletedId = item.Id;
+        var wasPending = !item.IsApproved;
+        var ownerId = item.OwnerId;
+
         _dbContext.Pois.Remove(item);
+
+        // If the POI was never approved, refund the 200k
+        if (wasPending && ownerId != Guid.Empty)
+        {
+            _dbContext.UserHistories.Add(new UserHistory 
+            {
+                UserId = ownerId.ToString(),
+                PoiId = deletedId,
+                Action = "refund_create_poi",
+                Amount = -200000,
+                VisitedAtUtc = DateTime.UtcNow
+            });
+        }
+
         _dbContext.SaveChanges();
         TrackPoiAction(deletedId, "Deleted");
         return true;
