@@ -4,24 +4,29 @@
 @inject HttpClient Http
 @inject IAdminDataService DataService
 @inject ToastService Toasts
-@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin, Owner")]
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthProvider
 
 <div class="d-flex justify-content-between align-items-center mb-5">
     <div>
-        <h1 class="h3 fw-bold mb-1">Quản lý Chủ quán</h1>
-        <p class="text-muted mb-0">Danh sách tài khoản Owner trong hệ thống.</p>
+        <h1 class="h3 fw-bold mb-1">Quản lý Tài khoản</h1>
+        <p class="text-muted mb-0">Danh sách tài khoản trong hệ thống.</p>
     </div>
     <div class="d-flex gap-2">
         <button class="btn btn-saas btn-saas-secondary" @onclick="LoadData">
             <i class="bi bi-arrow-clockwise me-1"></i> Làm mới
         </button>
-        <button class="btn btn-saas btn-saas-primary" @onclick="OpenCreateModal">
-            <i class="bi bi-plus-lg me-1"></i> Tạo tài khoản
-        </button>
+        <AuthorizeView Roles="Admin">
+            <button class="btn btn-saas btn-saas-primary" @onclick="OpenCreateModal">
+                <i class="bi bi-plus-lg me-1"></i> Tạo tài khoản
+            </button>
+        </AuthorizeView>
     </div>
 </div>
 
 @* KPI Cards *@
+<AuthorizeView Roles="Admin">
 <div class="row g-4 mb-5">
     <div class="col-lg-3 col-md-6">
         <div class="saas-card stats-card border-primary h-100">
@@ -72,6 +77,7 @@
         </div>
     </div>
 </div>
+</AuthorizeView>
 
 @* Search *@
 <div class="saas-card p-4 mb-4">
@@ -100,7 +106,6 @@
     </div>
 </div>
 
-@* Users Table *@
 <div class="saas-card overflow-hidden">
     @if (_isLoading)
     {
@@ -192,31 +197,46 @@
                                 <span class="small text-muted">@user.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy")</span>
                             </td>
                             <td class="text-end pe-4">
-                                @if (user.Role != "Admin")
-                                {
-                                    <div class="d-flex gap-1 justify-content-end">
-                                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
-                                                @onclick="() => ShowEditModal(user)"
-                                                title="Sửa">
-                                            <i class="bi bi-pencil me-1"></i> Sửa
-                                        </button>
-                                        <button class="btn btn-sm @(user.IsActive ? "btn-outline-warning" : "btn-outline-success") rounded-pill px-3"
-                                                @onclick="() => ToggleActive(user)"
-                                                title="@(user.IsActive ? "Khóa" : "Mở")">
-                                            <i class="bi @(user.IsActive ? "bi-lock" : "bi-unlock") me-1"></i>
-                                            @(user.IsActive ? "Khóa" : "Mở")
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger rounded-pill px-3"
-                                                @onclick="() => ConfirmDelete(user)"
-                                                title="Xóa">
-                                            <i class="bi bi-trash me-1"></i> Xóa
-                                        </button>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <span class="badge bg-light text-muted border">System</span>
-                                }
+                                <AuthorizeView Roles="Admin" Context="actionContext">
+                                    <Authorized>
+                                        @if (user.Role != "Admin")
+                                        {
+                                            <div class="d-flex gap-1 justify-content-end">
+                                                <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                                                        @onclick="() => ShowEditModal(user)"
+                                                        title="Sửa">
+                                                    <i class="bi bi-pencil me-1"></i> Sửa
+                                                </button>
+                                                <button class="btn btn-sm @(user.IsActive ? "btn-outline-warning" : "btn-outline-success") rounded-pill px-3"
+                                                        @onclick="() => ToggleActive(user)"
+                                                        title="@(user.IsActive ? "Khóa" : "Mở")">
+                                                    <i class="bi @(user.IsActive ? "bi-lock" : "bi-unlock") me-1"></i>
+                                                    @(user.IsActive ? "Khóa" : "Mở")
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger rounded-pill px-3"
+                                                        @onclick="() => ConfirmDelete(user)"
+                                                        title="Xóa">
+                                                    <i class="bi bi-trash me-1"></i> Xóa
+                                                </button>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-light text-muted border">System</span>
+                                        }
+                                    </Authorized>
+                                </AuthorizeView>
+                                <AuthorizeView Roles="Owner" Context="actionContext">
+                                    <Authorized>
+                                        <div class="d-flex gap-1 justify-content-end">
+                                            <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                                                    @onclick="() => ShowEditModal(user)"
+                                                    title="Sửa">
+                                                <i class="bi bi-pencil me-1"></i> Sửa
+                                            </button>
+                                        </div>
+                                    </Authorized>
+                                </AuthorizeView>
                             </td>
                         </tr>
                     }
@@ -459,11 +479,24 @@
         _isLoading = true;
         try
         {
+            var authState = await AuthProvider.GetAuthenticationStateAsync();
+            var isOwner = authState.User.IsInRole("Owner");
+            var userIdStr = authState.User.Claims.FirstOrDefault(c => c.Type == "userId")?.Value;
+
             var usersResponse = await Http.GetAsync("api/auth/users");
             if (usersResponse.IsSuccessStatusCode)
             {
                 var json = await usersResponse.Content.ReadAsStringAsync();
-                _users = JsonSerializer.Deserialize<List<UserDto>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                var allUsers = JsonSerializer.Deserialize<List<UserDto>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                
+                if (isOwner && userIdStr != null)
+                {
+                    _users = allUsers.Where(u => u.Id.ToString() == userIdStr).ToList();
+                }
+                else
+                {
+                    _users = allUsers;
+                }
             }
 
             var revenueResponse = await Http.GetAsync("api/auth/revenue");

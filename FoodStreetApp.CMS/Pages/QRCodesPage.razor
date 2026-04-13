@@ -1,11 +1,14 @@
 @page "/qrcodes"
-@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin, Owner")]
 @namespace FoodStreetApp.CMS.Pages
 @using FoodStreetApp.CMS.Interfaces
 @using FoodStreetApp.Shared.DTOs
+@using Microsoft.AspNetCore.Components.Authorization
 @inject IQRCodeService QRCodeService
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
+@inject IAdminDataService DataService
+@inject AuthenticationStateProvider AuthProvider
 
 <div class="page-container">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -166,9 +169,24 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var isOwner = user.IsInRole("Owner");
+        var userIdStr = user.Claims.FirstOrDefault(c => c.Type == "userId")?.Value;
+
         // Get the current base URL
         string baseUri = NavigationManager.BaseUri;
-        qrCodes = await QRCodeService.GetRestaurantQRCodesAsync(baseUri);
+        var allQr = await QRCodeService.GetRestaurantQRCodesAsync(baseUri);
+
+        if (isOwner && Guid.TryParse(userIdStr, out var uId))
+        {
+            var myPois = DataService.GetPois().Where(x => x.OwnerId == uId).Select(x => x.Id).ToList();
+            qrCodes = allQr.Where(x => myPois.Contains(x.Id)).ToList();
+        }
+        else
+        {
+            qrCodes = allQr;
+        }
     }
 
     private async Task DownloadQR(RestaurantQRCodeDto item)
