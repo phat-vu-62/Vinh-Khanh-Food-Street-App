@@ -91,7 +91,8 @@ namespace FoodStreetApp.Services
                                 System.Diagnostics.Debug.WriteLine(">>> Location is null, retrying...");
                             }
 
-                            await Task.Delay(1000, _cancelTokenSource.Token);
+                            var intervalMs = Preferences.Get("update_frequency", 5) * 1000;
+                            await Task.Delay(intervalMs, _cancelTokenSource.Token);
                         }
                         catch (OperationCanceledException)
                         {

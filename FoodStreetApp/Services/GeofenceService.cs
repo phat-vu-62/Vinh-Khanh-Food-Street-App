@@ -32,8 +32,8 @@ namespace FoodStreetApp.Services
 
         // --- POC configuration constants ---
 
-        /// <summary>Fixed trigger radius in meters — narration fires when the user enters within this distance of a POI.</summary>
-        private const double TriggerRadiusMeters = 15.0;
+        /// <summary>Fixed trigger radius in meters — reads from user Settings, defaults to 15m.</summary>
+        private double TriggerRadiusMeters => Preferences.Get("default_radius", 15);
 
         /// <summary>
         /// Minimum spacing between retained POIs after clustering (meters).
@@ -174,7 +174,21 @@ namespace FoodStreetApp.Services
                     $"  [{tag}] '{poi.Name}' {currentDistance:F0}m | P{poi.Priority}");
 
                 if (isEntered && !poi.HasPlayed)
+                {
+                    // Check cooldown: if LastTriggered is set and cooldown hasn't expired, skip
+                    if (poi.LastTriggered.HasValue)
+                    {
+                        var cooldownMin = Preferences.Get("cooldown_minutes", 5);
+                        var elapsed = (DateTime.UtcNow - poi.LastTriggered.Value).TotalMinutes;
+                        if (elapsed < cooldownMin)
+                        {
+                            System.Diagnostics.Debug.WriteLine(
+                                $"  [⏳ CD ] '{poi.Name}' cooldown: {elapsed:F1}/{cooldownMin}min");
+                            continue;
+                        }
+                    }
                     candidates.Add((poi, currentDistance));
+                }
             }
 
             // No POIs entered or all already played

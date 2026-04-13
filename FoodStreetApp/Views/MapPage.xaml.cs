@@ -104,7 +104,7 @@ namespace FoodStreetApp.Views
                 var circle = new Circle
                 {
                     Center = new Location(poi.Latitude, poi.Longitude),
-                    Radius = new Distance(poi.Radius),
+                    Radius = new Distance(Preferences.Get("default_radius", 15)),
                     StrokeColor = Colors.Transparent,
                     StrokeWidth = 0,
                     FillColor = Colors.Transparent
@@ -140,12 +140,14 @@ namespace FoodStreetApp.Views
             var nearby = _viewModel.GetNearbyPOIs(location, 50);
             var newIds = new HashSet<int>(nearby.Select(x => x.poi.Id));
 
+            var triggerRadius = (double)Preferences.Get("default_radius", 15);
+
             if (newIds.SetEquals(_shownPoiIds))
             {
                 // Same POIs still in view — only update the distance labels and circle colors
                 foreach (var (poi, distance) in nearby)
                 {
-                    bool isInside = distance <= 18.0;
+                    bool isInside = distance <= triggerRadius;
 
                     if (_poiPins.TryGetValue(poi.Id, out var existingPin))
                     {
@@ -164,6 +166,7 @@ namespace FoodStreetApp.Views
 
                     if (_poiCircles.TryGetValue(poi.Id, out var existingCircle))
                     {
+                        existingCircle.Radius = new Distance(triggerRadius);
                         if (isInside) // POI_TRIGGER_RADIUS
                         {
                             existingCircle.StrokeWidth = 2;
@@ -200,7 +203,7 @@ namespace FoodStreetApp.Views
             {
                 System.Diagnostics.Debug.WriteLine($"[MAP]   '{poi.Name}' — {distance:F0}m (Priority: {poi.Priority})");
 
-                bool isInside = distance <= 18.0;
+                bool isInside = distance <= triggerRadius;
 
                 var pin = new Pin
                 {
@@ -219,7 +222,7 @@ namespace FoodStreetApp.Views
                 var circle = new Circle
                 {
                     Center = new Location(poi.Latitude, poi.Longitude),
-                    Radius = new Distance(poi.Radius),
+                    Radius = new Distance(triggerRadius),
                     StrokeColor = isInside ? Colors.Red : Colors.Transparent,
                     StrokeWidth = isInside ? 2 : 0,
                     FillColor = isInside ? Color.FromArgb("#33FF0000") : Colors.Transparent

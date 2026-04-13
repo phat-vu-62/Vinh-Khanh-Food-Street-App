@@ -225,7 +225,7 @@ namespace FoodStreetApp.ViewModels
 
         private void UpdateLocationDisplay(Location location)
         {
-            const double POI_TRIGGER_RADIUS = 18.0;
+            var POI_TRIGGER_RADIUS = (double)Preferences.Get("default_radius", 15);
             var loc = LocalizationResourceManager.Instance;
 
             CurrentLocationText = $"GPS: {location.Latitude:F6}, {location.Longitude:F6}";

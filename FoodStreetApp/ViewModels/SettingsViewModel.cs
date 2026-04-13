@@ -189,7 +189,7 @@ namespace FoodStreetApp.ViewModels
         private void LoadSettings()
         {
             _updateFrequency = Preferences.Get(KEY_UPDATE_FREQUENCY, 5);
-            _defaultRadius = Preferences.Get(KEY_DEFAULT_RADIUS, 50);
+            _defaultRadius = Preferences.Get(KEY_DEFAULT_RADIUS, 15);
             _cooldownMinutes = Preferences.Get(KEY_COOLDOWN_MINUTES, 5);
             _preferTts = Preferences.Get(KEY_PREFER_TTS, false);
             _enableAudio = Preferences.Get(KEY_ENABLE_AUDIO, true);
