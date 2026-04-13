@@ -117,9 +117,20 @@ else
                     <span class="stats-value" style="font-size: 1.2rem;">@_revenueTotal.ToString("N0")₫</span>
                     <i class="bi bi-cash-stack text-success"></i>
                 </div>
-                <div class="progress mt-3" style="height: 4px;">
-                    <div class="progress-bar bg-success" style="width: 100%;"></div>
-                </div>
+                @if (_revenueRefund > 0)
+                {
+                    <div class="mt-2">
+                        <span class="badge bg-danger bg-opacity-10 text-danger border border-danger" style="font-size: 0.65rem;">
+                            <i class="bi bi-arrow-return-left me-1"></i>Hoàn: -@_revenueRefund.ToString("N0")₫
+                        </span>
+                    </div>
+                }
+                else
+                {
+                    <div class="progress mt-3" style="height: 4px;">
+                        <div class="progress-bar bg-success" style="width: 100%;"></div>
+                    </div>
+                }
             </div>
         </div>
         <div class="col-md-3">
@@ -233,6 +244,7 @@ else
     private decimal _revenueRegister = 0;
     private decimal _revenueListen = 0;
     private decimal _revenueCreatePoi = 0;
+    private decimal _revenueRefund = 0;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -268,6 +280,7 @@ else
                     _revenueRegister = rev.TryGetProperty("registerRevenue", out var rr) ? rr.GetDecimal() : 0;
                     _revenueListen = rev.TryGetProperty("listenRevenue", out var lr) ? lr.GetDecimal() : 0;
                     _revenueCreatePoi = rev.TryGetProperty("createPoiRevenue", out var cr) ? cr.GetDecimal() : 0;
+                    _revenueRefund = rev.TryGetProperty("totalRefund", out var rf) ? rf.GetDecimal() : 0;
                 }
             }
             catch { /* revenue fetch failed, keep at 0 */ }

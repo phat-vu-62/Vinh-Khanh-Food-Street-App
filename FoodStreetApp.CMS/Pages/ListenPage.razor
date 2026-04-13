@@ -27,6 +27,20 @@
             <a href="/" class="btn btn-primary w-100 rounded-pill mt-3">Quay lại trang chủ</a>
         </div>
     }
+    else if (!_poi.IsApproved)
+    {
+        <div class="status-box text-center p-4 shadow bg-white rounded-4" style="max-width: 380px;">
+            <div class="mb-3" style="color: #f59e0b;">
+                <i class="bi bi-hourglass-split" style="font-size: 4rem;"></i>
+            </div>
+            <h2 class="fw-bold h4">Địa điểm đang chờ duyệt</h2>
+            <p class="text-muted small">Quán <strong>@_poi.Name</strong> chưa được Admin phê duyệt. Vui lòng quay lại sau khi địa điểm đã được duyệt.</p>
+            <div class="p-3 bg-light rounded-3 mt-3">
+                <i class="bi bi-info-circle text-muted me-1"></i>
+                <span class="text-muted x-small">Nếu bạn là chủ quán, hãy liên hệ Admin để duyệt nhanh hơn.</span>
+            </div>
+        </div>
+    }
     else if (!_isPaid)
     {
         @* ===== PAYWALL CARD ===== *@
@@ -433,7 +447,7 @@
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
-        if (firstRender && _poi != null) {
+        if (firstRender && _poi != null && _poi.IsApproved) {
             // Get device ID and check payment
             _deviceId = await JSRuntime.InvokeAsync<string>("getDeviceId");
             
