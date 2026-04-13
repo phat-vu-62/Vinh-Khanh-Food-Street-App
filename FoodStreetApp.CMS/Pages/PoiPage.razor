@@ -445,6 +445,13 @@ else if (!_isLoading)
             _isLoading = true;
             _pois.Clear();
             _pois.AddRange(DataService.GetPois());
+
+            // Auto-adjust page if current page is now out of bounds (e.g. after deleting all items on last page)
+            var totalPages = GetTotalPoiPages();
+            if (_currentPage > totalPages && totalPages > 0)
+                _currentPage = totalPages;
+            else if (totalPages == 0)
+                _currentPage = 1;
         }
         catch
         {
