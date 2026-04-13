@@ -124,7 +124,29 @@
             }
             else
             {
-                errorMessage = "Tài khoản hoặc mật khẩu không chính xác";
+                if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                {
+                    try
+                    {
+                        var errorDoc = JsonDocument.Parse(raw);
+                        if (errorDoc.RootElement.TryGetProperty("message", out var msgProp))
+                        {
+                            errorMessage = msgProp.GetString() ?? "Tài khoản của bạn đã bị khóa.";
+                        }
+                        else
+                        {
+                            errorMessage = "Tài khoản của bạn đã bị khóa.";
+                        }
+                    }
+                    catch
+                    {
+                        errorMessage = "Tài khoản của bạn đã bị khóa.";
+                    }
+                }
+                else
+                {
+                    errorMessage = "Tài khoản hoặc mật khẩu không chính xác";
+                }
             }
         }
         catch (Exception ex)

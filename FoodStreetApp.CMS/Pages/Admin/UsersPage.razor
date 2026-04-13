@@ -195,6 +195,11 @@
                                 @if (user.Role != "Admin")
                                 {
                                     <div class="d-flex gap-1 justify-content-end">
+                                        <button class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                                                @onclick="() => ShowEditModal(user)"
+                                                title="Sửa">
+                                            <i class="bi bi-pencil me-1"></i> Sửa
+                                        </button>
                                         <button class="btn btn-sm @(user.IsActive ? "btn-outline-warning" : "btn-outline-success") rounded-pill px-3"
                                                 @onclick="() => ToggleActive(user)"
                                                 title="@(user.IsActive ? "Khóa" : "Mở")">
@@ -270,6 +275,61 @@
                             <span class="spinner-border spinner-border-sm me-1"></span>
                         }
                         <i class="bi bi-check-lg me-1"></i> Tạo tài khoản
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Edit User Modal *@
+@if (_showEditModal)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal fade show d-block" tabindex="-1" @onclick="CloseEditModal">
+        <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation="true">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-0 pb-0 px-4 pt-4">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-pencil-square me-2 text-primary"></i>Sửa tài khoản</h5>
+                    <button type="button" class="btn-close" @onclick="CloseEditModal"></button>
+                </div>
+                <div class="modal-body px-4 py-3">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">USERNAME (không thể đổi)</label>
+                        <input type="text" class="form-control" disabled value="@_editUser?.Username" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">HỌ TÊN</label>
+                        <input type="text" class="form-control" placeholder="Họ và tên" @bind="_editUser!.FullName" />
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-muted">SĐT</label>
+                            <input type="tel" class="form-control" placeholder="Số điện thoại" @bind="_editUser!.PhoneNumber" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-muted">EMAIL</label>
+                            <input type="email" class="form-control" placeholder="Email" @bind="_editUser!.Email" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">ĐỔI MẬT KHẨU (Bỏ trống nếu không đổi)</label>
+                        <input type="text" class="form-control" placeholder="Nhập mật khẩu mới..." @bind="_editPassword" />
+                    </div>
+                    @if (!string.IsNullOrEmpty(_editError))
+                    {
+                        <div class="alert alert-danger py-2 small mb-0">@_editError</div>
+                    }
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" @onclick="CloseEditModal">Hủy</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4" @onclick="UpdateUser"
+                            disabled="@_isEditing">
+                        @if (_isEditing)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                        }
+                        <i class="bi bi-check-lg me-1"></i> Lưu thay đổi
                     </button>
                 </div>
             </div>
@@ -357,6 +417,13 @@
     private string _newPassword = "123";
     private string? _createError;
     private bool _isCreating = false;
+
+    // Edit modal state
+    private bool _showEditModal = false;
+    private UserDto? _editUser;
+    private string _editPassword = "";
+    private string? _editError;
+    private bool _isEditing = false;
 
     // Delete modal state
     private bool _showDeleteModal = false;
@@ -473,6 +540,78 @@
         }
     }
 
+    private void CloseCreateModal()
+    {
+        _showCreateModal = false;
+        _newUsername = "";
+        _newFullName = "";
+        _newPhone = "";
+        _newEmail = "";
+        _newPassword = "123";
+        _createError = null;
+    }
+
+    private void ShowEditModal(UserDto user)
+    {
+        _editUser = new UserDto
+        {
+            Id = user.Id,
+            Username = user.Username,
+            FullName = user.FullName,
+            PhoneNumber = user.PhoneNumber,
+            Email = user.Email,
+            Role = user.Role,
+            IsActive = user.IsActive,
+            CreatedAtUtc = user.CreatedAtUtc
+        };
+        _editPassword = "";
+        _editError = null;
+        _showEditModal = true;
+    }
+
+    private void CloseEditModal()
+    {
+        _showEditModal = false;
+        _editUser = null;
+    }
+
+    private async Task UpdateUser()
+    {
+        if (_editUser == null) return;
+        _editError = null;
+        _isEditing = true;
+        try
+        {
+            var response = await Http.PutAsJsonAsync($"api/auth/users/{_editUser.Id}", new
+            {
+                fullName = _editUser.FullName,
+                phoneNumber = _editUser.PhoneNumber,
+                email = _editUser.Email,
+                password = string.IsNullOrWhiteSpace(_editPassword) ? null : _editPassword
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                Toasts.Success("Đã cập nhật thông tin tài khoản.");
+                CloseEditModal();
+                await LoadData();
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                _editError = $"Lỗi: {error}";
+            }
+        }
+        catch (Exception ex)
+        {
+            _editError = "Lỗi kết nối: " + ex.Message;
+        }
+        finally
+        {
+            _isEditing = false;
+        }
+    }
+
     private void OpenCreateModal()
     {
         _newUsername = "";
@@ -482,11 +621,6 @@
         _newPassword = "123";
         _createError = null;
         _showCreateModal = true;
-    }
-
-    private void CloseCreateModal()
-    {
-        _showCreateModal = false;
     }
 
     private async Task CreateUser()

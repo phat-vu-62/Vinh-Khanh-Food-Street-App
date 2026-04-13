@@ -441,6 +441,30 @@ app.MapPut("/api/auth/users/{id}/toggle-active", async (Guid id, CmsDbContext db
     return Results.Ok(new { user.Id, user.IsActive });
 });
 
+// Admin-only: Update user info
+app.MapPut("/api/auth/users/{id}", async (Guid id, JsonElement body, CmsDbContext db) =>
+{
+    var user = await db.Users.FindAsync(id);
+    if (user == null) return Results.NotFound();
+
+    var fullName = body.TryGetProperty("fullName", out var fnProp) && fnProp.ValueKind != JsonValueKind.Null ? fnProp.GetString() : user.FullName;
+    var phone = body.TryGetProperty("phoneNumber", out var phProp) && phProp.ValueKind != JsonValueKind.Null ? phProp.GetString() : user.PhoneNumber;
+    var email = body.TryGetProperty("email", out var emProp) && emProp.ValueKind != JsonValueKind.Null ? emProp.GetString() : user.Email;
+    var password = body.TryGetProperty("password", out var pwProp) && pwProp.ValueKind != JsonValueKind.Null ? pwProp.GetString() : null;
+
+    user.FullName = fullName;
+    user.PhoneNumber = phone;
+    user.Email = email;
+
+    if (!string.IsNullOrWhiteSpace(password))
+    {
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(password);
+    }
+
+    await db.SaveChangesAsync();
+    return Results.Ok(new { success = true });
+});
+
 // Admin-only: Delete user
 app.MapDelete("/api/auth/users/{id}", async (Guid id, CmsDbContext db) =>
 {
