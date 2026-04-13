@@ -5,6 +5,7 @@
 @inject NavigationManager NavigationManager
 @inject IConfiguration Configuration
 @inject AuthenticationStateProvider AuthStateProvider
+@inject HttpClient Http
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
 @using Microsoft.JSInterop
 @using Microsoft.AspNetCore.Components.Forms
@@ -328,6 +329,64 @@ else if (!_isLoading)
               OnConfirm="DeleteConfirmedAsync"
               OnCancel="CancelDelete" />
 
+@* Payment Modal for new POI *@
+@if (_showPaymentModal)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal fade show d-block" tabindex="-1" @onclick="() => _showPaymentModal = false">
+        <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation="true">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-0 pb-0 px-4 pt-4">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-credit-card me-2 text-warning"></i>Thanh toán tạo địa điểm</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showPaymentModal = false"></button>
+                </div>
+                <div class="modal-body px-4 py-3">
+                    <div class="p-4 rounded-4 mb-3" style="background: linear-gradient(135deg, #fef3c7, #fef9c3); border: 2px solid #fbbf24;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-bold text-dark">Phí tạo địa điểm mới</div>
+                                <div class="text-muted small">Mỗi địa điểm cần thanh toán riêng</div>
+                            </div>
+                            <div class="fw-bold fs-4 text-success">200.000₫</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">PHƯƠNG THỨC THANH TOÁN</label>
+                        <div class="d-flex gap-2">
+                            <button class="btn flex-fill py-2 @(_poiPayMethod == "momo" ? "btn-primary" : "btn-outline-secondary")" @onclick="SetPayMomo">
+                                <i class="bi bi-phone me-1"></i> MoMo
+                            </button>
+                            <button class="btn flex-fill py-2 @(_poiPayMethod == "vnpay" ? "btn-primary" : "btn-outline-secondary")" @onclick="SetPayVnpay">
+                                <i class="bi bi-qr-code me-1"></i> VNPay
+                            </button>
+                            <button class="btn flex-fill py-2 @(_poiPayMethod == "bank" ? "btn-primary" : "btn-outline-secondary")" @onclick="SetPayBank">
+                                <i class="bi bi-bank me-1"></i> CK
+                            </button>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(_poiPayError))
+                    {
+                        <div class="alert alert-danger py-2 small mb-0">@_poiPayError</div>
+                    }
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                    <button class="btn btn-outline-secondary rounded-pill px-4" @onclick="() => _showPaymentModal = false">Hủy</button>
+                    <button class="btn rounded-pill px-4 fw-bold text-white" style="background: linear-gradient(135deg, #f59e0b, #ef4444);" 
+                            @onclick="ProcessPoiPayment" disabled="@_isPoiPayProcessing">
+                        @if (_isPoiPayProcessing)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                        }
+                        <i class="bi bi-shield-check me-1"></i> Thanh toán 200.000₫
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<POI> _pois = [];
     private bool _isLoading;
@@ -345,6 +404,18 @@ else if (!_isLoading)
     private bool _mapInitialized;
     private bool _filterPending;
     private Guid _currentUserId;
+
+    // Payment state for new POI
+    private bool _showPaymentModal = false;
+    private bool _isPoiPayProcessing = false;
+    private bool _poiPaymentCompleted = false;
+    private string? _poiPayError;
+    private string _poiPayMethod = "momo";
+
+    private void SetPoiPayMethod(string method) => _poiPayMethod = method;
+    private void SetPayMomo() => _poiPayMethod = "momo";
+    private void SetPayVnpay() => _poiPayMethod = "vnpay";
+    private void SetPayBank() => _poiPayMethod = "bank";
 
     protected override async Task OnInitializedAsync()
     {
@@ -501,6 +572,13 @@ else if (!_isLoading)
 
     private async Task SaveAsync()
     {
+        // If creating new POI and not yet paid, show payment modal
+        if (!_isEditing && !_poiPaymentCompleted)
+        {
+            _showPaymentModal = true;
+            return;
+        }
+
         try
         {
             _isLoadingSave = true;
@@ -524,6 +602,7 @@ else if (!_isLoading)
             else DataService.AddPoi(poi);
 
             _isEditorOpen = false;
+            _poiPaymentCompleted = false; // Reset for next creation
             Toasts.Success("Đã lưu địa điểm thành công! 🚀");
             await LoadAsync();
         }
@@ -531,9 +610,52 @@ else if (!_isLoading)
         finally { _isLoadingSave = false; }
     }
 
-    private void CloseEditor() { _isEditorOpen = false; _mapInitialized = false; }
+    private void CloseEditor() { _isEditorOpen = false; _mapInitialized = false; _poiPaymentCompleted = false; }
     private void ShowQrCode(POI poi) { _selectedPoiForQr = poi; _qrModalVisible = true; }
     private void AskDelete(POI poi) { _deleteId = poi.Id; _confirmDeleteVisible = true; }
     private async Task DeleteConfirmedAsync() { if (_deleteId.HasValue) { DataService.DeletePoi(_deleteId.Value); Toasts.Success("Đã xóa."); await LoadAsync(); } _confirmDeleteVisible = false; }
     private void CancelDelete() => _confirmDeleteVisible = false;
+
+    private async Task ProcessPoiPayment()
+    {
+        _poiPayError = null;
+        _isPoiPayProcessing = true;
+        StateHasChanged();
+
+        try
+        {
+            // Simulate payment processing
+            await Task.Delay(2000);
+
+            var response = await Http.PostAsJsonAsync("api/owner/pay-create-poi", new
+            {
+                userId = _currentUserId.ToString(),
+                amount = 200000
+            });
+
+            if (response.IsSuccessStatusCode)
+            {
+                _poiPaymentCompleted = true;
+                _showPaymentModal = false;
+                Toasts.Success("Thanh toán thành công! Đang tạo địa điểm...");
+                StateHasChanged();
+
+                // Auto-submit the form after payment
+                await SaveAsync();
+            }
+            else
+            {
+                _poiPayError = "Thanh toán thất bại. Vui lòng thử lại.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _poiPayError = $"Lỗi: {ex.Message}";
+        }
+        finally
+        {
+            _isPoiPayProcessing = false;
+            StateHasChanged();
+        }
+    }
 }

@@ -493,19 +493,133 @@ app.MapPost("/api/auth/users", async (JsonElement body, CmsDbContext db) =>
     }
 });
 
-// Get registration revenue stats
+// Get ALL revenue stats (real data from DB)
 app.MapGet("/api/auth/revenue", async (CmsDbContext db) =>
 {
-    var stats = await db.UserHistories
-        .Where(h => h.Action == "register_merchant" && h.Amount.HasValue)
-        .GroupBy(h => 1)
-        .Select(g => new
+    var all = await db.UserHistories
+        .Where(h => h.Amount.HasValue && h.Amount > 0)
+        .ToListAsync();
+
+    var totalRevenue = all.Sum(x => x.Amount ?? 0);
+    var registerRevenue = all.Where(x => x.Action == "register_merchant").Sum(x => x.Amount ?? 0);
+    var listenRevenue = all.Where(x => x.Action == "payment_listen").Sum(x => x.Amount ?? 0);
+    var createPoiRevenue = all.Where(x => x.Action == "payment_create_poi").Sum(x => x.Amount ?? 0);
+
+    return Results.Ok(new
+    {
+        TotalRevenue = totalRevenue,
+        RegisterRevenue = registerRevenue,
+        ListenRevenue = listenRevenue,
+        CreatePoiRevenue = createPoiRevenue,
+        TotalRegistrations = all.Count(x => x.Action == "register_merchant"),
+        TotalListenPayments = all.Count(x => x.Action == "payment_listen"),
+        TotalCreatePoiPayments = all.Count(x => x.Action == "payment_create_poi")
+    });
+});
+
+// Get owner-specific revenue (listen payments for their POIs)
+app.MapGet("/api/auth/owner-revenue/{ownerId}", async (Guid ownerId, CmsDbContext db) =>
+{
+    var ownerPoiIds = await db.Pois
+        .Where(p => p.OwnerId == ownerId)
+        .Select(p => p.Id)
+        .ToListAsync();
+
+    var listenRevenue = await db.UserHistories
+        .Where(h => h.Action == "payment_listen" && h.Amount.HasValue && ownerPoiIds.Contains(h.PoiId))
+        .SumAsync(h => h.Amount ?? 0);
+
+    var listenCount = await db.UserHistories
+        .Where(h => h.Action == "payment_listen" && ownerPoiIds.Contains(h.PoiId))
+        .CountAsync();
+
+    return Results.Ok(new { ListenRevenue = listenRevenue, ListenCount = listenCount });
+});
+
+// ==========================================
+// 6. PAYMENT GATEWAY (QR Listen + POI Create)
+// ==========================================
+
+// Check if device already paid for a POI
+app.MapPost("/api/listen/check-payment", async (JsonElement body, CmsDbContext db) =>
+{
+    var deviceId = body.GetProperty("deviceId").GetString();
+    var poiId = body.GetProperty("poiId").GetInt32();
+
+    if (string.IsNullOrWhiteSpace(deviceId))
+        return Results.BadRequest(new { paid = false });
+
+    var paid = await db.UserHistories.AnyAsync(h =>
+        h.UserId == deviceId && h.PoiId == poiId && h.Action == "payment_listen" && h.Amount.HasValue);
+
+    return Results.Ok(new { paid });
+});
+
+// Record listen payment
+app.MapPost("/api/listen/pay", async (JsonElement body, CmsDbContext db) =>
+{
+    try
+    {
+        var deviceId = body.GetProperty("deviceId").GetString();
+        var poiId = body.GetProperty("poiId").GetInt32();
+        var amount = body.TryGetProperty("amount", out var amtProp) ? amtProp.GetDecimal() : 20000m;
+
+        if (string.IsNullOrWhiteSpace(deviceId))
+            return Results.BadRequest(new { message = "Device ID bắt buộc" });
+
+        // Check if already paid
+        var alreadyPaid = await db.UserHistories.AnyAsync(h =>
+            h.UserId == deviceId && h.PoiId == poiId && h.Action == "payment_listen");
+        if (alreadyPaid)
+            return Results.Ok(new { success = true, alreadyPaid = true });
+
+        db.UserHistories.Add(new FoodStreetApp.Shared.Entities.UserHistory
         {
-            TotalRevenue = g.Sum(x => x.Amount ?? 0),
-            TotalRegistrations = g.Count()
-        })
-        .FirstOrDefaultAsync();
-    return Results.Ok(stats ?? new { TotalRevenue = 0m, TotalRegistrations = 0 });
+            UserId = deviceId!,
+            PoiId = poiId,
+            Action = "payment_listen",
+            VisitedAtUtc = DateTime.UtcNow,
+            Amount = amount
+        });
+        await db.SaveChangesAsync();
+        Console.WriteLine($"[PAY-LISTEN] Device {deviceId} paid {amount}đ for POI {poiId}");
+
+        return Results.Ok(new { success = true, alreadyPaid = false });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem("Lỗi thanh toán: " + ex.Message);
+    }
+});
+
+// Record POI creation payment (Owner)
+app.MapPost("/api/owner/pay-create-poi", async (JsonElement body, CmsDbContext db) =>
+{
+    try
+    {
+        var userId = body.GetProperty("userId").GetString();
+        var amount = body.TryGetProperty("amount", out var amtProp) ? amtProp.GetDecimal() : 200000m;
+
+        if (string.IsNullOrWhiteSpace(userId))
+            return Results.BadRequest(new { message = "User ID bắt buộc" });
+
+        db.UserHistories.Add(new FoodStreetApp.Shared.Entities.UserHistory
+        {
+            UserId = userId!,
+            PoiId = 0, // Will be linked after POI creation
+            Action = "payment_create_poi",
+            VisitedAtUtc = DateTime.UtcNow,
+            Amount = amount
+        });
+        await db.SaveChangesAsync();
+        Console.WriteLine($"[PAY-POI] User {userId} paid {amount}đ to create new POI");
+
+        return Results.Ok(new { success = true });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem("Lỗi thanh toán: " + ex.Message);
+    }
 });
 
 if (!app.Environment.IsDevelopment())

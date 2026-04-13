@@ -27,8 +27,63 @@
             <a href="/" class="btn btn-primary w-100 rounded-pill mt-3">Quay lại trang chủ</a>
         </div>
     }
+    else if (!_isPaid)
+    {
+        @* ===== PAYWALL CARD ===== *@
+        <div class="paywall-card shadow-lg">
+            <div class="gradient-bar"></div>
+            <div class="card-content">
+                <div class="icon-circle mb-3">
+                    <i class="bi bi-lock-fill"></i>
+                </div>
+                <h2 class="restaurant-title">@_poi.Name</h2>
+                <p class="text-muted small mb-1">@(_poi.Description ?? "Phố ẩm thực Vĩnh Khánh")</p>
+                
+                <div class="paywall-divider"></div>
+                
+                <div class="price-box">
+                    <span class="price-label">Phí nghe thuyết minh</span>
+                    <span class="price-value">20.000₫</span>
+                </div>
+                <p class="text-muted x-small mb-3">Thanh toán 1 lần, nghe không giới hạn tại địa điểm này.</p>
+
+                @if (!string.IsNullOrEmpty(_payError))
+                {
+                    <div class="alert alert-danger py-2 small mb-3 rounded-3">
+                        <i class="bi bi-exclamation-circle me-1"></i>@_payError
+                    </div>
+                }
+
+                <div class="pay-methods mb-3">
+                    <button class="pay-method-btn @(_payMethod == "momo" ? "active" : "")" @onclick="SelectMomo">
+                        <i class="bi bi-phone"></i> MoMo
+                    </button>
+                    <button class="pay-method-btn @(_payMethod == "vnpay" ? "active" : "")" @onclick="SelectVnpay">
+                        <i class="bi bi-qr-code"></i> VNPay
+                    </button>
+                    <button class="pay-method-btn @(_payMethod == "bank" ? "active" : "")" @onclick="SelectBank">
+                        <i class="bi bi-bank"></i> CK
+                    </button>
+                </div>
+
+                <button class="btn-pay-listen" @onclick="ProcessListenPayment" disabled="@_isPayProcessing">
+                    @if (_isPayProcessing)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2"></span>
+                        <span>Đang xử lý...</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-shield-check me-1"></i>
+                        <span>Thanh toán 20.000₫</span>
+                    }
+                </button>
+            </div>
+        </div>
+    }
     else
     {
+        @* ===== AUDIO PLAYER (after payment) ===== *@
         <div class="audio-card shadow-lg">
             <div class="gradient-bar"></div>
             
@@ -68,6 +123,11 @@
                 }
 
                 <audio @ref="_audioElement" id="listenAudio" src="@_audioUrl" preload="auto" crossorigin="anonymous"></audio>
+
+                <div class="paid-badge mt-3">
+                    <i class="bi bi-patch-check-fill text-success me-1"></i>
+                    <span class="x-small text-success">Đã thanh toán</span>
+                </div>
             </div>
         </div>
     }
@@ -234,11 +294,29 @@
     window.updateAudioState = function(data) {
         if (window.audioState) Object.assign(window.audioState, data);
     };
+
+    // Payment helpers
+    window.getDeviceId = function() {
+        let id = localStorage.getItem("tracking_user_id");
+        if (!id) {
+            id = 'web-' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem("tracking_user_id", id);
+        }
+        return id;
+    };
+
+    window.checkLocalPayment = function(poiId) {
+        return localStorage.getItem("paid_" + poiId) === "true";
+    };
+
+    window.saveLocalPayment = function(poiId) {
+        localStorage.setItem("paid_" + poiId, "true");
+    };
 </script>
 
 <style>
     .listen-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f1f5f9; padding: 20px; font-family: 'Inter', sans-serif; }
-    .audio-card { width: 100%; max-width: 400px; background: white; border-radius: 32px; overflow: hidden; position: relative; }
+    .audio-card, .paywall-card { width: 100%; max-width: 400px; background: white; border-radius: 32px; overflow: hidden; position: relative; }
     .gradient-bar { height: 6px; background: linear-gradient(90deg, #3b82f6, #06b6d4); }
     .lang-selector { display: flex; justify-content: center; gap: 8px; padding: 20px 10px 0; }
     .lang-btn { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 12px; font-size: 0.7rem; font-weight: bold; color: #64748b; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
@@ -252,6 +330,67 @@
     .audio-wave { display: flex; justify-content: center; gap: 4px; height: 20px; margin-top: 20px; }
     .audio-wave span { width: 3px; background: #3b82f6; border-radius: 2px; animation: w 0.8s infinite alternate; }
     @@keyframes w { from { height: 4px; } to { height: 18px; } }
+    .x-small { font-size: 0.72rem; }
+
+    /* Paywall styles */
+    .paywall-card .icon-circle { background: #fef3c7; color: #f59e0b; }
+    .paywall-divider { height: 1px; background: linear-gradient(90deg, transparent, #e2e8f0, transparent); margin: 16px 0; }
+    .price-box { 
+        background: linear-gradient(135deg, #f0fdf4, #ecfdf5); 
+        border: 2px solid #86efac; 
+        border-radius: 16px; 
+        padding: 16px; 
+        margin-bottom: 8px; 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+    }
+    .price-label { font-weight: 600; color: #374151; font-size: 0.9rem; }
+    .price-value { font-weight: 800; color: #059669; font-size: 1.4rem; }
+    .pay-methods { display: flex; gap: 8px; justify-content: center; }
+    .pay-method-btn {
+        flex: 1;
+        background: #f8fafc;
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 10px 8px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #64748b;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .pay-method-btn.active { 
+        border-color: #3b82f6; 
+        color: #3b82f6; 
+        background: #eff6ff; 
+        box-shadow: 0 0 12px rgba(59,130,246,0.15);
+    }
+    .btn-pay-listen {
+        width: 100%;
+        padding: 14px;
+        background: linear-gradient(135deg, #f59e0b, #ef4444);
+        border: none;
+        border-radius: 16px;
+        color: white;
+        font-weight: 700;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .btn-pay-listen:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(245,158,11,0.3); }
+    .btn-pay-listen:disabled { opacity: 0.6; cursor: not-allowed; }
+    .paid-badge {
+        display: inline-flex;
+        align-items: center;
+        background: #f0fdf4;
+        border: 1px solid #bbf7d0;
+        border-radius: 20px;
+        padding: 4px 14px;
+    }
 </style>
 
 @code {
@@ -263,6 +402,17 @@
     private bool _isLoading = true;
     private bool _notFound = false;
     private string _currentLang = "vi", _currentName = "", _statusMessage = "", _audioUrl = "";
+
+    // Payment state
+    private bool _isPaid = false;
+    private bool _isPayProcessing = false;
+    private string? _payError;
+    private string _payMethod = "momo";
+    private string _deviceId = "";
+
+    private void SelectMomo() => _payMethod = "momo";
+    private void SelectVnpay() => _payMethod = "vnpay";
+    private void SelectBank() => _payMethod = "bank";
 
     protected override void OnInitialized() {
         try {
@@ -284,10 +434,90 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender) {
         if (firstRender && _poi != null) {
-            _objRef = DotNetObjectReference.Create(this);
-            await Task.Delay(300);
-            await JSRuntime.InvokeVoidAsync("initAudioMobileBridge", _objRef, _audioElement, "main-play-btn");
-            await SyncDataToJs();
+            // Get device ID and check payment
+            _deviceId = await JSRuntime.InvokeAsync<string>("getDeviceId");
+            
+            // Check localStorage first (fast)
+            var localPaid = await JSRuntime.InvokeAsync<bool>("checkLocalPayment", PoiId);
+            if (localPaid)
+            {
+                _isPaid = true;
+                StateHasChanged();
+                await Task.Delay(100);
+                await InitPlayer();
+                return;
+            }
+
+            // Check server (in case localStorage was cleared but payment exists)
+            try {
+                var http = new HttpClient { BaseAddress = new Uri(NavigationManager.BaseUri) };
+                var resp = await http.PostAsJsonAsync("api/listen/check-payment", new { deviceId = _deviceId, poiId = PoiId });
+                if (resp.IsSuccessStatusCode)
+                {
+                    var json = await resp.Content.ReadFromJsonAsync<System.Text.Json.JsonElement>();
+                    if (json.TryGetProperty("paid", out var paidProp) && paidProp.GetBoolean())
+                    {
+                        _isPaid = true;
+                        await JSRuntime.InvokeVoidAsync("saveLocalPayment", PoiId);
+                        StateHasChanged();
+                        await Task.Delay(100);
+                        await InitPlayer();
+                        return;
+                    }
+                }
+            } catch { /* server check failed, show paywall */ }
+
+            StateHasChanged();
+        }
+    }
+
+    private async Task InitPlayer()
+    {
+        _objRef = DotNetObjectReference.Create(this);
+        await Task.Delay(300);
+        await JSRuntime.InvokeVoidAsync("initAudioMobileBridge", _objRef, _audioElement, "main-play-btn");
+        await SyncDataToJs();
+    }
+
+    private async Task ProcessListenPayment()
+    {
+        _payError = null;
+        _isPayProcessing = true;
+        StateHasChanged();
+
+        try
+        {
+            // Simulate payment delay
+            await Task.Delay(2000);
+
+            // Call API to record payment
+            var http = new HttpClient { BaseAddress = new Uri(NavigationManager.BaseUri) };
+            var resp = await http.PostAsJsonAsync("api/listen/pay", new { deviceId = _deviceId, poiId = PoiId, amount = 20000 });
+
+            if (resp.IsSuccessStatusCode)
+            {
+                // Save to localStorage
+                await JSRuntime.InvokeVoidAsync("saveLocalPayment", PoiId);
+                _isPaid = true;
+                StateHasChanged();
+
+                // Wait for DOM update then init player
+                await Task.Delay(200);
+                await InitPlayer();
+            }
+            else
+            {
+                _payError = "Thanh toán thất bại. Vui lòng thử lại.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _payError = $"Lỗi kết nối: {ex.Message}";
+        }
+        finally
+        {
+            _isPayProcessing = false;
+            StateHasChanged();
         }
     }
 

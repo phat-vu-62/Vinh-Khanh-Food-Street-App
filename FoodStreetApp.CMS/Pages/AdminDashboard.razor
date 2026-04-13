@@ -2,7 +2,9 @@
 @page "/dashboard"
 @using FoodStreetApp.CMS.Models
 @using FoodStreetApp.CMS.Components
+@using System.Text.Json
 @inject IAdminDataService DataService
+@inject HttpClient Http
 @inject ToastService Toasts
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
 
@@ -106,6 +108,58 @@ else
         </div>
     </div>
 
+    @* Revenue KPI Row *@
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="saas-card stats-card border-success h-100">
+                <span class="stats-label">Tổng doanh thu</span>
+                <div class="d-flex align-items-baseline justify-content-between">
+                    <span class="stats-value" style="font-size: 1.2rem;">@_revenueTotal.ToString("N0")₫</span>
+                    <i class="bi bi-cash-stack text-success"></i>
+                </div>
+                <div class="progress mt-3" style="height: 4px;">
+                    <div class="progress-bar bg-success" style="width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="saas-card stats-card h-100" style="border-left: 3px solid #8b5cf6;">
+                <span class="stats-label">Đăng ký chủ quán</span>
+                <div class="d-flex align-items-baseline justify-content-between">
+                    <span class="stats-value" style="font-size: 1.2rem;">@_revenueRegister.ToString("N0")₫</span>
+                    <i class="bi bi-person-plus" style="color: #8b5cf6;"></i>
+                </div>
+                <div class="progress mt-3" style="height: 4px;">
+                    <div class="progress-bar" style="width: 100%; background: #8b5cf6;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="saas-card stats-card h-100" style="border-left: 3px solid #06b6d4;">
+                <span class="stats-label">Nghe thuyết minh</span>
+                <div class="d-flex align-items-baseline justify-content-between">
+                    <span class="stats-value" style="font-size: 1.2rem;">@_revenueListen.ToString("N0")₫</span>
+                    <i class="bi bi-headphones" style="color: #06b6d4;"></i>
+                </div>
+                <div class="progress mt-3" style="height: 4px;">
+                    <div class="progress-bar" style="width: 100%; background: #06b6d4;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="saas-card stats-card h-100" style="border-left: 3px solid #f59e0b;">
+                <span class="stats-label">Tạo địa điểm</span>
+                <div class="d-flex align-items-baseline justify-content-between">
+                    <span class="stats-value" style="font-size: 1.2rem;">@_revenueCreatePoi.ToString("N0")₫</span>
+                    <i class="bi bi-geo-alt-fill" style="color: #f59e0b;"></i>
+                </div>
+                <div class="progress mt-3" style="height: 4px;">
+                    <div class="progress-bar" style="width: 100%; background: #f59e0b;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
 
     <div class="row g-4 mb-5">
@@ -175,6 +229,10 @@ else
     private int _poiCount;
     private int _audioCount;
     private DateTime _lastUpdated;
+    private decimal _revenueTotal = 0;
+    private decimal _revenueRegister = 0;
+    private decimal _revenueListen = 0;
+    private decimal _revenueCreatePoi = 0;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -197,6 +255,22 @@ else
             _audioCount = DataService.GetAudios().Count;
             
             _summary = await DataService.GetAnalyticsSummaryAsync();
+
+            // Load real revenue from DB
+            try
+            {
+                var resp = await Http.GetAsync("api/auth/revenue");
+                if (resp.IsSuccessStatusCode)
+                {
+                    var json = await resp.Content.ReadAsStringAsync();
+                    var rev = JsonSerializer.Deserialize<JsonElement>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    _revenueTotal = rev.TryGetProperty("totalRevenue", out var tr) ? tr.GetDecimal() : 0;
+                    _revenueRegister = rev.TryGetProperty("registerRevenue", out var rr) ? rr.GetDecimal() : 0;
+                    _revenueListen = rev.TryGetProperty("listenRevenue", out var lr) ? lr.GetDecimal() : 0;
+                    _revenueCreatePoi = rev.TryGetProperty("createPoiRevenue", out var cr) ? cr.GetDecimal() : 0;
+                }
+            }
+            catch { /* revenue fetch failed, keep at 0 */ }
         }
         catch (Exception ex)
         {

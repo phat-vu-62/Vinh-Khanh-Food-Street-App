@@ -3,8 +3,10 @@
 @using FoodStreetApp.CMS.Interfaces
 @using FoodStreetApp.CMS.Models
 @using FoodStreetApp.CMS.Components
+@using System.Text.Json
 @inject IAdminDataService DataService
 @inject IJSRuntime JSRuntime
+@inject HttpClient Http
 @inject ToastService Toasts
 @inject AuthenticationStateProvider AuthStateProvider
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Owner")]
@@ -65,6 +67,20 @@
                     {
                         <span class="text-muted x-small">Đã duyệt tất cả</span>
                     }
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row g-4 mb-5">
+        <div class="col-xl col-md-6">
+            <div class="saas-card stats-card border-warning h-100">
+                <span class="stats-label">Doanh thu nghe thuyết minh</span>
+                <div class="d-flex align-items-baseline justify-content-between">
+                    <span class="stats-value" style="font-size: 1.2rem;">@_listenRevenue.ToString("N0")₫</span>
+                    <i class="bi bi-cash-coin text-warning"></i>
+                </div>
+                <div class="mt-2">
+                    <span class="text-muted x-small">@_listenPayCount lượt thanh toán nghe audio</span>
                 </div>
             </div>
         </div>
@@ -183,6 +199,8 @@
     private bool _isLoading = true;
     private Guid _currentUserId;
     private DateTime _lastUpdated = DateTime.Now;
+    private decimal _listenRevenue = 0;
+    private int _listenPayCount = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -228,6 +246,20 @@
         {
             _myPoiCount = DataService.GetPoisByOwnerId(_currentUserId).Count;
             _summary = await DataService.GetAnalyticsSummaryAsync(null, null, _currentUserId);
+
+            // Load real listen revenue for owner's POIs
+            try
+            {
+                var resp = await Http.GetAsync($"api/auth/owner-revenue/{_currentUserId}");
+                if (resp.IsSuccessStatusCode)
+                {
+                    var json = await resp.Content.ReadAsStringAsync();
+                    var rev = JsonSerializer.Deserialize<JsonElement>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    _listenRevenue = rev.TryGetProperty("listenRevenue", out var lr) ? lr.GetDecimal() : 0;
+                    _listenPayCount = rev.TryGetProperty("listenCount", out var lc) ? lc.GetInt32() : 0;
+                }
+            }
+            catch { /* revenue fetch failed */ }
         }
         catch (Exception ex)
         {
