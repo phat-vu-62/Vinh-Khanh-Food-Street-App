@@ -79,7 +79,8 @@
 </div>
 </AuthorizeView>
 
-@* Search *@
+@* Admin View: Search & Table *@
+<AuthorizeView Roles="Admin">
 <div class="saas-card p-4 mb-4">
     <div class="row g-3 align-items-end">
         <div class="col-md-6">
@@ -245,8 +246,68 @@
         </div>
     }
 </div>
+</AuthorizeView>
 
-@* Create User Modal *@
+@* Owner View: Profile Form *@
+<AuthorizeView Roles="Owner">
+    <div class="saas-card overflow-hidden">
+        @if (_isLoading)
+        {
+            <div class="p-5 text-center">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="text-muted mt-3 small">Đang tải dữ liệu...</p>
+            </div>
+        }
+        else if (_editUser != null)
+        {
+            <div class="p-4 mx-auto" style="max-width: 800px;">
+                <h5 class="fw-bold mb-4"><i class="bi bi-person-badge text-primary me-2"></i> Hồ sơ của bạn</h5>
+                
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">USERNAME (không thể đổi)</label>
+                            <input type="text" class="form-control bg-light" disabled value="@_editUser.Username" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">HỌ TÊN</label>
+                            <input type="text" class="form-control" placeholder="Họ và tên" @bind="_editUser.FullName" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">ĐỔI MẬT KHẨU (Bỏ trống nếu không đổi)</label>
+                            <input type="text" class="form-control" placeholder="Nhập mật khẩu mới..." @bind="_editPassword" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">SỐ ĐIỆN THOẠI</label>
+                            <input type="tel" class="form-control" placeholder="Số điện thoại" @bind="_editUser.PhoneNumber" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold text-muted">EMAIL</label>
+                            <input type="email" class="form-control" placeholder="Email" @bind="_editUser.Email" />
+                        </div>
+                        <div class="mb-3 pt-4">
+                            <button class="btn btn-primary rounded-pill w-100 py-2 fw-bold" @onclick="UpdateUser" disabled="@_isEditing">
+                                @if (_isEditing)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                <i class="bi bi-shield-check me-2"></i> Lưu thay đổi
+                            </button>
+                        </div>
+                        @if (!string.IsNullOrEmpty(_editError))
+                        {
+                            <div class="alert alert-danger py-2 small mt-3 mb-0">@_editError</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</AuthorizeView>
+
+@* Create User Modal (Admin only) *@
 @if (_showCreateModal)
 {
     <div class="modal-backdrop fade show"></div>
@@ -492,6 +553,21 @@
                 if (isOwner && userIdStr != null)
                 {
                     _users = allUsers.Where(u => u.Id.ToString() == userIdStr).ToList();
+                    if (_users.Any())
+                    {
+                        var u = _users.First();
+                        _editUser = new UserDto
+                        {
+                            Id = u.Id,
+                            Username = u.Username,
+                            FullName = u.FullName,
+                            PhoneNumber = u.PhoneNumber,
+                            Email = u.Email,
+                            Role = u.Role,
+                            IsActive = u.IsActive,
+                            CreatedAtUtc = u.CreatedAtUtc
+                        };
+                    }
                 }
                 else
                 {
@@ -625,8 +701,8 @@
 
             if (response.IsSuccessStatusCode)
             {
-                Toasts.Success("Đã cập nhật thông tin tài khoản.");
-                CloseEditModal();
+                Toasts.Success("Đã cập nhật thông tin thành công.");
+                if (_showEditModal) CloseEditModal();
                 await LoadData();
             }
             else
