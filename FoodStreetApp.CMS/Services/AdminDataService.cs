@@ -88,11 +88,14 @@ public class AdminDataService : IAdminDataService
         var deletedId = item.Id;
         var wasPending = !item.IsApproved;
         var ownerId = item.OwnerId;
+        
+        // Ensure it was NEVER approved in the past before refunding
+        var everApproved = _dbContext.PoiSyncActions.Any(x => x.PoiId == deletedId && x.Action == "Approved");
 
         _dbContext.Pois.Remove(item);
 
         // If the POI was never approved, refund the 200k
-        if (wasPending && ownerId != Guid.Empty)
+        if (wasPending && !everApproved && ownerId != Guid.Empty)
         {
             _dbContext.UserHistories.Add(new UserHistory 
             {

@@ -506,14 +506,16 @@ app.MapGet("/api/auth/revenue", async (CmsDbContext db) =>
     // Listen revenue counts explicitly paid positive amounts
     var listenRevenue = all.Where(x => x.Action == "payment_listen" && x.Amount > 0).Sum(x => x.Amount ?? 0);
 
-    // Create POI revenue includes ALL create POI payments (approved + pending)
-    var createPoiRevenue = all.Where(x => x.Action == "payment_create_poi" && x.Amount > 0).Sum(x => x.Amount ?? 0);
+    // Create POI gross revenue includes ALL create POI payments (approved + pending)
+    var createPoiGross = all.Where(x => x.Action == "payment_create_poi" && x.Amount > 0).Sum(x => x.Amount ?? 0);
+    var createPoiRefunds = Math.Abs(all.Where(x => x.Action == "refund_create_poi" && x.Amount < 0).Sum(x => x.Amount ?? 0));
+    var createPoiRevenue = createPoiGross - createPoiRefunds;
 
     // Total refund is the absolute sum of all negative transaction amounts
     var totalRefund = Math.Abs(all.Where(x => x.Amount < 0).Sum(x => x.Amount ?? 0));
 
     // Total Revenue is gross revenue MINUS total refunds
-    var totalRevenue = registerRevenue + listenRevenue + createPoiRevenue - totalRefund;
+    var totalRevenue = registerRevenue + listenRevenue + createPoiGross - totalRefund;
 
     return Results.Ok(new
     {
