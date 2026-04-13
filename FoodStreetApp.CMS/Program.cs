@@ -357,6 +357,12 @@ app.MapPost("/api/auth/register-merchant", async (JsonElement body, CmsDbContext
         if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(phone) || string.IsNullOrWhiteSpace(poiName))
             return Results.BadRequest(new { message = "Họ tên, SĐT và tên địa điểm là bắt buộc" });
 
+        if (!System.Text.RegularExpressions.Regex.IsMatch(phone, @"^(\+84|0)[0-9]{8,10}$"))
+            return Results.BadRequest(new { message = "Số điện thoại không hợp lệ" });
+
+        if (!string.IsNullOrWhiteSpace(email) && !System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+            return Results.BadRequest(new { message = "Email không đúng định dạng" });
+
         // Check if phone (username) already exists
         var exists = await db.Users.AnyAsync(u => u.Username.ToLower() == phone!.ToLower());
         if (exists)
@@ -452,6 +458,12 @@ app.MapPut("/api/auth/users/{id}", async (Guid id, JsonElement body, CmsDbContex
     var email = body.TryGetProperty("email", out var emProp) && emProp.ValueKind != JsonValueKind.Null ? emProp.GetString() : user.Email;
     var password = body.TryGetProperty("password", out var pwProp) && pwProp.ValueKind != JsonValueKind.Null ? pwProp.GetString() : null;
 
+    if (!string.IsNullOrWhiteSpace(phone) && !System.Text.RegularExpressions.Regex.IsMatch(phone, @"^(\+84|0)[0-9]{8,10}$"))
+        return Results.BadRequest(new { message = "Số điện thoại không hợp lệ" });
+
+    if (!string.IsNullOrWhiteSpace(email) && !System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+        return Results.BadRequest(new { message = "Email không đúng định dạng" });
+
     user.FullName = fullName;
     user.PhoneNumber = phone;
     user.Email = email;
@@ -489,6 +501,12 @@ app.MapPost("/api/auth/users", async (JsonElement body, CmsDbContext db) =>
 
         if (string.IsNullOrWhiteSpace(username))
             return Results.BadRequest(new { message = "Username là bắt buộc" });
+
+        if (!System.Text.RegularExpressions.Regex.IsMatch(username, @"^(\+84|0)[0-9]{8,10}$"))
+            return Results.BadRequest(new { message = "Username (Số điện thoại) không hợp lệ" });
+
+        if (!string.IsNullOrWhiteSpace(email) && !System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+            return Results.BadRequest(new { message = "Email không đúng định dạng" });
 
         var exists = await db.Users.AnyAsync(u => u.Username.ToLower() == username!.ToLower());
         if (exists)

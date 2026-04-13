@@ -501,11 +501,24 @@
             _error = "Vui lòng nhập họ tên và số điện thoại";
             return;
         }
-        if (_phone.Length < 9)
+
+        // Validate phone number format (starts with 0 or +84, 9-12 digits total)
+        if (!System.Text.RegularExpressions.Regex.IsMatch(_phone, @"^(\+84|0)[0-9]{8,10}$"))
         {
-            _error = "Số điện thoại không hợp lệ";
+            _error = "Số điện thoại không hợp lệ. Vui lòng nhập đúng định dạng (VD: 0912345678).";
             return;
         }
+
+        // Validate email format if provided
+        if (!string.IsNullOrWhiteSpace(_email))
+        {
+            if (!System.Text.RegularExpressions.Regex.IsMatch(_email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+            {
+                _error = "Email không đúng định dạng.";
+                return;
+            }
+        }
+
         _step = 2;
     }
 
