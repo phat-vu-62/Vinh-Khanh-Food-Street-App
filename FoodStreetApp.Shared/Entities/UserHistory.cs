@@ -9,5 +9,5 @@ public class UserHistory
     public string? Action { get; set; }
     public int? DurationSeconds { get; set; }
     public string? QRCode { get; set; }
+    public decimal? Amount { get; set; }
 }
-

@@ -1,0 +1,550 @@
+@page "/users"
+@using System.Text.Json
+@using System.Text.Json.Serialization
+@inject HttpClient Http
+@inject IAdminDataService DataService
+@inject ToastService Toasts
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+
+<div class="d-flex justify-content-between align-items-center mb-5">
+    <div>
+        <h1 class="h3 fw-bold mb-1">Quản lý Chủ quán</h1>
+        <p class="text-muted mb-0">Danh sách tài khoản Owner trong hệ thống.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-saas btn-saas-secondary" @onclick="LoadData">
+            <i class="bi bi-arrow-clockwise me-1"></i> Làm mới
+        </button>
+        <button class="btn btn-saas btn-saas-primary" @onclick="OpenCreateModal">
+            <i class="bi bi-plus-lg me-1"></i> Tạo tài khoản
+        </button>
+    </div>
+</div>
+
+@* KPI Cards *@
+<div class="row g-4 mb-5">
+    <div class="col-lg-3 col-md-6">
+        <div class="saas-card stats-card border-primary h-100">
+            <span class="stats-label">Tổng tài khoản</span>
+            <div class="d-flex align-items-baseline justify-content-between">
+                <span class="stats-value">@_users.Count</span>
+                <i class="bi bi-people text-primary"></i>
+            </div>
+            <div class="progress mt-3" style="height: 4px;">
+                <div class="progress-bar bg-primary" style="width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="saas-card stats-card border-success h-100">
+            <span class="stats-label">Đang hoạt động</span>
+            <div class="d-flex align-items-baseline justify-content-between">
+                <span class="stats-value">@_users.Count(u => u.IsActive && u.Role != "Admin")</span>
+                <i class="bi bi-person-check text-success"></i>
+            </div>
+            <div class="progress mt-3" style="height: 4px;">
+                <div class="progress-bar bg-success" style="width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="saas-card stats-card border-danger h-100">
+            <span class="stats-label">Đã khóa</span>
+            <div class="d-flex align-items-baseline justify-content-between">
+                <span class="stats-value">@_users.Count(u => !u.IsActive)</span>
+                <i class="bi bi-person-x text-danger"></i>
+            </div>
+            <div class="progress mt-3" style="height: 4px;">
+                <div class="progress-bar bg-danger" style="width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-3 col-md-6">
+        <div class="saas-card stats-card border-warning h-100">
+            <span class="stats-label">Doanh thu đăng ký</span>
+            <div class="d-flex align-items-baseline justify-content-between">
+                <span class="stats-value" style="font-size: 1.2rem;">@_totalRevenue.ToString("N0")₫</span>
+                <i class="bi bi-cash-coin text-warning"></i>
+            </div>
+            <div class="progress mt-3" style="height: 4px;">
+                <div class="progress-bar bg-warning" style="width: 100%;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Search *@
+<div class="saas-card p-4 mb-4">
+    <div class="row g-3 align-items-end">
+        <div class="col-md-6">
+            <div class="input-group input-group-lg">
+                <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                <input type="text" class="form-control border-start-0" placeholder="Tìm theo tên, SĐT, email..."
+                       @bind="_searchTerm" @bind:event="oninput" @onkeyup="OnSearch" />
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select form-select-lg" @bind="_filterRole">
+                <option value="">Tất cả vai trò</option>
+                <option value="Admin">Admin</option>
+                <option value="Owner">Owner</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select form-select-lg" @bind="_filterStatus">
+                <option value="">Tất cả trạng thái</option>
+                <option value="active">Đang hoạt động</option>
+                <option value="locked">Đã khóa</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+@* Users Table *@
+<div class="saas-card overflow-hidden">
+    @if (_isLoading)
+    {
+        <div class="p-5 text-center">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="text-muted mt-3 small">Đang tải dữ liệu...</p>
+        </div>
+    }
+    else if (!FilteredUsers.Any())
+    {
+        <div class="p-5 text-center">
+            <i class="bi bi-people text-muted opacity-25" style="font-size: 3rem;"></i>
+            <p class="text-muted mt-3">Chưa có người dùng nào phù hợp</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead>
+                    <tr class="text-uppercase small text-muted" style="font-size: 0.7rem; letter-spacing: 0.5px;">
+                        <th class="border-0 py-3 px-4">Người dùng</th>
+                        <th class="border-0 py-3">SĐT</th>
+                        <th class="border-0 py-3">Email</th>
+                        <th class="border-0 py-3">Vai trò</th>
+                        <th class="border-0 py-3">Trạng thái</th>
+                        <th class="border-0 py-3">Ngày tạo</th>
+                        <th class="border-0 py-3 text-end pe-4">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in FilteredUsers)
+                    {
+                        <tr>
+                            <td class="py-3 px-4">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="avatar-circle @(user.Role == "Admin" ? "admin" : "owner")">
+                                        <i class="bi @(user.Role == "Admin" ? "bi-shield-fill" : "bi-person-fill")"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">@(!string.IsNullOrEmpty(user.FullName) ? user.FullName : user.Username)</div>
+                                        <div class="text-muted x-small">@@@user.Username</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(user.PhoneNumber))
+                                {
+                                    <span class="small">@user.PhoneNumber</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">—</span>
+                                }
+                            </td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(user.Email))
+                                {
+                                    <span class="small text-truncate d-inline-block" style="max-width: 180px;">@user.Email</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">—</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="badge rounded-pill @(user.Role == "Admin" ? "bg-primary bg-opacity-10 text-primary" : "bg-info bg-opacity-10 text-info")" 
+                                      style="padding: 5px 12px;">
+                                    @user.Role
+                                </span>
+                            </td>
+                            <td>
+                                @if (user.IsActive)
+                                {
+                                    <span class="d-flex align-items-center gap-1">
+                                        <span class="status-dot active"></span>
+                                        <span class="small text-success">Hoạt động</span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="d-flex align-items-center gap-1">
+                                        <span class="status-dot locked"></span>
+                                        <span class="small text-danger">Đã khóa</span>
+                                    </span>
+                                }
+                            </td>
+                            <td>
+                                <span class="small text-muted">@user.CreatedAtUtc.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                            </td>
+                            <td class="text-end pe-4">
+                                @if (user.Role != "Admin")
+                                {
+                                    <div class="d-flex gap-1 justify-content-end">
+                                        <button class="btn btn-sm @(user.IsActive ? "btn-outline-warning" : "btn-outline-success") rounded-pill px-3"
+                                                @onclick="() => ToggleActive(user)"
+                                                title="@(user.IsActive ? "Khóa" : "Mở")">
+                                            <i class="bi @(user.IsActive ? "bi-lock" : "bi-unlock") me-1"></i>
+                                            @(user.IsActive ? "Khóa" : "Mở")
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger rounded-pill px-3"
+                                                @onclick="() => ConfirmDelete(user)"
+                                                title="Xóa">
+                                            <i class="bi bi-trash me-1"></i> Xóa
+                                        </button>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-muted border">System</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@* Create User Modal *@
+@if (_showCreateModal)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal fade show d-block" tabindex="-1" @onclick="CloseCreateModal">
+        <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation="true">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-0 pb-0 px-4 pt-4">
+                    <h5 class="modal-title fw-bold"><i class="bi bi-person-plus me-2 text-primary"></i>Tạo tài khoản Owner</h5>
+                    <button type="button" class="btn-close" @onclick="CloseCreateModal"></button>
+                </div>
+                <div class="modal-body px-4 py-3">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">USERNAME (bắt buộc)</label>
+                        <input type="text" class="form-control" placeholder="VD: 0901234567" @bind="_newUsername" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">HỌ TÊN</label>
+                        <input type="text" class="form-control" placeholder="Họ và tên" @bind="_newFullName" />
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-muted">SĐT</label>
+                            <input type="tel" class="form-control" placeholder="Số điện thoại" @bind="_newPhone" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-bold text-muted">EMAIL</label>
+                            <input type="email" class="form-control" placeholder="Email" @bind="_newEmail" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">MẬT KHẨU</label>
+                        <input type="text" class="form-control" placeholder="123" @bind="_newPassword" />
+                        <small class="text-muted">Mật khẩu mặc định: 123</small>
+                    </div>
+                    @if (!string.IsNullOrEmpty(_createError))
+                    {
+                        <div class="alert alert-danger py-2 small mb-0">@_createError</div>
+                    }
+                </div>
+                <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                    <button type="button" class="btn btn-outline-secondary rounded-pill px-4" @onclick="CloseCreateModal">Hủy</button>
+                    <button type="button" class="btn btn-primary rounded-pill px-4" @onclick="CreateUser"
+                            disabled="@(string.IsNullOrWhiteSpace(_newUsername) || _isCreating)">
+                        @if (_isCreating)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1"></span>
+                        }
+                        <i class="bi bi-check-lg me-1"></i> Tạo tài khoản
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* Delete Confirm Modal *@
+@if (_showDeleteModal)
+{
+    <div class="modal-backdrop fade show"></div>
+    <div class="modal fade show d-block" tabindex="-1" @onclick="() => _showDeleteModal = false">
+        <div class="modal-dialog modal-dialog-centered modal-sm" @onclick:stopPropagation="true">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-body text-center p-4">
+                    <div class="bg-danger bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                        <i class="bi bi-exclamation-triangle-fill text-danger fs-4"></i>
+                    </div>
+                    <h6 class="fw-bold">Xóa tài khoản?</h6>
+                    <p class="text-muted small mb-0">Tài khoản <strong>@_userToDelete?.Username</strong> sẽ bị xóa vĩnh viễn.</p>
+                </div>
+                <div class="modal-footer border-0 justify-content-center pb-4">
+                    <button class="btn btn-outline-secondary rounded-pill px-4" @onclick="() => _showDeleteModal = false">Hủy</button>
+                    <button class="btn btn-danger rounded-pill px-4" @onclick="DeleteUser">
+                        <i class="bi bi-trash me-1"></i> Xóa
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .avatar-circle {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        flex-shrink: 0;
+    }
+    .avatar-circle.admin {
+        background: rgba(58, 123, 213, 0.1);
+        color: #3a7bd5;
+    }
+    .avatar-circle.owner {
+        background: rgba(0, 210, 255, 0.1);
+        color: #00d2ff;
+    }
+    .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+    }
+    .status-dot.active {
+        background: #10b981;
+        box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
+    }
+    .status-dot.locked {
+        background: #ef4444;
+        box-shadow: 0 0 6px rgba(239, 68, 68, 0.4);
+    }
+    .x-small { font-size: 0.72rem; }
+    table tbody tr { transition: background 0.15s ease; }
+    table tbody tr:hover { background: rgba(0, 210, 255, 0.02); }
+</style>
+
+@code {
+    private List<UserDto> _users = new();
+    private bool _isLoading = true;
+    private string _searchTerm = "";
+    private string _filterRole = "";
+    private string _filterStatus = "";
+    private decimal _totalRevenue = 0;
+
+    // Create modal state
+    private bool _showCreateModal = false;
+    private string _newUsername = "";
+    private string _newFullName = "";
+    private string _newPhone = "";
+    private string _newEmail = "";
+    private string _newPassword = "123";
+    private string? _createError;
+    private bool _isCreating = false;
+
+    // Delete modal state
+    private bool _showDeleteModal = false;
+    private UserDto? _userToDelete;
+
+    private IEnumerable<UserDto> FilteredUsers => _users.Where(u =>
+    {
+        if (!string.IsNullOrWhiteSpace(_filterRole) && u.Role != _filterRole) return false;
+        if (_filterStatus == "active" && !u.IsActive) return false;
+        if (_filterStatus == "locked" && u.IsActive) return false;
+        if (!string.IsNullOrWhiteSpace(_searchTerm))
+        {
+            var term = _searchTerm.ToLower();
+            return (u.Username?.ToLower().Contains(term) == true) ||
+                   (u.FullName?.ToLower().Contains(term) == true) ||
+                   (u.PhoneNumber?.ToLower().Contains(term) == true) ||
+                   (u.Email?.ToLower().Contains(term) == true);
+        }
+        return true;
+    });
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await LoadData();
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        _isLoading = true;
+        try
+        {
+            var usersResponse = await Http.GetAsync("api/auth/users");
+            if (usersResponse.IsSuccessStatusCode)
+            {
+                var json = await usersResponse.Content.ReadAsStringAsync();
+                _users = JsonSerializer.Deserialize<List<UserDto>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+            }
+
+            var revenueResponse = await Http.GetAsync("api/auth/revenue");
+            if (revenueResponse.IsSuccessStatusCode)
+            {
+                var json = await revenueResponse.Content.ReadAsStringAsync();
+                var revenue = JsonSerializer.Deserialize<RevenueDto>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                _totalRevenue = revenue?.TotalRevenue ?? 0;
+            }
+        }
+        catch (Exception ex)
+        {
+            Toasts.Error("Lỗi tải dữ liệu: " + ex.Message);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void OnSearch()
+    {
+        // Reactively filters via FilteredUsers computed property
+        StateHasChanged();
+    }
+
+    private async Task ToggleActive(UserDto user)
+    {
+        try
+        {
+            var response = await Http.PutAsync($"api/auth/users/{user.Id}/toggle-active", null);
+            if (response.IsSuccessStatusCode)
+            {
+                user.IsActive = !user.IsActive;
+                Toasts.Success(user.IsActive ? $"Đã mở khóa {user.Username}" : $"Đã khóa {user.Username}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Toasts.Error("Lỗi: " + ex.Message);
+        }
+    }
+
+    private void ConfirmDelete(UserDto user)
+    {
+        _userToDelete = user;
+        _showDeleteModal = true;
+    }
+
+    private async Task DeleteUser()
+    {
+        if (_userToDelete == null) return;
+        try
+        {
+            var response = await Http.DeleteAsync($"api/auth/users/{_userToDelete.Id}");
+            if (response.IsSuccessStatusCode)
+            {
+                _users.Remove(_userToDelete);
+                Toasts.Success($"Đã xóa tài khoản {_userToDelete.Username}");
+            }
+            else
+            {
+                Toasts.Error("Không thể xóa tài khoản này");
+            }
+        }
+        catch (Exception ex)
+        {
+            Toasts.Error("Lỗi: " + ex.Message);
+        }
+        finally
+        {
+            _showDeleteModal = false;
+            _userToDelete = null;
+        }
+    }
+
+    private void OpenCreateModal()
+    {
+        _newUsername = "";
+        _newFullName = "";
+        _newPhone = "";
+        _newEmail = "";
+        _newPassword = "123";
+        _createError = null;
+        _showCreateModal = true;
+    }
+
+    private void CloseCreateModal()
+    {
+        _showCreateModal = false;
+    }
+
+    private async Task CreateUser()
+    {
+        _createError = null;
+        _isCreating = true;
+        try
+        {
+            var payload = new
+            {
+                username = _newUsername,
+                fullName = _newFullName,
+                phone = _newPhone,
+                email = _newEmail,
+                password = _newPassword
+            };
+            var response = await Http.PostAsJsonAsync("api/auth/users", payload);
+            if (response.IsSuccessStatusCode)
+            {
+                Toasts.Success($"Đã tạo tài khoản {_newUsername}");
+                _showCreateModal = false;
+                await LoadData();
+                StateHasChanged();
+            }
+            else
+            {
+                var raw = await response.Content.ReadAsStringAsync();
+                var result = JsonSerializer.Deserialize<JsonElement>(raw);
+                _createError = result.TryGetProperty("message", out var msg) ? msg.GetString() : "Có lỗi xảy ra";
+            }
+        }
+        catch (Exception ex)
+        {
+            _createError = "Lỗi: " + ex.Message;
+        }
+        finally
+        {
+            _isCreating = false;
+        }
+    }
+
+    // DTOs
+    public class UserDto
+    {
+        public Guid Id { get; set; }
+        public string Username { get; set; } = "";
+        public string? FullName { get; set; }
+        public string? PhoneNumber { get; set; }
+        public string? Email { get; set; }
+        public string? Address { get; set; }
+        public string Role { get; set; } = "Owner";
+        public bool IsActive { get; set; } = true;
+        public DateTime CreatedAtUtc { get; set; }
+    }
+
+    public class RevenueDto
+    {
+        public decimal TotalRevenue { get; set; }
+        public int TotalRegistrations { get; set; }
+    }
+}

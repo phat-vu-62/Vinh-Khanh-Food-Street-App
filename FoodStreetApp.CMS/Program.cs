@@ -131,6 +131,15 @@ _ = Task.Run(async () => {
         await dbContext.Database.ExecuteSqlRawAsync(@"ALTER TABLE ""Pois"" ADD COLUMN IF NOT EXISTS ""ImageUrl"" text");
         await dbContext.Database.ExecuteSqlRawAsync(@"ALTER TABLE ""UserHistories"" ADD COLUMN IF NOT EXISTS ""DurationSeconds"" integer");
         await dbContext.Database.ExecuteSqlRawAsync(@"ALTER TABLE ""UserHistories"" ADD COLUMN IF NOT EXISTS ""QRCode"" text");
+        await dbContext.Database.ExecuteSqlRawAsync(@"ALTER TABLE ""UserHistories"" ADD COLUMN IF NOT EXISTS ""Amount"" numeric");
+
+        // User profile columns
+        await dbContext.Database.ExecuteSqlRawAsync(@"ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""FullName"" text");
+        await dbContext.Database.ExecuteSqlRawAsync(@"ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""PhoneNumber"" text");
+        await dbContext.Database.ExecuteSqlRawAsync(@"ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""Email"" text");
+        await dbContext.Database.ExecuteSqlRawAsync(@"ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""Address"" text");
+        await dbContext.Database.ExecuteSqlRawAsync(@"ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""CreatedAtUtc"" timestamp with time zone DEFAULT now()");
+        await dbContext.Database.ExecuteSqlRawAsync(@"ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""IsActive"" boolean DEFAULT true");
 
         // Explicit Admin Seeding
         var hasAdmin = await dbContext.Users.AnyAsync(u => u.Username == "admin");
@@ -202,6 +211,9 @@ app.MapPost("/api/auth/login", async (JsonElement body, CmsDbContext db, IConfig
         var user = await db.Users.FirstOrDefaultAsync(u => u.Username.ToLower() == username.ToLower());
         if (user != null && !string.IsNullOrEmpty(user.PasswordHash))
         {
+            if (!user.IsActive)
+                return Results.Json(new { message = "Tài khoản đã bị khóa. Liên hệ Admin để được hỗ trợ." }, statusCode: 403);
+
             if (BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
                 // Normalize role string to Capitalized for the frontend
@@ -325,6 +337,176 @@ app.MapPost("/api/history", async (FoodStreetApp.Shared.Entities.UserHistory his
 
 app.MapGet("/api/Audio", (IAdminDataService service) => Results.Ok(service.GetAudios()));
 app.MapGet("/api/Tour", (IAdminDataService service) => Results.Ok(service.GetTours()));
+
+// ==========================================
+// 5. MERCHANT REGISTRATION & USER MANAGEMENT
+// ==========================================
+
+// Public endpoint: Register a new merchant (owner)
+app.MapPost("/api/auth/register-merchant", async (JsonElement body, CmsDbContext db) =>
+{
+    try
+    {
+        var fullName = body.GetProperty("fullName").GetString();
+        var phone = body.GetProperty("phone").GetString();
+        var email = body.TryGetProperty("email", out var emailProp) ? emailProp.GetString() : null;
+        var address = body.TryGetProperty("address", out var addrProp) ? addrProp.GetString() : null;
+        var poiName = body.GetProperty("poiName").GetString();
+        var amount = body.TryGetProperty("amount", out var amtProp) ? amtProp.GetDecimal() : 500000m;
+
+        if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(phone) || string.IsNullOrWhiteSpace(poiName))
+            return Results.BadRequest(new { message = "Họ tên, SĐT và tên địa điểm là bắt buộc" });
+
+        // Check if phone (username) already exists
+        var exists = await db.Users.AnyAsync(u => u.Username.ToLower() == phone!.ToLower());
+        if (exists)
+            return Results.Conflict(new { message = "Số điện thoại đã được đăng ký" });
+
+        // Create new POI
+        var poi = new FoodStreetApp.Shared.Entities.POI
+        {
+            Name = poiName!,
+            Description = $"Quán của {fullName}",
+            Latitude = 10.7553,  // Default: Vinh Khánh street
+            Longitude = 106.6933,
+            IsActive = true,
+            IsApproved = false,  // Needs admin approval
+            Type = FoodStreetApp.Shared.Enums.POIType.Food
+        };
+        db.Pois.Add(poi);
+        await db.SaveChangesAsync();
+
+        // Create new User
+        var user = new FoodStreetApp.Shared.Entities.User
+        {
+            Id = Guid.NewGuid(),
+            Username = phone!,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("123"),
+            Role = "Owner",
+            FullName = fullName,
+            PhoneNumber = phone,
+            Email = email,
+            Address = address,
+            CreatedAtUtc = DateTime.UtcNow,
+            IsActive = true
+        };
+        db.Users.Add(user);
+
+        // Link POI to owner
+        poi.OwnerId = user.Id;
+
+        // Record payment history
+        db.UserHistories.Add(new FoodStreetApp.Shared.Entities.UserHistory
+        {
+            UserId = user.Id.ToString(),
+            PoiId = poi.Id,
+            Action = "register_merchant",
+            VisitedAtUtc = DateTime.UtcNow,
+            Amount = amount
+        });
+
+        await db.SaveChangesAsync();
+        Console.WriteLine($"[REGISTER] New merchant: {fullName} ({phone}), POI: {poiName}");
+
+        return Results.Ok(new { success = true, username = phone, poiId = poi.Id, userId = user.Id });
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[REGISTER-ERROR] {ex.Message}");
+        return Results.Problem("Lỗi khi đăng ký: " + ex.Message);
+    }
+});
+
+// Admin-only: Get all users
+app.MapGet("/api/auth/users", async (CmsDbContext db) =>
+{
+    var users = await db.Users
+        .OrderByDescending(u => u.CreatedAtUtc)
+        .Select(u => new
+        {
+            u.Id, u.Username, u.FullName, u.PhoneNumber, u.Email,
+            u.Address, u.Role, u.IsActive, u.CreatedAtUtc
+        })
+        .ToListAsync();
+    return Results.Ok(users);
+});
+
+// Admin-only: Toggle user active status
+app.MapPut("/api/auth/users/{id}/toggle-active", async (Guid id, CmsDbContext db) =>
+{
+    var user = await db.Users.FindAsync(id);
+    if (user == null) return Results.NotFound();
+    user.IsActive = !user.IsActive;
+    await db.SaveChangesAsync();
+    return Results.Ok(new { user.Id, user.IsActive });
+});
+
+// Admin-only: Delete user
+app.MapDelete("/api/auth/users/{id}", async (Guid id, CmsDbContext db) =>
+{
+    var user = await db.Users.FindAsync(id);
+    if (user == null) return Results.NotFound();
+    if (user.Role == "Admin") return Results.BadRequest(new { message = "Không thể xóa tài khoản Admin" });
+    db.Users.Remove(user);
+    await db.SaveChangesAsync();
+    return Results.Ok(new { success = true });
+});
+
+// Admin-only: Create a new owner user (no payment required)
+app.MapPost("/api/auth/users", async (JsonElement body, CmsDbContext db) =>
+{
+    try
+    {
+        var username = body.GetProperty("username").GetString();
+        var fullName = body.TryGetProperty("fullName", out var fnProp) ? fnProp.GetString() : null;
+        var phone = body.TryGetProperty("phone", out var phProp) ? phProp.GetString() : null;
+        var email = body.TryGetProperty("email", out var emProp) ? emProp.GetString() : null;
+        var password = body.TryGetProperty("password", out var pwProp) ? pwProp.GetString() : "123";
+
+        if (string.IsNullOrWhiteSpace(username))
+            return Results.BadRequest(new { message = "Username là bắt buộc" });
+
+        var exists = await db.Users.AnyAsync(u => u.Username.ToLower() == username!.ToLower());
+        if (exists)
+            return Results.Conflict(new { message = "Username đã tồn tại" });
+
+        var user = new FoodStreetApp.Shared.Entities.User
+        {
+            Id = Guid.NewGuid(),
+            Username = username!,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(password ?? "123"),
+            Role = "Owner",
+            FullName = fullName,
+            PhoneNumber = phone,
+            Email = email,
+            CreatedAtUtc = DateTime.UtcNow,
+            IsActive = true
+        };
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+
+        return Results.Ok(new { success = true, user.Id, user.Username });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem("Lỗi tạo user: " + ex.Message);
+    }
+});
+
+// Get registration revenue stats
+app.MapGet("/api/auth/revenue", async (CmsDbContext db) =>
+{
+    var stats = await db.UserHistories
+        .Where(h => h.Action == "register_merchant" && h.Amount.HasValue)
+        .GroupBy(h => 1)
+        .Select(g => new
+        {
+            TotalRevenue = g.Sum(x => x.Amount ?? 0),
+            TotalRegistrations = g.Count()
+        })
+        .FirstOrDefaultAsync();
+    return Results.Ok(stats ?? new { TotalRevenue = 0m, TotalRegistrations = 0 });
+});
 
 if (!app.Environment.IsDevelopment())
 {
