@@ -1,0 +1,9 @@
+<Project>
+  <PropertyGroup>
+    <!-- Disable MSBuild node reuse to prevent OOM/Segfault 139 on limited RAM environments like Render -->
+    <UseSharedCompilation>false</UseSharedCompilation>
+    <ProduceReferenceAssembly>false</ProduceReferenceAssembly>
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+</Project>
