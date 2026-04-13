@@ -368,13 +368,14 @@ public class AdminDataService : IAdminDataService
         if (stats == null) stats = new { TotalAudio = 0, TotalViews = 0, HighEngagement = 0, AvgDuration = 0d, UniqueUsers = 0 };
 
         // 2. Top POIs
-        var topPoiData = await query
-            .Where(l => l.Action == "qr_scanned" || l.Action == "poi_viewed" || l.Action == "POI viewed")
-            .GroupBy(l => l.PoiId)
-            .OrderByDescending(g => g.Count())
-            .Take(5)
-            .Select(g => new { g.Key, Count = g.Count() })
-            .ToListAsync();
+        var topPoiData = await (from h in query
+                                join p in _dbContext.Pois on h.PoiId equals p.Id // Skip deleted POIs
+                                where (h.Action == "qr_scanned" || h.Action == "poi_viewed" || h.Action == "POI viewed")
+                                group h by h.PoiId into g
+                                orderby g.Count() descending
+                                select new { Key = g.Key, Count = g.Count() })
+                                .Take(5)
+                                .ToListAsync();
 
         var poiIds = topPoiData.Select(x => x.Key).ToList();
         var poiDetails = await _dbContext.Pois
