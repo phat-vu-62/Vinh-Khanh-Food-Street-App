@@ -6,6 +6,7 @@
 @inject IAdminDataService DataService
 @inject HttpClient Http
 @inject ToastService Toasts
+@inject IJSRuntime JSRuntime
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
 
 <div class="d-flex justify-content-between align-items-center mb-5">
@@ -232,6 +233,21 @@ else
             </div>
         </div>
     </div>
+
+    <!-- Heatmap Row -->
+    <div class="row g-4 mb-5 pb-5">
+        <div class="col-12">
+            <div class="saas-card p-4 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h6 class="fw-bold mb-0"><i class="bi bi-fire text-danger me-2"></i>Bản đồ nhiệt tương tác (Heatmap)</h6>
+                        <small class="text-muted">Hiển thị mật độ quét QR và Nghe âm thanh tại các khu vực thực tế</small>
+                    </div>
+                </div>
+                <div id="admin-heatmap" style="height: 450px; border-radius: 16px; z-index: 1;"></div>
+            </div>
+        </div>
+    </div>
 }
 
 @code {
@@ -252,6 +268,40 @@ else
         {
             await LoadAsync();
             StateHasChanged();
+        }
+
+        // Render Map whenever loading ends
+        if (!_isLoading && _summary.TopPois != null)
+        {
+            await RenderHeatmapAsync();
+        }
+    }
+
+    private async Task RenderHeatmapAsync()
+    {
+        try 
+        {
+            var pois = DataService.GetPois();
+            var heatData = new List<double[]>();
+
+            foreach(var topPoi in _summary.TopPois)
+            {
+                var poi = pois.FirstOrDefault(p => p.Id == topPoi.PoiId);
+                if (poi != null && poi.Latitude != 0 && poi.Longitude != 0)
+                {
+                    // Weight from 0.1 to 1.0 based on max count
+                    var maxCount = _summary.TopPois.Max(x => x.Count);
+                    double intensity = maxCount > 0 ? (double)topPoi.Count / maxCount : 0.5;
+
+                    heatData.Add(new double[] { poi.Latitude, poi.Longitude, Math.Max(0.2, intensity) });
+                }
+            }
+
+            await JSRuntime.InvokeVoidAsync("renderHeatmap", "admin-heatmap", heatData);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Heatmap Render Error: {ex.Message}");
         }
     }
 
