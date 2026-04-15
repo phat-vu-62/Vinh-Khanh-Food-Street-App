@@ -346,8 +346,12 @@ else
         }
     }
 
+    private bool _isRefreshing;
+
     private async Task LoadAsync()
     {
+        if (_isRefreshing) return;
+        _isRefreshing = true;
         _isLoading = true;
         _lastUpdated = DateTime.Now;
         
@@ -378,11 +382,12 @@ else
         }
         catch (Exception ex)
         {
-            Toasts.Error($"Lỗi khi tải dữ liệu dashboard: {ex.Message}");
+            Console.WriteLine($"Dashboard load error (ignored): {ex.Message}");
         }
         finally
         {
             _isLoading = false;
+            _isRefreshing = false;
         }
     }
 
