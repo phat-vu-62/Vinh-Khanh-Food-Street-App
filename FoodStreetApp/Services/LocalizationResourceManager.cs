@@ -54,6 +54,9 @@ namespace FoodStreetApp.Services
         // Tạm dịch thủ công để bạn test (Do chưa có file .resx)
         private string Translate(string key)
         {
+            if (string.IsNullOrEmpty(key))
+                return string.Empty;
+
             var culture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
             // Try exact key first, then try without trailing period (API data may differ)
             var trimmedKey = key.TrimEnd('.');
