@@ -432,7 +432,7 @@ public class AdminDataService : IAdminDataService
         // 5. Active Users Now (last 5 seconds - Super Realtime)
         var fiveSecondsAgo = DateTime.UtcNow.AddSeconds(-5);
         var activeNow = await _dbContext.UserHistories.AsNoTracking()
-            .Where(h => h.VisitedAtUtc >= fiveSecondsAgo)
+            .Where(h => h.VisitedAtUtc >= fiveSecondsAgo && (h.Action == "app_ping" || h.Action == "cms_ping"))
             .Select(h => h.UserId)
             .Distinct()
             .CountAsync();

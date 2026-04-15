@@ -649,12 +649,30 @@ app.MapGet("/api/auth/revenue", async (CmsDbContext db) =>
         TotalCreatePoiPayments = all.Count(x => x.Action == "payment_create_poi" && x.Amount > 0)
     });
 });
+
+// Gửi heartbeat từ CMS
+app.MapPost("/api/auth/cms-ping", async (ClaimsPrincipal user, CmsDbContext db) =>
+{
+    var userIdStr = user.Claims.FirstOrDefault(c => c.Type == "userId")?.Value;
+    if (string.IsNullOrEmpty(userIdStr) || !Guid.TryParse(userIdStr, out var userId))
+        return Results.Unauthorized();
+
+    var history = new FoodStreetApp.Shared.Entities.UserHistory
+    {
+        UserId = userIdStr,
+        Action = "cms_ping",
+        VisitedAtUtc = DateTime.UtcNow
+    };
+    db.UserHistories.Add(history);
+    await db.SaveChangesAsync();
+    return Results.Ok();
+}).RequireAuthorization();
 // Get list of currently online user IDs (app_ping in last 10 seconds)
 app.MapGet("/api/auth/online-users", async (CmsDbContext db) =>
 {
     var tenSecondsAgo = DateTime.UtcNow.AddSeconds(-10);
     var onlineUserIds = await db.UserHistories.AsNoTracking()
-        .Where(h => h.Action == "app_ping" && h.VisitedAtUtc >= tenSecondsAgo)
+        .Where(h => (h.Action == "app_ping" || h.Action == "cms_ping") && h.VisitedAtUtc >= tenSecondsAgo)
         .Select(h => h.UserId)
         .Distinct()
         .ToListAsync();

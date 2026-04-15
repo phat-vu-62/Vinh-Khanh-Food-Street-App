@@ -152,10 +152,23 @@ window.downloadBase64File = (base64, contentType, fileName) => {
         });
     }
 
+    function initPing() {
+        setInterval(() => {
+            const token = localStorage.getItem('token');
+            if (token) {
+                fetch('/api/auth/cms-ping', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }).catch(() => {});
+            }
+        }, 8000); // Ping every 8 seconds
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         initLoadingState();
         initDeleteConfirmation();
         initCrudModal();
         initTableEnhancements();
+        initPing();
     });
 })();
