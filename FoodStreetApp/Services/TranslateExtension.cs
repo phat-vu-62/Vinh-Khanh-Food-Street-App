@@ -2,7 +2,8 @@ namespace FoodStreetApp.Services
 {
     /// <summary>
     /// Markup extension that creates a binding to LocalizationResourceManager
-    /// using a value converter instead of indexer syntax to avoid XAML parser issues.
+    /// using a value converter. Binds to CurrentCulture property so that when
+    /// the language changes, all translated texts update automatically.
     /// </summary>
     [ContentProperty(nameof(Key))]
     public class TranslateExtension : IMarkupExtension<BindingBase>
@@ -14,7 +15,7 @@ namespace FoodStreetApp.Services
             return new Binding
             {
                 Source = LocalizationResourceManager.Instance,
-                Path = ".",
+                Path = nameof(LocalizationResourceManager.CurrentCulture),
                 Mode = BindingMode.OneWay,
                 Converter = new TranslateConverter(),
                 ConverterParameter = Key
@@ -29,15 +30,16 @@ namespace FoodStreetApp.Services
 
     /// <summary>
     /// Value converter that translates a key using the LocalizationResourceManager.
-    /// Triggered when PropertyChanged fires (language change).
+    /// The 'value' parameter receives the CurrentCulture string (triggers re-evaluation),
+    /// and the 'parameter' contains the translation key.
     /// </summary>
     public class TranslateConverter : IValueConverter
     {
         public object? Convert(object? value, Type targetType, object? parameter, System.Globalization.CultureInfo culture)
         {
-            if (parameter is string key && value is LocalizationResourceManager manager)
+            if (parameter is string key)
             {
-                return manager[key];
+                return LocalizationResourceManager.Instance[key];
             }
             return parameter?.ToString() ?? string.Empty;
         }

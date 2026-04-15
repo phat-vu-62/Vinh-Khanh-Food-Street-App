@@ -15,6 +15,18 @@ namespace FoodStreetApp.Services
             SetCulture(new CultureInfo(savedLang));
         }
 
+        // Property that changes when language changes, used by TranslateExtension binding
+        private string _currentCulture = "en";
+        public string CurrentCulture
+        {
+            get => _currentCulture;
+            private set
+            {
+                _currentCulture = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(CurrentCulture)));
+            }
+        }
+
         public void SetCulture(CultureInfo culture)
         {
             Thread.CurrentThread.CurrentCulture = culture;
@@ -22,7 +34,10 @@ namespace FoodStreetApp.Services
             CultureInfo.DefaultThreadCurrentCulture = culture;
             CultureInfo.DefaultThreadCurrentUICulture = culture;
 
-            // In MAUI, resx automatically follows CurrentUICulture, we just notify UI to refresh
+            // Update tracked property - triggers all TranslateExtension bindings to re-evaluate
+            CurrentCulture = culture.TwoLetterISOLanguageName;
+
+            // Also fire null to refresh any remaining old-style bindings
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(null));
         }
 
