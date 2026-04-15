@@ -96,14 +96,14 @@
 <AuthorizeView Roles="Admin">
 <div class="saas-card p-4 mb-4">
     <div class="row g-3 align-items-end">
-        <div class="col-md-5">
+        <div class="col-md-6">
             <div class="input-group input-group-lg">
                 <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
                 <input type="text" class="form-control border-start-0" placeholder="Tìm theo tên, SĐT, email..."
                        @bind="_searchTerm" @bind:event="oninput" @onkeyup="OnSearch" />
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-3">
             <select class="form-select form-select-lg" @bind="_filterRole">
                 <option value="">Tất cả vai trò</option>
                 <option value="Admin">Admin</option>
@@ -111,18 +111,11 @@
                 <option value="Enduser">Enduser</option>
             </select>
         </div>
-        <div class="col-md-2">
+        <div class="col-md-3">
             <select class="form-select form-select-lg" @bind="_filterStatus">
                 <option value="">Tất cả trạng thái</option>
                 <option value="active">Khả dụng</option>
                 <option value="locked">Đã khóa</option>
-            </select>
-        </div>
-        <div class="col-md-3">
-            <select class="form-select form-select-lg" @bind="_filterOnline">
-                <option value="">Tất cả (Online/Offline)</option>
-                <option value="online">Đang Online</option>
-                <option value="offline">Đang Offline</option>
             </select>
         </div>
     </div>
@@ -538,7 +531,6 @@
     private string _searchTerm = "";
     private string _filterRole = "";
     private string _filterStatus = "";
-    private string _filterOnline = "";
     private decimal _totalRevenue = 0;
     private HashSet<string> _onlineUserIds = new();
 
@@ -569,8 +561,6 @@
         if (!string.IsNullOrWhiteSpace(_filterRole) && !string.Equals(u.Role, _filterRole, StringComparison.OrdinalIgnoreCase)) return false;
         if (_filterStatus == "active" && !u.IsActive) return false;
         if (_filterStatus == "locked" && u.IsActive) return false;
-        if (_filterOnline == "online" && !IsUserOnline(u.Id.ToString())) return false;
-        if (_filterOnline == "offline" && IsUserOnline(u.Id.ToString())) return false;
         if (!string.IsNullOrWhiteSpace(_searchTerm))
         {
             var term = _searchTerm.ToLower();
