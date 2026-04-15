@@ -14,6 +14,13 @@ namespace FoodStreetApp
         protected override void OnCreate(Bundle? savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
+
+            // Ngăn crash trên Android khi mở lại app
+            Android.Runtime.AndroidEnvironment.UnhandledExceptionRaiser += (s, e) =>
+            {
+                System.Diagnostics.Debug.WriteLine($"[ANDROID-CRASH] {e.Exception.Message}");
+                e.Handled = true; // Ngăn Force Close
+            };
         }
 
         // MAUI's MauiAppCompatActivity base class hooks into OnRequestPermissionsResult

@@ -42,20 +42,26 @@
 
             <!-- Username -->
             <Frame Padding="0" CornerRadius="12" HasShadow="False" BackgroundColor="White" BorderColor="#E0E0E0">
-                <Entry Placeholder="Tên tài khoản"
+                <Entry x:Name="UsernameEntry"
+                       Placeholder="Tên tài khoản"
                        Text="{Binding Username, Mode=TwoWay}"
                        FontSize="16"
                        Margin="16,12"
-                       Keyboard="Default" />
+                       Keyboard="Default"
+                       ReturnType="Next"
+                       Completed="OnUsernameCompleted" />
             </Frame>
 
             <!-- Password -->
             <Frame Padding="0" CornerRadius="12" HasShadow="False" BackgroundColor="White" BorderColor="#E0E0E0">
-                <Entry Placeholder="Mật khẩu"
+                <Entry x:Name="PasswordEntry"
+                       Placeholder="Mật khẩu"
                        Text="{Binding Password, Mode=TwoWay}"
                        IsPassword="True"
                        FontSize="16"
-                       Margin="16,12" />
+                       Margin="16,12"
+                       ReturnType="Done"
+                       ReturnCommand="{Binding LoginCommand}" />
             </Frame>
 
             <!-- Login Button -->

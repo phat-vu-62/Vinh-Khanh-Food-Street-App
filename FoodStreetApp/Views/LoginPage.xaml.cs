@@ -10,6 +10,11 @@ namespace FoodStreetApp.Views
             BindingContext = viewModel;
         }
 
+        private void OnUsernameCompleted(object? sender, EventArgs e)
+        {
+            PasswordEntry.Focus();
+        }
+
         private async void OnBackTapped(object? sender, EventArgs e)
         {
             await Shell.Current.GoToAsync("..");

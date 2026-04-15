@@ -63,6 +63,17 @@ namespace FoodStreetApp
             builder.Services.AddTransient<RegisterViewModel>();
             builder.Services.AddTransient<RegisterPage>();
 
+            // Global exception handlers để tránh crash
+            AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+            {
+                System.Diagnostics.Debug.WriteLine($"[CRASH] Unhandled: {e.ExceptionObject}");
+            };
+            TaskScheduler.UnobservedTaskException += (s, e) =>
+            {
+                System.Diagnostics.Debug.WriteLine($"[CRASH] Task: {e.Exception?.Message}");
+                e.SetObserved(); // Ngăn crash
+            };
+
             return builder.Build();
         }
     }
