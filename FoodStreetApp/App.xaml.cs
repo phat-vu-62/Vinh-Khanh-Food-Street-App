@@ -35,8 +35,12 @@ namespace FoodStreetApp
             _heartbeatTimer.Interval = TimeSpan.FromSeconds(2);
             _heartbeatTimer.Tick += (s, e) =>
             {
-                var tracker = Handler?.MauiContext?.Services.GetService<Services.ITrackingService>();
-                tracker?.TrackEventAsync(0, "app_ping"); // Gửi tín hiệu duy trì Online
+                var auth = Handler?.MauiContext?.Services.GetService<Services.IAuthService>();
+                if (auth != null && auth.IsLoggedIn)
+                {
+                    var tracker = Handler?.MauiContext?.Services.GetService<Services.ITrackingService>();
+                    tracker?.TrackEventAsync(0, "app_ping");
+                }
             };
             _heartbeatTimer.Start();
         }
