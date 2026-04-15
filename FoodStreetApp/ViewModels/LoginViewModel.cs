@@ -65,17 +65,34 @@ namespace FoodStreetApp.ViewModels
             IsBusy = true;
             ErrorMessage = null;
 
-            var (success, message) = await _authService.LoginAsync(Username, Password);
-
-            IsBusy = false;
-
-            if (success)
+            try
             {
-                await Shell.Current.GoToAsync("//HomePage");
+                var (success, message) = await _authService.LoginAsync(Username, Password);
+
+                if (success)
+                {
+                    await MainThread.InvokeOnMainThreadAsync(async () =>
+                    {
+                        try
+                        {
+                            await Shell.Current.GoToAsync("..");
+                        }
+                        catch { /* ignore */ }
+                    });
+                }
+                else
+                {
+                    ErrorMessage = message;
+                }
             }
-            else
+            catch (Exception ex)
             {
-                ErrorMessage = message;
+                ErrorMessage = $"Lỗi: {ex.Message}";
+                System.Diagnostics.Debug.WriteLine($"[LOGIN] Error: {ex}");
+            }
+            finally
+            {
+                IsBusy = false;
             }
         }
 
