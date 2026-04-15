@@ -8,6 +8,7 @@ public class AnalyticsSummary
     public int TotalPoiViewed { get; set; }
     public double AvgDurationSeconds { get; set; }
     public int UniqueUsersCount { get; set; }
+    public int ActiveUsersNow { get; set; } // Users active in last 5 minutes
 
     public List<TopPoiMetric> TopPois { get; set; } = new();
     public List<TrendPoint> DailyTrends { get; set; } = new();

@@ -39,6 +39,8 @@ namespace FoodStreetApp
             builder.Services.AddSingleton<ITrackingService, TrackingService>();
         builder.Services.AddSingleton<IGeofenceService, GeofenceService>();
 
+            builder.Services.AddSingleton<IAuthService, AuthService>();
+
             // ViewModels & Views
             builder.Services.AddTransient<HomeViewModel>();
             builder.Services.AddTransient<HomePage>();
@@ -54,6 +56,12 @@ namespace FoodStreetApp
 
             builder.Services.AddTransient<SettingsViewModel>();
             builder.Services.AddTransient<SettingsPage>();
+
+            builder.Services.AddTransient<LoginViewModel>();
+            builder.Services.AddTransient<LoginPage>();
+
+            builder.Services.AddTransient<RegisterViewModel>();
+            builder.Services.AddTransient<RegisterPage>();
 
             return builder.Build();
         }

@@ -8,6 +8,7 @@
 @inject ToastService Toasts
 @inject IJSRuntime JSRuntime
 @attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin")]
+@implements IDisposable
 
 <div class="d-flex justify-content-between align-items-center mb-5">
     <div>
@@ -104,6 +105,27 @@ else
                 </div>
                 <div class="progress mt-3" style="height: 4px;">
                     <div class="progress-bar bg-warning" style="width: 100%;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl col-md-6 col-lg-6">
+            <div class="saas-card stats-card h-100 @(_summary.ActiveUsersNow > 0 ? "border-2 shadow-sm" : "opacity-75")" style="border-left: 3px solid #10b981;">
+                <span class="stats-label">Đang trực tuyến</span>
+                <div class="d-flex align-items-baseline justify-content-between">
+                    <span class="stats-value @(_summary.ActiveUsersNow > 0 ? "animate__animated animate__flash animate__infinite animate__slow" : "")">@_summary.ActiveUsersNow</span>
+                    <span class="small fw-bold" style="color: #10b981;">
+                        @if (_summary.ActiveUsersNow > 0)
+                        {
+                            <span>● Online</span>
+                        }
+                        else
+                        {
+                            <span class="text-muted">Offline</span>
+                        }
+                    </span>
+                </div>
+                <div class="mt-2">
+                    <span class="text-muted x-small">Hoạt động trong 5 giây qua</span>
                 </div>
             </div>
         </div>
@@ -262,12 +284,19 @@ else
     private decimal _revenueCreatePoi = 0;
     private decimal _revenueRefund = 0;
 
+    private System.Timers.Timer? _refreshTimer;
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
             await LoadAsync();
             StateHasChanged();
+
+            // Start Real-time Auto Refresh (every 2 seconds)
+            _refreshTimer = new System.Timers.Timer(2000);
+            _refreshTimer.Elapsed += async (sender, e) => await InvokeAsync(SilentRefreshAsync);
+            _refreshTimer.Start();
         }
 
         // Render Map whenever loading ends
@@ -275,6 +304,25 @@ else
         {
             await RenderHeatmapAsync();
         }
+    }
+
+    private async Task SilentRefreshAsync()
+    {
+        try
+        {
+            var newSummary = await DataService.GetAnalyticsSummaryAsync();
+            _summary.ActiveUsersNow = newSummary.ActiveUsersNow;
+            _summary.TotalPoiViewed = newSummary.TotalPoiViewed;
+            _summary.TotalAudioPlayed = newSummary.TotalAudioPlayed;
+            _lastUpdated = DateTime.Now;
+            StateHasChanged();
+        }
+        catch { /* ignore silent refresh errors */ }
+    }
+
+    public void Dispose()
+    {
+        _refreshTimer?.Dispose();
     }
 
     private async Task RenderHeatmapAsync()

@@ -429,11 +429,20 @@ public class AdminDataService : IAdminDataService
             peakHourStr = $"{peakGroup.Hour:D2}:00 - {peakGroup.Hour + 1:D2}:00";
         }
 
+        // 5. Active Users Now (last 5 seconds - Super Realtime)
+        var fiveSecondsAgo = DateTime.UtcNow.AddSeconds(-5);
+        var activeNow = await _dbContext.UserHistories.AsNoTracking()
+            .Where(h => h.VisitedAtUtc >= fiveSecondsAgo)
+            .Select(h => h.UserId)
+            .Distinct()
+            .CountAsync();
+
         return new FoodStreetApp.CMS.Models.AnalyticsSummary
         {
             TotalAudioPlayed = stats.TotalAudio,
             TotalPoiViewed = stats.TotalViews,
             UniqueUsersCount = stats.UniqueUsers,
+            ActiveUsersNow = activeNow,
             AvgDurationSeconds = stats.AvgDuration,
             TopPois = topPois,
             HotSpotName = topPois.FirstOrDefault()?.PoiName ?? "N/A",

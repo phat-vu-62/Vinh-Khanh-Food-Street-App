@@ -29,6 +29,29 @@ namespace FoodStreetApp.ViewModels
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
+        // ─── Account State ───────────────────────────────────
+        private bool _isLoggedIn;
+        public bool IsLoggedIn
+        {
+            get => _isLoggedIn;
+            set { _isLoggedIn = value; OnPropertyChanged(); OnPropertyChanged(nameof(IsNotLoggedIn)); }
+        }
+        public bool IsNotLoggedIn => !_isLoggedIn;
+
+        private string _displayName = string.Empty;
+        public string DisplayName
+        {
+            get => _displayName;
+            set { _displayName = value; OnPropertyChanged(); }
+        }
+
+        public void RefreshAccountState()
+        {
+            var userId = Preferences.Get("logged_in_user_id", string.Empty);
+            IsLoggedIn = !string.IsNullOrEmpty(userId);
+            DisplayName = Preferences.Get("logged_in_fullname", Preferences.Get("logged_in_username", "Khách"));
+        }
+
         public ObservableCollection<LanguageOption> AvailableLanguages { get; }
 
         private LanguageOption? _selectedLanguage;

@@ -9,11 +9,27 @@ namespace FoodStreetApp
             InitializeComponent();
         }
 
+        private IDispatcherTimer? _heartbeatTimer;
+
         protected override void OnStart()
         {
             base.OnStart();
+            StartHeartbeatTimer();
         }
 
+        private void StartHeartbeatTimer()
+        {
+            if (Application.Current?.Dispatcher == null) return;
+            
+            _heartbeatTimer = Application.Current.Dispatcher.CreateTimer();
+            _heartbeatTimer.Interval = TimeSpan.FromSeconds(2);
+            _heartbeatTimer.Tick += (s, e) =>
+            {
+                var tracker = Handler?.MauiContext?.Services.GetService<Services.ITrackingService>();
+                tracker?.TrackEventAsync(0, "app_ping"); // Gửi tín hiệu duy trì Online
+            };
+            _heartbeatTimer.Start();
+        }
 
 
         protected override Window CreateWindow(IActivationState? activationState)
