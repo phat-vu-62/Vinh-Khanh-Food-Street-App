@@ -55,11 +55,52 @@ namespace FoodStreetApp.Services
         private string Translate(string key)
         {
             var culture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+            // Try exact key first, then try without trailing period (API data may differ)
+            var trimmedKey = key.TrimEnd('.');
 
             if (culture == "vi")
             {
-                return key switch
-                {
+                var result = TranslateVi(key);
+                if (result == key && trimmedKey != key)
+                    result = TranslateVi(trimmedKey);
+                return result;
+            }
+
+            if (culture == "ko")
+            {
+                var result = TranslateKo(key);
+                if (result == key && trimmedKey != key)
+                    result = TranslateKo(trimmedKey);
+                return result;
+            }
+
+            if (culture == "ja")
+            {
+                var result = TranslateJa(key);
+                if (result == key && trimmedKey != key)
+                    result = TranslateJa(trimmedKey);
+                return result;
+            }
+
+            if (culture == "zh")
+            {
+                var result = TranslateZh(key);
+                if (result == key && trimmedKey != key)
+                    result = TranslateZh(trimmedKey);
+                return result;
+            }
+
+            // English (default) - also try trimmedKey for descriptions
+            var enResult = TranslateEn(key);
+            if (enResult == key && trimmedKey != key)
+                enResult = TranslateEn(trimmedKey);
+            return enResult;
+        }
+
+        private string TranslateVi(string key)
+        {
+            return key switch
+            {
                     "Home" => "Trang chủ",
                     "Map" => "Bản đồ",
                     "Settings" => "Cài đặt",
@@ -96,6 +137,11 @@ namespace FoodStreetApp.Services
                     "All POI cooldowns have been reset" => "Đã đặt lại tất cả thời gian chờ của địa điểm",
                     "OK" => "Đồng ý",
                     "AppVersion" => "Phiên bản 2.0.0",
+                    "👤 Account" => "👤 Tài khoản",
+                    "Hello, " => "Xin chào, ",
+                    "Logout" => "Đăng xuất",
+                    "Login" => "Đăng nhập",
+                    "Login to sync activity history" => "Đăng nhập để đồng bộ lịch sử hoạt động",
                     "Audio Guide" => "Hướng dẫn âm thanh",
                     "Listen to the story of this place" => "Lắng nghe câu chuyện của địa điểm này",
                     "Description" => "Mô tả",
@@ -132,11 +178,12 @@ namespace FoodStreetApp.Services
                     "Quán ốc cuối đường Vĩnh Khánh" => "Quán ốc cuối đường Vĩnh Khánh",
                     _ => key
                 };
-            }
-            if (culture == "en")
+        }
+
+        private string TranslateEn(string key)
+        {
+            return key switch
             {
-                return key switch
-                {
                     "All POI cooldowns have been reset" => "All POI cooldowns have been reset",
                     "OK" => "OK",
                     "AppVersion" => "Version 2.0.0",
@@ -167,13 +214,19 @@ namespace FoodStreetApp.Services
                     "Quán ốc tươi với không gian thoải mái" => "Fresh snails with a comfortable atmosphere",
                     "Nhà hàng lẩu gà lá é đặc biệt" => "Special chicken and é leaf hotpot restaurant",
                     "Quán ốc cuối đường Vĩnh Khánh" => "Snail restaurant at the end of Vinh Khanh street",
+                    "👤 Account" => "👤 Account",
+                    "Hello, " => "Hello, ",
+                    "Logout" => "Logout",
+                    "Login" => "Login",
+                    "Login to sync activity history" => "Login to sync activity history",
                     _ => key
                 };
-            }
-            if (culture == "ko")
+        }
+
+        private string TranslateKo(string key)
+        {
+            return key switch
             {
-                return key switch
-                {
                     "Home" => "홈",
                     "Map" => "지도",
                     "Settings" => "설정",
@@ -210,6 +263,11 @@ namespace FoodStreetApp.Services
                     "All POI cooldowns have been reset" => "모든 POI 재사용 대기시간이 초기화되었습니다",
                     "OK" => "확인",
                     "AppVersion" => "버전 2.0.0",
+                    "👤 Account" => "👤 계정",
+                    "Hello, " => "안녕하세요, ",
+                    "Logout" => "로그아웃",
+                    "Login" => "로그인",
+                    "Login to sync activity history" => "활동 기록을 동기화하려면 로그인하세요",
                     "Audio Guide" => "오디오 가이드",
                     "Listen to the story of this place" => "이 장소의 이야기를 들어보세요",
                     "Description" => "설명",
@@ -247,11 +305,12 @@ namespace FoodStreetApp.Services
                     "Quán ốc cuối đường Vĩnh Khánh" => "빈칸 거리 끝의 달팽이 식당",
                     _ => key
                 };
-            }
-            if (culture == "ja")
+        }
+
+        private string TranslateJa(string key)
+        {
+            return key switch
             {
-                return key switch
-                {
                     "Home" => "ホーム",
                     "Map" => "マップ",
                     "Settings" => "設定",
@@ -288,6 +347,11 @@ namespace FoodStreetApp.Services
                     "All POI cooldowns have been reset" => "すべてのPOIクールダウンがリセットされました",
                     "OK" => "OK",
                     "AppVersion" => "バージョン 2.0.0",
+                    "👤 Account" => "👤 アカウント",
+                    "Hello, " => "こんにちは、",
+                    "Logout" => "ログアウト",
+                    "Login" => "ログイン",
+                    "Login to sync activity history" => "アクティビティ履歴を同期するにはログインしてください",
                     "Audio Guide" => "オーディオガイド",
                     "Listen to the story of this place" => "この場所のストーリーを聞く",
                     "Description" => "説明",
@@ -321,11 +385,12 @@ namespace FoodStreetApp.Services
                     "Quán ốc cuối đường Vĩnh Khánh" => "ヴィンカン通りの終わりにあるカタツムリレストラン",
                     _ => key
                 };
-            }
-            if (culture == "zh")
+        }
+
+        private string TranslateZh(string key)
+        {
+            return key switch
             {
-                return key switch
-                {
                     "Home" => "首页",
                     "Map" => "地图",
                     "Settings" => "设置",
@@ -362,6 +427,11 @@ namespace FoodStreetApp.Services
                     "All POI cooldowns have been reset" => "所有POI冷却时间已重置",
                     "OK" => "确定",
                     "AppVersion" => "版本 2.0.0",
+                    "👤 Account" => "👤 账户",
+                    "Hello, " => "你好，",
+                    "Logout" => "退出登录",
+                    "Login" => "登录",
+                    "Login to sync activity history" => "登录以同步活动历史记录",
                     "Audio Guide" => "语音指南",
                     "Listen to the story of this place" => "听听这个地方的故事",
                     "Description" => "描述",
@@ -398,9 +468,6 @@ namespace FoodStreetApp.Services
                     "Quán ốc cuối đường Vĩnh Khánh" => "Vinh Khanh 街尾的蜗牛餐厅",
                     _ => key
                 };
-            }
-
-            return key; // Default English
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
