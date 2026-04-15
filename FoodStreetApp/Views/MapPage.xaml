@@ -66,7 +66,7 @@
         </Frame>
 
         <Button Grid.Row="0"
-                Text="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[Reset]}"
+                Text="{loc:Translate Reset}"
                 Clicked="OnResetClicked"
                 BackgroundColor="{StaticResource Primary}"
                 TextColor="White"

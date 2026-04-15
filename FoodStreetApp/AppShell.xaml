@@ -9,19 +9,20 @@
 
     <TabBar>
         <ShellContent
-            Title="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[Home]}"
+            Title="{loc:Translate Home}"
             ContentTemplate="{DataTemplate views:HomePage}"
             Route="HomePage" />
 
         <ShellContent
-            Title="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[Map]}"
+            Title="{loc:Translate Map}"
             ContentTemplate="{DataTemplate views:MapPage}"
             Route="MapPage" />
 
         <ShellContent
-            Title="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[Settings]}"
+            Title="{loc:Translate Settings}"
             ContentTemplate="{DataTemplate views:SettingsPage}"
             Route="SettingsPage" />
     </TabBar>
 
 </Shell>
+
