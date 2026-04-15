@@ -40,6 +40,8 @@
 
 	<PropertyGroup Condition="$(TargetFramework.Contains('-android'))">
 		<EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+		<DebugSymbols>true</DebugSymbols>
+		<AndroidIncludeDebugSymbols>true</AndroidIncludeDebugSymbols>
 	</PropertyGroup>
 
 	<ItemGroup>
