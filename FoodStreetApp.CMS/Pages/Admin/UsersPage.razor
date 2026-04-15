@@ -154,7 +154,7 @@
                         <th class="border-0 py-3">Email</th>
                         <th class="border-0 py-3">Vai trò</th>
                         <th class="border-0 py-3" style="white-space: nowrap;">Trực tuyến</th>
-                        <th class="border-0 py-3">Trạng thái</th>
+                        <th class="border-0 py-3" style="white-space: nowrap;">Trạng thái</th>
                         <th class="border-0 py-3">Ngày tạo</th>
                         <th class="border-0 py-3 text-end pe-4">Thao tác</th>
                     </tr>
@@ -201,7 +201,7 @@
                                 </span>
                             </td>
                             <td>
-                                @if (IsUserOnline(user.Id.ToString()))
+                                @if (user.Role == "Admin" || IsUserOnline(user.Id.ToString()))
                                 {
                                     <span class="d-flex align-items-center gap-1">
                                         <span class="status-dot active"></span>
@@ -221,7 +221,7 @@
                                 {
                                     <span class="d-flex align-items-center gap-1">
                                         <span class="status-dot active"></span>
-                                        <span class="small text-success">Mở khóa</span>
+                                        <span class="small text-success">Khả dụng</span>
                                     </span>
                                 }
                                 else
