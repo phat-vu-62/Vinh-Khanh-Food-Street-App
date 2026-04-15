@@ -33,6 +33,8 @@ namespace FoodStreetApp.Services
                 var payload = new { Username = username, Password = password };
                 var response = await _httpClient.PostAsJsonAsync($"{BaseUrl}/api/auth/api-login", payload);
                 var json = await response.Content.ReadAsStringAsync();
+                System.Diagnostics.Debug.WriteLine($"[AUTH] Login status: {(int)response.StatusCode} {response.StatusCode}");
+                System.Diagnostics.Debug.WriteLine($"[AUTH] Login raw response: {json}");
                 
                 string errorMsg = "Đăng nhập thất bại.";
                 try
@@ -62,6 +64,11 @@ namespace FoodStreetApp.Services
                     errorMsg = string.IsNullOrWhiteSpace(json) ? errorMsg : json;
                 }
 
+                if (!response.IsSuccessStatusCode && string.IsNullOrWhiteSpace(errorMsg))
+                {
+                    errorMsg = $"Đăng nhập thất bại (HTTP {(int)response.StatusCode}).";
+                }
+
                 return (false, errorMsg);
             }
             catch (Exception ex)
@@ -76,8 +83,21 @@ namespace FoodStreetApp.Services
             try
             {
                 var payload = new { Username = username, Password = password, Email = email, FullName = fullName };
-                var response = await _httpClient.PostAsJsonAsync($"{BaseUrl}/api/auth/api-register", payload);
-                var json = await response.Content.ReadAsStringAsync();
+                HttpResponseMessage response;
+                string json;
+
+                // Try compatibility endpoints because deployed backend can differ by route naming.
+                response = await _httpClient.PostAsJsonAsync($"{BaseUrl}/api/auth/api-register", payload);
+                json = await response.Content.ReadAsStringAsync();
+
+                if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    response = await _httpClient.PostAsJsonAsync($"{BaseUrl}/api/auth/register", payload);
+                    json = await response.Content.ReadAsStringAsync();
+                }
+
+                System.Diagnostics.Debug.WriteLine($"[AUTH] Register status: {(int)response.StatusCode} {response.StatusCode}");
+                System.Diagnostics.Debug.WriteLine($"[AUTH] Register raw response: {json}");
                 
                 string errorMsg = "Đăng ký thất bại.";
                 try
@@ -96,6 +116,16 @@ namespace FoodStreetApp.Services
                 catch
                 {
                     errorMsg = string.IsNullOrWhiteSpace(json) ? errorMsg : json;
+                }
+
+                if (!response.IsSuccessStatusCode && string.IsNullOrWhiteSpace(errorMsg))
+                {
+                    errorMsg = $"Đăng ký thất bại (HTTP {(int)response.StatusCode}).";
+                }
+
+                if (!response.IsSuccessStatusCode && string.IsNullOrWhiteSpace(json))
+                {
+                    errorMsg = $"Máy chủ trả về HTTP {(int)response.StatusCode} nhưng không có nội dung lỗi. Hãy kiểm tra API deploy.";
                 }
 
                 return (false, errorMsg);
