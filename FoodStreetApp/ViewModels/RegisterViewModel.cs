@@ -46,6 +46,13 @@ namespace FoodStreetApp.ViewModels
             set { _fullName = value; OnPropertyChanged(); }
         }
 
+        private string _phoneNumber = string.Empty;
+        public string PhoneNumber
+        {
+            get => _phoneNumber;
+            set { _phoneNumber = value; OnPropertyChanged(); }
+        }
+
         private bool _isBusy;
         public bool IsBusy
         {
@@ -88,9 +95,9 @@ namespace FoodStreetApp.ViewModels
             ErrorMessage = null;
             SuccessMessage = null;
 
-            if (string.IsNullOrWhiteSpace(FullName) || string.IsNullOrWhiteSpace(Username) || string.IsNullOrWhiteSpace(Password))
+            if (string.IsNullOrWhiteSpace(FullName) || string.IsNullOrWhiteSpace(Username) || string.IsNullOrWhiteSpace(Password) || string.IsNullOrWhiteSpace(PhoneNumber))
             {
-                ErrorMessage = "Vui lòng nhập đầy đủ Họ tên, tài khoản và mật khẩu.";
+                ErrorMessage = "Vui lòng nhập đầy đủ Họ tên, SĐT, tài khoản và mật khẩu.";
                 return;
             }
 
@@ -111,7 +118,8 @@ namespace FoodStreetApp.ViewModels
             var (success, message) = await _authService.RegisterAsync(
                 Username, Password,
                 string.IsNullOrWhiteSpace(Email) ? null : Email,
-                string.IsNullOrWhiteSpace(FullName) ? null : FullName);
+                string.IsNullOrWhiteSpace(FullName) ? null : FullName,
+                string.IsNullOrWhiteSpace(PhoneNumber) ? null : PhoneNumber);
 
             IsBusy = false;
 

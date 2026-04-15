@@ -78,11 +78,11 @@ namespace FoodStreetApp.Services
             }
         }
 
-        public async Task<(bool Success, string Message)> RegisterAsync(string username, string password, string? email, string? fullName)
+        public async Task<(bool Success, string Message)> RegisterAsync(string username, string password, string? email, string? fullName, string? phoneNumber = null)
         {
             try
             {
-                var payload = new { Username = username, Password = password, Email = email, FullName = fullName };
+                var payload = new { Username = username, Password = password, Email = email, FullName = fullName, PhoneNumber = phoneNumber };
                 HttpResponseMessage response;
                 string json;
 

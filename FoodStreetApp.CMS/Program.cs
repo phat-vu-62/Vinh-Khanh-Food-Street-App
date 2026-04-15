@@ -337,6 +337,9 @@ app.MapPost("/api/auth/api-login", async (JsonElement body, CmsDbContext db) =>
         if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             return Results.Json(new { success = false, message = "Sai tài khoản hoặc mật khẩu." }, statusCode: 401);
 
+        if (!user.IsActive)
+            return Results.Json(new { success = false, message = "Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên." }, statusCode: 403);
+
         return Results.Ok(new
         {
             success = true,
@@ -365,6 +368,8 @@ app.MapPost("/api/auth/api-register", async (JsonElement body, CmsDbContext db) 
                   : body.TryGetProperty("email", out var eProp2) ? eProp2.GetString() : null;
         var fullName = body.TryGetProperty("FullName", out var fProp) ? fProp.GetString()
                      : body.TryGetProperty("fullName", out var fProp2) ? fProp2.GetString() : null;
+        var phoneNumber = body.TryGetProperty("PhoneNumber", out var phProp) ? phProp.GetString()
+                        : body.TryGetProperty("phoneNumber", out var phProp2) ? phProp2.GetString() : null;
 
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(fullName))
             return Results.BadRequest(new { success = false, message = "Vui lòng nhập tài khoản, mật khẩu và họ tên." });
@@ -383,6 +388,7 @@ app.MapPost("/api/auth/api-register", async (JsonElement body, CmsDbContext db) 
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
             Email = email,
             FullName = fullName,
+            PhoneNumber = phoneNumber,
             Role = "enduser",
             CreatedAtUtc = DateTime.UtcNow,
             IsActive = true

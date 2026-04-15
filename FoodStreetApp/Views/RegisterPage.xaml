@@ -70,6 +70,15 @@
                        Margin="16,12" />
             </Frame>
 
+            <!-- Phone Number -->
+            <Frame Padding="0" CornerRadius="12" HasShadow="False" BackgroundColor="White" BorderColor="#E0E0E0">
+                <Entry Placeholder="Số điện thoại *"
+                       Text="{Binding PhoneNumber, Mode=TwoWay}"
+                       FontSize="15"
+                       Keyboard="Telephone"
+                       Margin="16,12" />
+            </Frame>
+
             <!-- Username -->
             <Frame Padding="0" CornerRadius="12" HasShadow="False" BackgroundColor="White" BorderColor="#E0E0E0">
                 <Entry Placeholder="Tên tài khoản *"
