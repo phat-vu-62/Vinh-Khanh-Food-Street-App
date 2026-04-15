@@ -11,10 +11,21 @@ namespace FoodStreetApp
 
         private IDispatcherTimer? _heartbeatTimer;
 
-        protected override void OnStart()
+        protected override async void OnStart()
         {
             base.OnStart();
             StartHeartbeatTimer();
+
+            // Bắt buộc đăng nhập khi mở app (nhưng lưu phiên - nếu đã login trước đó thì bỏ qua)
+            await Task.Delay(300); // Chờ Shell load xong
+            var authService = Handler?.MauiContext?.Services.GetService<Services.IAuthService>();
+            if (authService == null || !authService.IsLoggedIn)
+            {
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await Shell.Current.GoToAsync("LoginPage");
+                });
+            }
         }
 
         private void StartHeartbeatTimer()

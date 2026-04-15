@@ -26,11 +26,12 @@ namespace FoodStreetApp.Views
             await Shell.Current.GoToAsync(nameof(LoginPage));
         }
 
-        private void OnLogoutClicked(object? sender, EventArgs e)
+        private async void OnLogoutClicked(object? sender, EventArgs e)
         {
             var authService = Handler?.MauiContext?.Services.GetService<IAuthService>();
             authService?.Logout();
             _viewModel.RefreshAccountState();
+            await Shell.Current.GoToAsync("LoginPage");
         }
     }
 }
