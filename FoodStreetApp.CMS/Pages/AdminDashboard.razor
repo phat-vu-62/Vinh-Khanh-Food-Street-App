@@ -84,18 +84,7 @@ else
                 </div>
             </div>
         </div>
-        <div class="col-xl col-md-6 col-lg-6">
-            <div class="saas-card stats-card border-info h-100">
-                <span class="stats-label">Lượt tương tác</span>
-                <div class="d-flex align-items-baseline justify-content-between">
-                    <span class="stats-value">@_summary.TotalPoiViewed.ToString("N0")</span>
-                    <span class="small text-info fw-bold">Live</span>
-                </div>
-                <div class="progress mt-3" style="height: 4px;">
-                    <div class="progress-bar bg-info" style="width: 100%;"></div>
-                </div>
-            </div>
-        </div>
+
         <div class="col-xl col-md-6 col-lg-6">
             <div class="saas-card stats-card border-warning h-100">
                 <span class="stats-label">Nghe trung bình</span>
@@ -124,9 +113,7 @@ else
                         }
                     </span>
                 </div>
-                <div class="mt-2">
-                    <span class="text-muted x-small">Hoạt động trong 5 giây qua</span>
-                </div>
+
             </div>
         </div>
     </div>
@@ -315,6 +302,24 @@ else
             _summary.TotalPoiViewed = newSummary.TotalPoiViewed;
             _summary.TotalAudioPlayed = newSummary.TotalAudioPlayed;
             _lastUpdated = DateTime.Now;
+
+            // Also refresh revenue data
+            try
+            {
+                var resp = await Http.GetAsync("api/auth/revenue");
+                if (resp.IsSuccessStatusCode)
+                {
+                    var json = await resp.Content.ReadAsStringAsync();
+                    var rev = JsonSerializer.Deserialize<JsonElement>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    _revenueTotal = rev.TryGetProperty("totalRevenue", out var tr) ? tr.GetDecimal() : _revenueTotal;
+                    _revenueRegister = rev.TryGetProperty("registerRevenue", out var rr) ? rr.GetDecimal() : _revenueRegister;
+                    _revenueListen = rev.TryGetProperty("listenRevenue", out var lr) ? lr.GetDecimal() : _revenueListen;
+                    _revenueCreatePoi = rev.TryGetProperty("createPoiRevenue", out var cr) ? cr.GetDecimal() : _revenueCreatePoi;
+                    _revenueRefund = rev.TryGetProperty("totalRefund", out var rf) ? rf.GetDecimal() : _revenueRefund;
+                }
+            }
+            catch { }
+
             StateHasChanged();
         }
         catch { /* ignore silent refresh errors */ }

@@ -184,7 +184,7 @@
                                FontSize="13"
                                TextColor="#666"
                                Margin="0,4,0,0" />
-                        <Button Text="Đăng nhập / Đăng ký"
+                        <Button Text="Đăng nhập"
                                 Clicked="OnLoginClicked"
                                 FontSize="14"
                                 BackgroundColor="{StaticResource Primary}"
