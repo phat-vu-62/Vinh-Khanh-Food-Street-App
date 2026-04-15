@@ -104,21 +104,6 @@ namespace FoodStreetApp.ViewModels
             {
                 if (place == null) return;
 
-                // Kiểm tra đăng nhập trước khi xem chi tiết
-                var auth = Application.Current?.Handler?.MauiContext?.Services.GetService<IAuthService>();
-                if (auth == null || !auth.IsLoggedIn)
-                {
-                    var result = await Shell.Current.DisplayAlert(
-                        "Yêu cầu đăng nhập",
-                        "Bạn phải đăng nhập để xem chi tiết địa điểm.",
-                        "Đăng nhập", "Hủy");
-                    if (result)
-                    {
-                        await Shell.Current.GoToAsync("LoginPage");
-                    }
-                    return;
-                }
-
                 var navigationParameter = new Dictionary<string, object>
                 {
                     { "FoodPlace", place }

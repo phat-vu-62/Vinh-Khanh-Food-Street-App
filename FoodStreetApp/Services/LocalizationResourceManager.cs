@@ -57,7 +57,7 @@ namespace FoodStreetApp.Services
             if (string.IsNullOrEmpty(key))
                 return string.Empty;
 
-            var culture = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+            var culture = CurrentCulture;
             // Try exact key first, then try without trailing period (API data may differ)
             var trimmedKey = key.TrimEnd('.');
 
@@ -359,6 +359,9 @@ namespace FoodStreetApp.Services
                     "Listen to the story of this place" => "この場所のストーリーを聞く",
                     "Description" => "説明",
                     "Show on Map" => "地図に表示",
+                    "Play" => "再生",
+                    "Stop" => "停止",
+                    "Replay" => "リプレイ",
                     "seconds" => "秒",
                     "meters" => "メートル",
                     "minutes" => "分",
