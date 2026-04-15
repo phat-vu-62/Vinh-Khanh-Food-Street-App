@@ -649,6 +649,17 @@ app.MapGet("/api/auth/revenue", async (CmsDbContext db) =>
         TotalCreatePoiPayments = all.Count(x => x.Action == "payment_create_poi" && x.Amount > 0)
     });
 });
+// Get list of currently online user IDs (app_ping in last 10 seconds)
+app.MapGet("/api/auth/online-users", async (CmsDbContext db) =>
+{
+    var tenSecondsAgo = DateTime.UtcNow.AddSeconds(-10);
+    var onlineUserIds = await db.UserHistories.AsNoTracking()
+        .Where(h => h.Action == "app_ping" && h.VisitedAtUtc >= tenSecondsAgo)
+        .Select(h => h.UserId)
+        .Distinct()
+        .ToListAsync();
+    return Results.Ok(onlineUserIds);
+});
 
 // Get owner-specific revenue (listen payments for their APPROVED POIs only)
 app.MapGet("/api/auth/owner-revenue/{ownerId}", async (Guid ownerId, CmsDbContext db) =>

@@ -146,6 +146,7 @@
                         <th class="border-0 py-3">SĐT</th>
                         <th class="border-0 py-3">Email</th>
                         <th class="border-0 py-3">Vai trò</th>
+                        <th class="border-0 py-3">Trực tuyến</th>
                         <th class="border-0 py-3">Trạng thái</th>
                         <th class="border-0 py-3">Ngày tạo</th>
                         <th class="border-0 py-3 text-end pe-4">Thao tác</th>
@@ -191,6 +192,22 @@
                                       style="padding: 5px 12px;">
                                     @user.Role
                                 </span>
+                            </td>
+                            <td>
+                                @if (IsUserOnline(user.Id.ToString()))
+                                {
+                                    <span class="d-flex align-items-center gap-1">
+                                        <span class="status-dot active"></span>
+                                        <span class="small text-success">Online</span>
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="d-flex align-items-center gap-1">
+                                        <span class="status-dot" style="background: #ccc;"></span>
+                                        <span class="small text-muted">Offline</span>
+                                    </span>
+                                }
                             </td>
                             <td>
                                 @if (user.IsActive)
@@ -508,6 +525,7 @@
     private string _filterRole = "";
     private string _filterStatus = "";
     private decimal _totalRevenue = 0;
+    private HashSet<string> _onlineUserIds = new();
 
     // Create modal state
     private bool _showCreateModal = false;
@@ -532,7 +550,7 @@
 
     private IEnumerable<UserDto> FilteredUsers => _users.Where(u =>
     {
-        if (!string.IsNullOrWhiteSpace(_filterRole) && u.Role != _filterRole) return false;
+        if (!string.IsNullOrWhiteSpace(_filterRole) && !string.Equals(u.Role, _filterRole, StringComparison.OrdinalIgnoreCase)) return false;
         if (_filterStatus == "active" && !u.IsActive) return false;
         if (_filterStatus == "locked" && u.IsActive) return false;
         if (!string.IsNullOrWhiteSpace(_searchTerm))
@@ -602,6 +620,19 @@
                 var revenue = JsonSerializer.Deserialize<RevenueDto>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                 _totalRevenue = revenue?.TotalRevenue ?? 0;
             }
+
+            // Load online users
+            try
+            {
+                var onlineResp = await Http.GetAsync("api/auth/online-users");
+                if (onlineResp.IsSuccessStatusCode)
+                {
+                    var onlineJson = await onlineResp.Content.ReadAsStringAsync();
+                    var ids = JsonSerializer.Deserialize<List<string>>(onlineJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new();
+                    _onlineUserIds = new HashSet<string>(ids, StringComparer.OrdinalIgnoreCase);
+                }
+            }
+            catch { }
         }
         catch (Exception ex)
         {
@@ -618,6 +649,8 @@
         // Reactively filters via FilteredUsers computed property
         StateHasChanged();
     }
+
+    private bool IsUserOnline(string userId) => _onlineUserIds.Contains(userId);
 
     private async Task ToggleActive(UserDto user)
     {
