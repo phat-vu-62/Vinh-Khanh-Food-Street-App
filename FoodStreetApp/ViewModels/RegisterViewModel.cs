@@ -88,9 +88,9 @@ namespace FoodStreetApp.ViewModels
             ErrorMessage = null;
             SuccessMessage = null;
 
-            if (string.IsNullOrWhiteSpace(Username) || string.IsNullOrWhiteSpace(Password))
+            if (string.IsNullOrWhiteSpace(FullName) || string.IsNullOrWhiteSpace(Username) || string.IsNullOrWhiteSpace(Password))
             {
-                ErrorMessage = "Vui lòng nhập đầy đủ tài khoản và mật khẩu.";
+                ErrorMessage = "Vui lòng nhập đầy đủ Họ tên, tài khoản và mật khẩu.";
                 return;
             }
 

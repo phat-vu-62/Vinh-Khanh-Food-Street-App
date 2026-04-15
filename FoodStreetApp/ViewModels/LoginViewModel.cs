@@ -71,7 +71,7 @@ namespace FoodStreetApp.ViewModels
 
             if (success)
             {
-                await Shell.Current.GoToAsync(".."); // Go back to Settings
+                await Shell.Current.GoToAsync("//HomePage");
             }
             else
             {

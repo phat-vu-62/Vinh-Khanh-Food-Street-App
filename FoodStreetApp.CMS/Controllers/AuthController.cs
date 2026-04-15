@@ -90,8 +90,8 @@ public class AuthController : ControllerBase
     [HttpPost("api-register")]
     public async Task<IActionResult> ApiRegister([FromBody] MobileRegisterRequest req)
     {
-        if (string.IsNullOrWhiteSpace(req.Username) || string.IsNullOrWhiteSpace(req.Password))
-            return BadRequest(new { success = false, message = "Vui lòng nhập tài khoản và mật khẩu." });
+        if (string.IsNullOrWhiteSpace(req.Username) || string.IsNullOrWhiteSpace(req.Password) || string.IsNullOrWhiteSpace(req.FullName))
+            return BadRequest(new { success = false, message = "Vui lòng nhập tài khoản, mật khẩu và họ tên." });
 
         if (req.Password.Length < 6)
             return BadRequest(new { success = false, message = "Mật khẩu phải có ít nhất 6 ký tự." });

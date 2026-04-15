@@ -7,6 +7,10 @@
     xmlns:loc="clr-namespace:FoodStreetApp.Services"
     Title="Food Street Guide">
 
+    <ShellItem Route="LoginPage" FlyoutItemIsVisible="False" TabBarIsVisible="False">
+        <ShellContent ContentTemplate="{DataTemplate views:LoginPage}" />
+    </ShellItem>
+
     <TabBar>
         <ShellContent
             Title="{Binding Source={x:Static loc:LocalizationResourceManager.Instance}, Path=[Home]}"

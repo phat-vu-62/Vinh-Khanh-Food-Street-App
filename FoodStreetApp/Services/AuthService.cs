@@ -33,13 +33,16 @@ namespace FoodStreetApp.Services
                 var payload = new { Username = username, Password = password };
                 var response = await _httpClient.PostAsJsonAsync($"{BaseUrl}/api/auth/api-login", payload);
                 var json = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<JsonElement>(json);
-
-                if (response.IsSuccessStatusCode && result.TryGetProperty("success", out var s) && s.GetBoolean())
+                
+                string errorMsg = "Đăng nhập thất bại.";
+                try
                 {
-                    var userId = result.GetProperty("userId").GetString()!;
-                    var user = result.GetProperty("username").GetString()!;
-                    var fullName = result.TryGetProperty("fullName", out var fn) ? fn.GetString() : user;
+                    var result = JsonSerializer.Deserialize<JsonElement>(json);
+                    if (response.IsSuccessStatusCode && result.TryGetProperty("success", out var s) && s.GetBoolean())
+                    {
+                        var userId = result.GetProperty("userId").GetString()!;
+                        var user = result.GetProperty("username").GetString()!;
+                        var fullName = result.TryGetProperty("fullName", out var fn) ? fn.GetString() : user;
 
                     Preferences.Set(KEY_USER_ID, userId);
                     Preferences.Set(KEY_USERNAME, user);
@@ -52,8 +55,14 @@ namespace FoodStreetApp.Services
                     return (true, "Đăng nhập thành công!");
                 }
 
-                var msg = result.TryGetProperty("message", out var m) ? m.GetString() : "Đăng nhập thất bại.";
-                return (false, msg ?? "Đăng nhập thất bại.");
+                    errorMsg = result.TryGetProperty("message", out var m) ? m.GetString() ?? errorMsg : errorMsg;
+                }
+                catch
+                {
+                    errorMsg = string.IsNullOrWhiteSpace(json) ? errorMsg : json;
+                }
+
+                return (false, errorMsg);
             }
             catch (Exception ex)
             {
@@ -69,17 +78,27 @@ namespace FoodStreetApp.Services
                 var payload = new { Username = username, Password = password, Email = email, FullName = fullName };
                 var response = await _httpClient.PostAsJsonAsync($"{BaseUrl}/api/auth/api-register", payload);
                 var json = await response.Content.ReadAsStringAsync();
-                var result = JsonSerializer.Deserialize<JsonElement>(json);
-
-                if (response.IsSuccessStatusCode && result.TryGetProperty("success", out var s) && s.GetBoolean())
+                
+                string errorMsg = "Đăng ký thất bại.";
+                try
                 {
+                    var result = JsonSerializer.Deserialize<JsonElement>(json);
+
+                    if (response.IsSuccessStatusCode && result.TryGetProperty("success", out var s) && s.GetBoolean())
+                    {
                     var msg = result.TryGetProperty("message", out var m) ? m.GetString() : "Đăng ký thành công!";
                     System.Diagnostics.Debug.WriteLine($"[AUTH] Register OK: {username}");
                     return (true, msg ?? "Đăng ký thành công!");
                 }
 
-                var errMsg = result.TryGetProperty("message", out var em) ? em.GetString() : "Đăng ký thất bại.";
-                return (false, errMsg ?? "Đăng ký thất bại.");
+                    errorMsg = result.TryGetProperty("message", out var em) ? em.GetString() ?? errorMsg : errorMsg;
+                }
+                catch
+                {
+                    errorMsg = string.IsNullOrWhiteSpace(json) ? errorMsg : json;
+                }
+
+                return (false, errorMsg);
             }
             catch (Exception ex)
             {
