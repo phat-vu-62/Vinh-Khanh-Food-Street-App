@@ -576,6 +576,7 @@ app.MapPost("/api/auth/users", async (JsonElement body, CmsDbContext db) =>
         var phone = body.TryGetProperty("phone", out var phProp) ? phProp.GetString() : null;
         var email = body.TryGetProperty("email", out var emProp) ? emProp.GetString() : null;
         var password = body.TryGetProperty("password", out var pwProp) ? pwProp.GetString() : "123";
+        var role = body.TryGetProperty("role", out var rlProp) ? rlProp.GetString() : "Owner";
 
         if (string.IsNullOrWhiteSpace(username))
             return Results.BadRequest(new { message = "Username là bắt buộc" });
@@ -595,7 +596,7 @@ app.MapPost("/api/auth/users", async (JsonElement body, CmsDbContext db) =>
             Id = Guid.NewGuid(),
             Username = username!,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(password ?? "123"),
-            Role = "Owner",
+            Role = role ?? "Owner",
             FullName = fullName,
             PhoneNumber = phone,
             Email = email,

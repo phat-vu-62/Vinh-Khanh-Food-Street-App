@@ -55,9 +55,9 @@
     </div>
     <div class="col-lg-3 col-md-6">
         <div class="saas-card stats-card border-success h-100">
-            <span class="stats-label">Đang hoạt động</span>
+            <span class="stats-label">Khả dụng</span>
             <div class="d-flex align-items-baseline justify-content-between">
-                <span class="stats-value">@_users.Count(u => u.IsActive && u.Role != "Admin")</span>
+                <span class="stats-value">@_users.Count(u => u.IsActive)</span>
                 <i class="bi bi-person-check text-success"></i>
             </div>
             <div class="progress mt-3" style="height: 4px;">
@@ -96,14 +96,14 @@
 <AuthorizeView Roles="Admin">
 <div class="saas-card p-4 mb-4">
     <div class="row g-3 align-items-end">
-        <div class="col-md-6">
+        <div class="col-md-5">
             <div class="input-group input-group-lg">
                 <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
                 <input type="text" class="form-control border-start-0" placeholder="Tìm theo tên, SĐT, email..."
                        @bind="_searchTerm" @bind:event="oninput" @onkeyup="OnSearch" />
             </div>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <select class="form-select form-select-lg" @bind="_filterRole">
                 <option value="">Tất cả vai trò</option>
                 <option value="Admin">Admin</option>
@@ -111,11 +111,18 @@
                 <option value="Enduser">Enduser</option>
             </select>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <select class="form-select form-select-lg" @bind="_filterStatus">
                 <option value="">Tất cả trạng thái</option>
-                <option value="active">Đang hoạt động</option>
+                <option value="active">Khả dụng</option>
                 <option value="locked">Đã khóa</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select class="form-select form-select-lg" @bind="_filterOnline">
+                <option value="">Tất cả (Online/Offline)</option>
+                <option value="online">Đang Online</option>
+                <option value="offline">Đang Offline</option>
             </select>
         </div>
     </div>
@@ -146,7 +153,7 @@
                         <th class="border-0 py-3">SĐT</th>
                         <th class="border-0 py-3">Email</th>
                         <th class="border-0 py-3">Vai trò</th>
-                        <th class="border-0 py-3">Trực tuyến</th>
+                        <th class="border-0 py-3" style="white-space: nowrap;">Trực tuyến</th>
                         <th class="border-0 py-3">Trạng thái</th>
                         <th class="border-0 py-3">Ngày tạo</th>
                         <th class="border-0 py-3 text-end pe-4">Thao tác</th>
@@ -214,7 +221,7 @@
                                 {
                                     <span class="d-flex align-items-center gap-1">
                                         <span class="status-dot active"></span>
-                                        <span class="small text-success">Hoạt động</span>
+                                        <span class="small text-success">Mở khóa</span>
                                     </span>
                                 }
                                 else
@@ -352,7 +359,7 @@
         <div class="modal-dialog modal-dialog-centered" @onclick:stopPropagation="true">
             <div class="modal-content border-0 shadow-lg rounded-4">
                 <div class="modal-header border-0 pb-0 px-4 pt-4">
-                    <h5 class="modal-title fw-bold"><i class="bi bi-person-plus me-2 text-primary"></i>Tạo tài khoản Owner</h5>
+                    <h5 class="modal-title fw-bold"><i class="bi bi-person-plus me-2 text-primary"></i>Tạo tài khoản mới</h5>
                     <button type="button" class="btn-close" @onclick="CloseCreateModal"></button>
                 </div>
                 <div class="modal-body px-4 py-3">
@@ -373,6 +380,13 @@
                             <label class="form-label small fw-bold text-muted">EMAIL</label>
                             <input type="email" class="form-control" placeholder="Email" @bind="_newEmail" />
                         </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">LOẠI TÀI KHOẢN</label>
+                        <select class="form-select" @bind="_newRole">
+                            <option value="Owner">Owner (Chủ quán)</option>
+                            <option value="enduser">Enduser (Người dùng app)</option>
+                        </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted">MẬT KHẨU</label>
@@ -524,6 +538,7 @@
     private string _searchTerm = "";
     private string _filterRole = "";
     private string _filterStatus = "";
+    private string _filterOnline = "";
     private decimal _totalRevenue = 0;
     private HashSet<string> _onlineUserIds = new();
 
@@ -533,6 +548,7 @@
     private string _newFullName = "";
     private string _newPhone = "";
     private string _newEmail = "";
+    private string _newRole = "Owner";
     private string _newPassword = "123";
     private string? _createError;
     private bool _isCreating = false;
@@ -553,6 +569,8 @@
         if (!string.IsNullOrWhiteSpace(_filterRole) && !string.Equals(u.Role, _filterRole, StringComparison.OrdinalIgnoreCase)) return false;
         if (_filterStatus == "active" && !u.IsActive) return false;
         if (_filterStatus == "locked" && u.IsActive) return false;
+        if (_filterOnline == "online" && !IsUserOnline(u.Id.ToString())) return false;
+        if (_filterOnline == "offline" && IsUserOnline(u.Id.ToString())) return false;
         if (!string.IsNullOrWhiteSpace(_searchTerm))
         {
             var term = _searchTerm.ToLower();
@@ -709,6 +727,7 @@
         _newFullName = "";
         _newPhone = "";
         _newEmail = "";
+        _newRole = "Owner";
         _newPassword = "123";
         _createError = null;
     }
@@ -780,6 +799,7 @@
         _newFullName = "";
         _newPhone = "";
         _newEmail = "";
+        _newRole = "Owner";
         _newPassword = "123";
         _createError = null;
         _showCreateModal = true;
@@ -797,6 +817,7 @@
                 fullName = _newFullName,
                 phone = _newPhone,
                 email = _newEmail,
+                role = _newRole,
                 password = _newPassword
             };
             var response = await Http.PostAsJsonAsync("api/auth/users", payload);
