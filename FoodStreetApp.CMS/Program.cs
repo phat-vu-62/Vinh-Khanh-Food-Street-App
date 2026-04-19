@@ -51,6 +51,9 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddDbContext<CmsDbContext>(options => 
     options.UseNpgsql(connectionString, x => x.MigrationsAssembly("FoodStreetApp.CMS")));
+// Factory for concurrent operations (dashboard timer, API pings, etc.)
+builder.Services.AddDbContextFactory<CmsDbContext>(options =>
+    options.UseNpgsql(connectionString, x => x.MigrationsAssembly("FoodStreetApp.CMS")), ServiceLifetime.Scoped);
 
 // Register Gemini translation service
 builder.Services.AddHttpClient<IGeminiTranslationService, GeminiTranslationService>()

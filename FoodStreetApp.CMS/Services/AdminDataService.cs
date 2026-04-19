@@ -8,12 +8,14 @@ namespace FoodStreetApp.CMS.Services;
 public class AdminDataService : IAdminDataService
 {
     private readonly CmsDbContext _dbContext;
+    private readonly IDbContextFactory<CmsDbContext> _dbFactory;
     private readonly IGeminiTranslationService _translationService;
     private readonly ILogger<AdminDataService> _logger;
 
-    public AdminDataService(CmsDbContext dbContext, IGeminiTranslationService translationService, ILogger<AdminDataService> logger)
+    public AdminDataService(CmsDbContext dbContext, IDbContextFactory<CmsDbContext> dbFactory, IGeminiTranslationService translationService, ILogger<AdminDataService> logger)
     {
         _dbContext = dbContext;
+        _dbFactory = dbFactory;
         _translationService = translationService;
         _logger = logger;
     }
@@ -334,10 +336,13 @@ public class AdminDataService : IAdminDataService
 
     public async Task<FoodStreetApp.CMS.Models.AnalyticsSummary> GetAnalyticsSummaryAsync(DateTime? startDate = null, DateTime? endDate = null, Guid? ownerId = null)
     {
+        // Use a dedicated DbContext to avoid concurrency issues with the 2s dashboard timer
+        await using var db = await _dbFactory.CreateDbContextAsync();
+
         var start = startDate?.ToUniversalTime() ?? DateTime.UtcNow.Date.AddDays(-30).ToUniversalTime();
         var end = endDate?.ToUniversalTime() ?? DateTime.UtcNow.ToUniversalTime();
 
-        var query = _dbContext.UserHistories.AsNoTracking()
+        var query = db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= start && h.VisitedAtUtc <= end);
 
         // If ownerId is provided, filter history by the owner's POIs
@@ -431,14 +436,14 @@ public class AdminDataService : IAdminDataService
 
         // 5. Active Users Now (last 4 seconds - Fast Offline Detection)
         var recentThreshold = DateTime.UtcNow.AddSeconds(-4);
-        var activeNow = await _dbContext.UserHistories.AsNoTracking()
+        var activeNow = await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= recentThreshold && (h.Action == "app_ping" || h.Action == "cms_ping"))
             .Select(h => h.UserId)
             .Distinct()
             .CountAsync();
 
         // 5b. Active QR Listeners (last 4 seconds)
-        var activeQrNow = await _dbContext.UserHistories.AsNoTracking()
+        var activeQrNow = await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= recentThreshold && h.Action == "qr_listen_ping")
             .Select(h => h.UserId)
             .Distinct()
@@ -457,7 +462,7 @@ public class AdminDataService : IAdminDataService
             PeakHour = peakHourStr,
             EngagementRate = stats.TotalAudio > 0 ? (double)stats.HighEngagement * 100 / stats.TotalAudio : 0,
             DailyTrends = trends,
-            PendingApprovals = await _dbContext.Pois.CountAsync(p => !p.IsApproved && (!ownerId.HasValue || p.OwnerId == ownerId.Value))
+            PendingApprovals = await db.Pois.CountAsync(p => !p.IsApproved && (!ownerId.HasValue || p.OwnerId == ownerId.Value))
         };
 
 
