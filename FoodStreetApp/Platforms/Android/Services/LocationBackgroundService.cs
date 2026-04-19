@@ -4,6 +4,7 @@ using Android.OS;
 using Android.Content.PM;
 using AndroidX.Core.App;
 using FoodStreetApp.Services;
+using System.Net.Http.Json;
 
 namespace FoodStreetApp.Platforms.Android.Services
 {
