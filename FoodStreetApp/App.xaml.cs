@@ -20,6 +20,15 @@ namespace FoodStreetApp
                 StartHeartbeatTimer();
                 // Send immediate ping so user shows Online right away
                 SendImmediatePing();
+
+                var bgEnabled = Preferences.Get("background_tracking", false);
+                if (bgEnabled)
+                {
+#if ANDROID
+                    var intent = new Android.Content.Intent(Platform.AppContext, typeof(FoodStreetApp.Platforms.Android.Services.LocationBackgroundService));
+                    Platform.AppContext.StartForegroundService(intent);
+#endif
+                }
             }
             catch (Exception ex)
             {

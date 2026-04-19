@@ -15,6 +15,7 @@ namespace FoodStreetApp.Platforms.Android.Services
         private const string ChannelId = "location_service_channel";
         private ILocationService? _locationService;
         private CancellationTokenSource? _pingCts;
+        private PowerManager.WakeLock? _wakeLock;
 
         public override IBinder? OnBind(Intent? intent)
         {
@@ -59,6 +60,14 @@ namespace FoodStreetApp.Platforms.Android.Services
 
                 StartForeground(NotificationId, notification);
                 System.Diagnostics.Debug.WriteLine(">>> LocationBackgroundService: Foreground service started");
+
+                // Acquire WakeLock to prevent CPU from sleeping while service is active
+                var powerManager = (PowerManager?)GetSystemService(PowerService);
+                if (powerManager != null)
+                {
+                    _wakeLock = powerManager.NewWakeLock(WakeLockFlags.Partial, "FoodStreetApp::LocationHeartbeat");
+                    _wakeLock?.Acquire();
+                }
 
                 // Start location tracking
                 Task.Run(async () =>
@@ -119,16 +128,18 @@ namespace FoodStreetApp.Platforms.Android.Services
                     ServerCertificateCustomValidationCallback = (msg, cert, chain, err) => true
                 };
                 using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(10) };
-                var userId = Preferences.Get("tracking_user_id", string.Empty);
-                var trackingUrl = "https://vinh-khanh-food-street-app-iyhe.onrender.com/api/history";
-
                 while (!token.IsCancellationRequested)
                 {
                     try
                     {
-                        var payload = new { UserId = userId, PoiId = 0, Action = "app_ping" };
-                        await http.PostAsJsonAsync(trackingUrl, payload);
-                        System.Diagnostics.Debug.WriteLine("[BG-HEARTBEAT] Ping sent");
+                        var userId = Preferences.Get("tracking_user_id", string.Empty);
+                        if (!string.IsNullOrEmpty(userId))
+                        {
+                            var trackingUrl = "https://vinh-khanh-food-street-app-iyhe.onrender.com/api/history";
+                            var payload = new { UserId = userId, PoiId = 0, Action = "app_ping" };
+                            await http.PostAsJsonAsync(trackingUrl, payload);
+                            System.Diagnostics.Debug.WriteLine("[BG-HEARTBEAT] Ping sent for User: " + userId);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -148,6 +159,12 @@ namespace FoodStreetApp.Platforms.Android.Services
             _pingCts?.Cancel();
             _pingCts?.Dispose();
             _pingCts = null;
+
+            if (_wakeLock?.IsHeld == true)
+            {
+                _wakeLock.Release();
+                _wakeLock = null;
+            }
 
             _locationService?.StopTrackingAsync();
             base.OnDestroy();
