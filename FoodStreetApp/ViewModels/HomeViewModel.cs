@@ -11,7 +11,7 @@ namespace FoodStreetApp.ViewModels
     {
         private readonly IPOIService _poiService;
         private string _searchText = string.Empty;
-        private const string RenderSyncUrl = "https://vinh-khanh-food-street-app.onrender.com/api/sync/pois";
+        private const string RenderSyncUrl = "https://vinh-khanh-food-street-app-iyhe.onrender.com/api/sync/pois";
         private readonly SemaphoreSlim _refreshLock = new(1, 1);
 
         public ObservableCollection<FoodPlace> FeaturedStalls { get; }

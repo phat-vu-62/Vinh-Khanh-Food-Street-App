@@ -120,7 +120,7 @@ namespace FoodStreetApp.Platforms.Android.Services
                 };
                 using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(10) };
                 var userId = Preferences.Get("tracking_user_id", string.Empty);
-                var trackingUrl = "https://vinh-khanh-food-street-app.onrender.com/api/history";
+                var trackingUrl = "https://vinh-khanh-food-street-app-iyhe.onrender.com/api/history";
 
                 while (!token.IsCancellationRequested)
                 {

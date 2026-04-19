@@ -81,7 +81,7 @@ builder.Services.AddScoped(sp =>
     // If we're on Render, we use the public URL. Otherwise, we use localhost.
     var isRender = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("RENDER"));
     var baseUrl = isRender 
-        ? "https://vinh-khanh-food-street-app.onrender.com/" 
+        ? "https://vinh-khanh-food-street-app-iyhe.onrender.com/" 
         : $"http://localhost:{port}/";
     
     client.BaseAddress = new Uri(baseUrl);

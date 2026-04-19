@@ -120,7 +120,7 @@ namespace FoodStreetApp.Data
 
         public async Task<int> SyncFromWebAsync(string? syncUrl = null)
         {
-            const string defaultUrl = "https://vinh-khanh-food-street-app.onrender.com/api/sync/pois";
+            const string defaultUrl = "https://vinh-khanh-food-street-app-iyhe.onrender.com/api/sync/pois";
             var targetUrl = string.IsNullOrWhiteSpace(syncUrl) ? defaultUrl : syncUrl;
             var actionsUrl = targetUrl.Replace("/api/sync/pois", "/api/sync/poi-actions", StringComparison.OrdinalIgnoreCase);
 
