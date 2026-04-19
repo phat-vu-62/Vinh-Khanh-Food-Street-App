@@ -437,12 +437,20 @@ public class AdminDataService : IAdminDataService
             .Distinct()
             .CountAsync();
 
+        // 5b. Active QR Listeners (last 5 seconds)
+        var activeQrNow = await _dbContext.UserHistories.AsNoTracking()
+            .Where(h => h.VisitedAtUtc >= fiveSecondsAgo && h.Action == "qr_listen_ping")
+            .Select(h => h.UserId)
+            .Distinct()
+            .CountAsync();
+
         return new FoodStreetApp.CMS.Models.AnalyticsSummary
         {
             TotalAudioPlayed = stats.TotalAudio,
             TotalPoiViewed = stats.TotalViews,
             UniqueUsersCount = stats.UniqueUsers,
             ActiveUsersNow = activeNow,
+            ActiveQrUsersNow = activeQrNow,
             AvgDurationSeconds = stats.AvgDuration,
             TopPois = topPois,
             HotSpotName = topPois.FirstOrDefault()?.PoiName ?? "N/A",

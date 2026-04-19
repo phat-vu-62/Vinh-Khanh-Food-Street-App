@@ -11,33 +11,13 @@ namespace FoodStreetApp
 
         private IDispatcherTimer? _heartbeatTimer;
 
-        protected override async void OnStart()
+        protected override void OnStart()
         {
             base.OnStart();
 
             try
             {
                 StartHeartbeatTimer();
-
-                // Chờ Shell và Services sẵn sàng
-                await Task.Delay(500);
-
-                // Bắt buộc đăng nhập khi mở app (nhưng lưu phiên)
-                if (Shell.Current != null)
-                {
-                    var authService = Handler?.MauiContext?.Services.GetService<Services.IAuthService>();
-                    if (authService == null || !authService.IsLoggedIn)
-                    {
-                        await MainThread.InvokeOnMainThreadAsync(async () =>
-                        {
-                            try
-                            {
-                                await Shell.Current.GoToAsync("LoginPage");
-                            }
-                            catch { /* Shell chưa sẵn sàng */ }
-                        });
-                    }
-                }
             }
             catch (Exception ex)
             {
@@ -57,12 +37,9 @@ namespace FoodStreetApp
                 {
                     try
                     {
-                        var auth = Handler?.MauiContext?.Services.GetService<Services.IAuthService>();
-                        if (auth != null && auth.IsLoggedIn)
-                        {
-                            var tracker = Handler?.MauiContext?.Services.GetService<Services.ITrackingService>();
-                            tracker?.TrackEventAsync(0, "app_ping");
-                        }
+                        // Always send heartbeat — app is anonymous, no login check needed
+                        var tracker = Handler?.MauiContext?.Services.GetService<Services.ITrackingService>();
+                        tracker?.TrackEventAsync(0, "app_ping");
                     }
                     catch { /* Services chưa sẵn sàng */ }
                 };

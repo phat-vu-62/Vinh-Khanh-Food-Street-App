@@ -25,7 +25,7 @@ public class HistoryController : ControllerBase
         try
         {
             // 1. HARD VALIDATION
-            if (history.PoiId <= 0 && history.Action != "app_ping")
+            if (history.PoiId <= 0 && history.Action != "app_ping" && history.Action != "qr_listen_ping")
             {
                 _logger.LogWarning("[Tracking] REFUSED: Invalid PoiId {PoiId}", history.PoiId);
                 return BadRequest("Invalid PoiId");

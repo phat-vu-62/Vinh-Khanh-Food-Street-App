@@ -37,8 +37,7 @@ namespace FoodStreetApp
             builder.Services.AddSingleton<INarrationService, NarrationService>();
             builder.Services.AddSingleton<IPOIService, POIService>();
             builder.Services.AddSingleton<ITrackingService, TrackingService>();
-        builder.Services.AddSingleton<IGeofenceService, GeofenceService>();
-
+            builder.Services.AddSingleton<IGeofenceService, GeofenceService>();
             builder.Services.AddSingleton<IAuthService, AuthService>();
 
             // ViewModels & Views
@@ -56,12 +55,6 @@ namespace FoodStreetApp
 
             builder.Services.AddTransient<SettingsViewModel>();
             builder.Services.AddTransient<SettingsPage>();
-
-            builder.Services.AddTransient<LoginViewModel>();
-            builder.Services.AddTransient<LoginPage>();
-
-            builder.Services.AddTransient<RegisterViewModel>();
-            builder.Services.AddTransient<RegisterPage>();
 
             // Global exception handlers để tránh crash
             AppDomain.CurrentDomain.UnhandledException += (s, e) =>

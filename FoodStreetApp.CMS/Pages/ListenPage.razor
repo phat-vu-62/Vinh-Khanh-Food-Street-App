@@ -326,6 +326,65 @@
     window.saveLocalPayment = function(poiId) {
         localStorage.setItem("paid_" + poiId, "true");
     };
+
+    // --- QR PRESENCE HEARTBEAT ---
+    // Sends qr_listen_ping every 2 seconds while user is on the listen page after payment.
+    // Stops when user leaves the page (beforeunload / visibilitychange).
+    window._qrPingInterval = null;
+
+    window.startQrPresencePing = function(poiId) {
+        // Prevent duplicate intervals
+        if (window._qrPingInterval) return;
+
+        const userId = window.getDeviceId();
+        console.log("[QR-PRESENCE] Starting heartbeat for user:", userId, "POI:", poiId);
+
+        function sendPing() {
+            try {
+                fetch("/api/history", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        userId: userId,
+                        poiId: 0,
+                        action: "qr_listen_ping"
+                    })
+                }).catch(() => {});
+            } catch(e) {}
+        }
+
+        // Send immediate first ping
+        sendPing();
+
+        // Then every 2 seconds
+        window._qrPingInterval = setInterval(sendPing, 2000);
+
+        // Stop heartbeat when user leaves or hides page
+        window.addEventListener('beforeunload', window._stopQrPing);
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState === 'hidden') {
+                window._stopQrPing();
+            } else if (document.visibilityState === 'visible') {
+                // Resume if they come back
+                if (!window._qrPingInterval) {
+                    sendPing();
+                    window._qrPingInterval = setInterval(sendPing, 2000);
+                }
+            }
+        });
+    };
+
+    window._stopQrPing = function() {
+        if (window._qrPingInterval) {
+            clearInterval(window._qrPingInterval);
+            window._qrPingInterval = null;
+            console.log("[QR-PRESENCE] Heartbeat stopped");
+        }
+    };
+
+    window.stopQrPresencePing = function() {
+        window._stopQrPing();
+    };
 </script>
 
 <style>
@@ -459,6 +518,8 @@
                 StateHasChanged();
                 await Task.Delay(100);
                 await InitPlayer();
+                // Start QR presence heartbeat after payment confirmed
+                await JSRuntime.InvokeVoidAsync("startQrPresencePing", PoiId);
                 return;
             }
 
@@ -476,6 +537,8 @@
                         StateHasChanged();
                         await Task.Delay(100);
                         await InitPlayer();
+                        // Start QR presence heartbeat after payment confirmed
+                        await JSRuntime.InvokeVoidAsync("startQrPresencePing", PoiId);
                         return;
                     }
                 }
@@ -518,6 +581,8 @@
                 // Wait for DOM update then init player
                 await Task.Delay(200);
                 await InitPlayer();
+                // Start QR presence heartbeat after payment
+                await JSRuntime.InvokeVoidAsync("startQrPresencePing", PoiId);
             }
             else
             {
@@ -576,5 +641,10 @@
         StateHasChanged(); 
     }
 
-    public void Dispose() => _objRef?.Dispose();
+    public async void Dispose()
+    {
+        _objRef?.Dispose();
+        // Stop QR presence heartbeat when leaving the page
+        try { await JSRuntime.InvokeVoidAsync("stopQrPresencePing"); } catch { }
+    }
 }

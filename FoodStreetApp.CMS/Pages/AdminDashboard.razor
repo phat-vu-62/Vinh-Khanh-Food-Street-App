@@ -98,12 +98,12 @@ else
             </div>
         </div>
         <div class="col-xl col-md-6 col-lg-6">
-            <div class="saas-card stats-card h-100 @(_summary.ActiveUsersNow > 0 ? "border-2 shadow-sm" : "opacity-75")" style="border-left: 3px solid #10b981;">
+            <div class="saas-card stats-card h-100 @((_summary.ActiveUsersNow + _summary.ActiveQrUsersNow) > 0 ? "border-2 shadow-sm" : "opacity-75")" style="border-left: 3px solid #10b981;">
                 <span class="stats-label">Đang trực tuyến</span>
                 <div class="d-flex align-items-baseline justify-content-between">
-                    <span class="stats-value @(_summary.ActiveUsersNow > 0 ? "animate__animated animate__flash animate__infinite animate__slow" : "")">@_summary.ActiveUsersNow</span>
+                    <span class="stats-value @((_summary.ActiveUsersNow + _summary.ActiveQrUsersNow) > 0 ? "animate__animated animate__flash animate__infinite animate__slow" : "")">@(_summary.ActiveUsersNow + _summary.ActiveQrUsersNow)</span>
                     <span class="small fw-bold" style="color: #10b981;">
-                        @if (_summary.ActiveUsersNow > 0)
+                        @if ((_summary.ActiveUsersNow + _summary.ActiveQrUsersNow) > 0)
                         {
                             <span>● Online</span>
                         }
@@ -113,7 +113,23 @@ else
                         }
                     </span>
                 </div>
-
+                @if ((_summary.ActiveUsersNow + _summary.ActiveQrUsersNow) > 0)
+                {
+                    <div class="d-flex gap-2 mt-2">
+                        @if (_summary.ActiveUsersNow > 0)
+                        {
+                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle" style="font-size: 0.65rem;">
+                                <i class="bi bi-phone me-1"></i>App: @_summary.ActiveUsersNow
+                            </span>
+                        }
+                        @if (_summary.ActiveQrUsersNow > 0)
+                        {
+                            <span class="badge bg-info bg-opacity-10 text-info border border-info-subtle" style="font-size: 0.65rem;">
+                                <i class="bi bi-qr-code me-1"></i>QR: @_summary.ActiveQrUsersNow
+                            </span>
+                        }
+                    </div>
+                }
             </div>
         </div>
     </div>
@@ -287,6 +303,7 @@ else
         {
             var newSummary = await DataService.GetAnalyticsSummaryAsync();
             _summary.ActiveUsersNow = newSummary.ActiveUsersNow;
+            _summary.ActiveQrUsersNow = newSummary.ActiveQrUsersNow;
             _summary.TotalPoiViewed = newSummary.TotalPoiViewed;
             _summary.TotalAudioPlayed = newSummary.TotalAudioPlayed;
             _lastUpdated = DateTime.Now;

@@ -308,8 +308,8 @@ static object MapToSyncDto(FoodStreetApp.Shared.Entities.POI p) => new
 // 4. USAGE HISTORY & TRACKING
 app.MapPost("/api/history", async (FoodStreetApp.Shared.Entities.UserHistory history, CmsDbContext db) =>
 {
-    // Allow app_ping (PoiId=0) for real-time online tracking
-    if (history.PoiId <= 0 && history.Action != "app_ping")
+    // Allow app_ping and qr_listen_ping (PoiId=0) for real-time online tracking
+    if (history.PoiId <= 0 && history.Action != "app_ping" && history.Action != "qr_listen_ping")
         return Results.BadRequest("Invalid history data");
     if (string.IsNullOrEmpty(history.Action))
         return Results.BadRequest("Action required");
@@ -320,98 +320,7 @@ app.MapPost("/api/history", async (FoodStreetApp.Shared.Entities.UserHistory his
     return Results.Ok(new { success = true });
 });
 
-// 4b. MOBILE APP AUTH ENDPOINTS (api-login & api-register)
-app.MapPost("/api/auth/api-login", async (JsonElement body, CmsDbContext db) =>
-{
-    try
-    {
-        var username = body.TryGetProperty("Username", out var uProp) ? uProp.GetString()
-                     : body.TryGetProperty("username", out var uProp2) ? uProp2.GetString() : null;
-        var password = body.TryGetProperty("Password", out var pProp) ? pProp.GetString()
-                     : body.TryGetProperty("password", out var pProp2) ? pProp2.GetString() : null;
-
-        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
-            return Results.BadRequest(new { success = false, message = "Vui lòng nhập tài khoản và mật khẩu." });
-
-        var user = await db.Users.FirstOrDefaultAsync(u => u.Username == username);
-        if (user == null || !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
-            return Results.Json(new { success = false, message = "Sai tài khoản hoặc mật khẩu." }, statusCode: 401);
-
-        if (!user.IsActive)
-            return Results.Json(new { success = false, message = "Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên." }, statusCode: 403);
-
-        return Results.Ok(new
-        {
-            success = true,
-            userId = user.Id.ToString(),
-            username = user.Username,
-            fullName = user.FullName ?? user.Username,
-            role = user.Role
-        });
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[API-LOGIN-ERROR] {ex.Message}");
-        return Results.Problem("Lỗi đăng nhập: " + ex.Message);
-    }
-});
-
-app.MapPost("/api/auth/api-register", async (JsonElement body, CmsDbContext db) =>
-{
-    try
-    {
-        var username = body.TryGetProperty("Username", out var uProp) ? uProp.GetString()
-                     : body.TryGetProperty("username", out var uProp2) ? uProp2.GetString() : null;
-        var password = body.TryGetProperty("Password", out var pProp) ? pProp.GetString()
-                     : body.TryGetProperty("password", out var pProp2) ? pProp2.GetString() : null;
-        var email = body.TryGetProperty("Email", out var eProp) ? eProp.GetString()
-                  : body.TryGetProperty("email", out var eProp2) ? eProp2.GetString() : null;
-        var fullName = body.TryGetProperty("FullName", out var fProp) ? fProp.GetString()
-                     : body.TryGetProperty("fullName", out var fProp2) ? fProp2.GetString() : null;
-        var phoneNumber = body.TryGetProperty("PhoneNumber", out var phProp) ? phProp.GetString()
-                        : body.TryGetProperty("phoneNumber", out var phProp2) ? phProp2.GetString() : null;
-
-        if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password) || string.IsNullOrWhiteSpace(fullName))
-            return Results.BadRequest(new { success = false, message = "Vui lòng nhập tài khoản, mật khẩu và họ tên." });
-
-        if (password.Length < 6)
-            return Results.BadRequest(new { success = false, message = "Mật khẩu phải có ít nhất 6 ký tự." });
-
-        var exists = await db.Users.AnyAsync(u => u.Username == username);
-        if (exists)
-            return Results.Conflict(new { success = false, message = "Tên tài khoản đã tồn tại." });
-
-        var user = new FoodStreetApp.Shared.Entities.User
-        {
-            Id = Guid.NewGuid(),
-            Username = username,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
-            Email = email,
-            FullName = fullName,
-            PhoneNumber = phoneNumber,
-            Role = "enduser",
-            CreatedAtUtc = DateTime.UtcNow,
-            IsActive = true
-        };
-
-        db.Users.Add(user);
-        await db.SaveChangesAsync();
-        Console.WriteLine($"[API-REGISTER] New user: {username} ({fullName})");
-
-        return Results.Ok(new
-        {
-            success = true,
-            userId = user.Id.ToString(),
-            username = user.Username,
-            message = "Đăng ký thành công!"
-        });
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[API-REGISTER-ERROR] {ex.Message}");
-        return Results.Problem("Lỗi đăng ký: " + ex.Message);
-    }
-});
+// 4b. (Removed: Mobile app auth endpoints api-login & api-register - app is now anonymous)
 
 app.MapGet("/api/Audio", (IAdminDataService service) => Results.Ok(service.GetAudios()));
 app.MapGet("/api/Tour", (IAdminDataService service) => Results.Ok(service.GetTours()));
@@ -668,16 +577,28 @@ app.MapPost("/api/auth/cms-ping", async (ClaimsPrincipal user, CmsDbContext db) 
     await db.SaveChangesAsync();
     return Results.Ok();
 }).RequireAuthorization();
-// Get list of currently online user IDs (app_ping in last 10 seconds)
+// Get list of currently online user IDs (app_ping, cms_ping, qr_listen_ping in last 10 seconds)
 app.MapGet("/api/auth/online-users", async (CmsDbContext db) =>
 {
     var tenSecondsAgo = DateTime.UtcNow.AddSeconds(-10);
     var onlineUserIds = await db.UserHistories.AsNoTracking()
-        .Where(h => (h.Action == "app_ping" || h.Action == "cms_ping") && h.VisitedAtUtc >= tenSecondsAgo)
+        .Where(h => (h.Action == "app_ping" || h.Action == "cms_ping" || h.Action == "qr_listen_ping") && h.VisitedAtUtc >= tenSecondsAgo)
         .Select(h => h.UserId)
         .Distinct()
         .ToListAsync();
     return Results.Ok(onlineUserIds);
+});
+
+// Get online QR listeners count (separate from app users)
+app.MapGet("/api/auth/online-qr-count", async (CmsDbContext db) =>
+{
+    var fiveSecondsAgo = DateTime.UtcNow.AddSeconds(-5);
+    var count = await db.UserHistories.AsNoTracking()
+        .Where(h => h.Action == "qr_listen_ping" && h.VisitedAtUtc >= fiveSecondsAgo)
+        .Select(h => h.UserId)
+        .Distinct()
+        .CountAsync();
+    return Results.Ok(new { count });
 });
 
 // Get owner-specific revenue (listen payments for their APPROVED POIs only)

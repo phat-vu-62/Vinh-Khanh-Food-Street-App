@@ -151,43 +151,6 @@
                 </VerticalStackLayout>
             </Frame>
 
-            <!-- Account -->
-            <Frame Padding="16" CornerRadius="12" HasShadow="True" BackgroundColor="White">
-                <VerticalStackLayout Spacing="8">
-                    <Label Text="{loc:Translate Key='👤 Account'}"
-                           FontSize="16"
-                           FontAttributes="Bold"
-                           TextColor="{StaticResource Primary}" />
-
-                    <!-- Logged In State -->
-                    <VerticalStackLayout IsVisible="{Binding IsLoggedIn}" Spacing="8">
-                        <Label Text="{Binding DisplayName}" FontSize="14" TextColor="{StaticResource Primary}" FontAttributes="Bold" Margin="0,4,0,0" />
-                        <Button Text="{loc:Translate Logout}"
-                                Clicked="OnLogoutClicked"
-                                FontSize="14"
-                                BackgroundColor="#FF4444"
-                                TextColor="White"
-                                CornerRadius="8"
-                                HeightRequest="40" />
-                    </VerticalStackLayout>
-
-                    <!-- Logged Out State -->
-                    <VerticalStackLayout IsVisible="{Binding IsNotLoggedIn}" Spacing="8">
-                        <Label Text="{loc:Translate Key='Login to sync activity history'}"
-                               FontSize="13"
-                               TextColor="#666"
-                               Margin="0,4,0,0" />
-                        <Button Text="{loc:Translate Login}"
-                                Clicked="OnLoginClicked"
-                                FontSize="14"
-                                BackgroundColor="{StaticResource Primary}"
-                                TextColor="White"
-                                CornerRadius="8"
-                                HeightRequest="40" />
-                    </VerticalStackLayout>
-                </VerticalStackLayout>
-            </Frame>
-
             <!-- About -->
             <Frame Padding="16" CornerRadius="12" HasShadow="True" BackgroundColor="White">
                 <VerticalStackLayout Spacing="6">
