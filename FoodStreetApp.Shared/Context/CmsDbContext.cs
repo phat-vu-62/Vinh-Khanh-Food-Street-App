@@ -22,8 +22,6 @@ public class CmsDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Explicitly set default schema to fix imported DB on new Render instance
-        modelBuilder.HasDefaultSchema("public");
         var poiIdsConverter = new ValueConverter<List<int>, string>(
             v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
             v => JsonSerializer.Deserialize<List<int>>(v, (JsonSerializerOptions?)null) ?? new List<int>());

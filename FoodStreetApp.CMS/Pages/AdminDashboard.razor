@@ -399,7 +399,8 @@ else
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Dashboard load error (ignored): {ex.Message}");
+            Console.WriteLine($"Dashboard LoadAsync error: {ex.Message}");
+            Console.WriteLine(ex.StackTrace);
         }
         finally
         {

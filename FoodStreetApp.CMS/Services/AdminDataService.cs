@@ -348,7 +348,7 @@ public class AdminDataService : IAdminDataService
         // If ownerId is provided, filter history by the owner's POIs
         if (ownerId.HasValue)
         {
-            var myPoiIds = await _dbContext.Pois
+            var myPoiIds = await db.Pois
                 .Where(p => p.OwnerId == ownerId.Value)
                 .Select(p => p.Id)
                 .ToListAsync();
@@ -374,7 +374,7 @@ public class AdminDataService : IAdminDataService
 
         // 2. Top POIs
         var topPoiData = await (from h in query
-                                join p in _dbContext.Pois on h.PoiId equals p.Id // Skip deleted POIs
+                                join p in db.Pois on h.PoiId equals p.Id // Skip deleted POIs
                                 where (h.Action == "qr_scanned" || h.Action == "poi_viewed" || h.Action == "POI viewed")
                                 group h by h.PoiId into g
                                 orderby g.Count() descending
@@ -383,7 +383,7 @@ public class AdminDataService : IAdminDataService
                                 .ToListAsync();
 
         var poiIds = topPoiData.Select(x => x.Key).ToList();
-        var poiDetails = await _dbContext.Pois
+        var poiDetails = await db.Pois
             .Where(p => poiIds.Contains(p.Id))
             .ToDictionaryAsync(p => p.Id, p => p);
 
