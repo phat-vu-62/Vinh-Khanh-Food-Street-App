@@ -18,6 +18,8 @@ namespace FoodStreetApp
             try
             {
                 StartHeartbeatTimer();
+                // Send immediate ping so user shows Online right away
+                SendImmediatePing();
             }
             catch (Exception ex)
             {
@@ -29,7 +31,7 @@ namespace FoodStreetApp
         {
             base.OnSleep();
             // Only stop heartbeat if background tracking is OFF
-            // When background tracking is ON, the app is still running in background → keep Online
+            // When background tracking is ON, the background service handles pings
             var bgTrackingEnabled = Preferences.Get("background_tracking", false);
             if (!bgTrackingEnabled)
             {
@@ -38,7 +40,9 @@ namespace FoodStreetApp
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine("[APP] Heartbeat continues (OnSleep, background tracking ON)");
+                // Stop UI timer — background service ping loop handles it
+                _heartbeatTimer?.Stop();
+                System.Diagnostics.Debug.WriteLine("[APP] UI heartbeat stopped (OnSleep, BG service handles pings)");
             }
         }
 
@@ -47,7 +51,22 @@ namespace FoodStreetApp
             base.OnResume();
             // Restart heartbeat when app comes back to foreground
             _heartbeatTimer?.Start();
+            // Send immediate ping so Online shows instantly
+            SendImmediatePing();
             System.Diagnostics.Debug.WriteLine("[APP] Heartbeat resumed (OnResume)");
+        }
+
+        private void SendImmediatePing()
+        {
+            Task.Run(() =>
+            {
+                try
+                {
+                    var tracker = IPlatformApplication.Current?.Services?.GetService<Services.ITrackingService>();
+                    tracker?.TrackEventAsync(0, "app_ping");
+                }
+                catch { }
+            });
         }
 
         private void StartHeartbeatTimer()

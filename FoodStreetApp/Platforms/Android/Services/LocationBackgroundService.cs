@@ -13,6 +13,7 @@ namespace FoodStreetApp.Platforms.Android.Services
         private const int NotificationId = 1000;
         private const string ChannelId = "location_service_channel";
         private ILocationService? _locationService;
+        private CancellationTokenSource? _pingCts;
 
         public override IBinder? OnBind(Intent? intent)
         {
@@ -90,6 +91,9 @@ namespace FoodStreetApp.Platforms.Android.Services
                     }
                 });
 
+                // Start background heartbeat ping (runs on background thread, not UI dispatcher)
+                StartBackgroundHeartbeat();
+
                 return StartCommandResult.Sticky;
             }
             catch (Exception ex)
@@ -100,8 +104,50 @@ namespace FoodStreetApp.Platforms.Android.Services
             }
         }
 
+        private void StartBackgroundHeartbeat()
+        {
+            _pingCts?.Cancel();
+            _pingCts = new CancellationTokenSource();
+            var token = _pingCts.Token;
+
+            Task.Run(async () =>
+            {
+                System.Diagnostics.Debug.WriteLine("[BG-HEARTBEAT] Starting background ping loop");
+                var handler = new HttpClientHandler
+                {
+                    ServerCertificateCustomValidationCallback = (msg, cert, chain, err) => true
+                };
+                using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(10) };
+                var userId = Preferences.Get("tracking_user_id", string.Empty);
+                var trackingUrl = "https://vinh-khanh-food-street-app.onrender.com/api/history";
+
+                while (!token.IsCancellationRequested)
+                {
+                    try
+                    {
+                        var payload = new { UserId = userId, PoiId = 0, Action = "app_ping" };
+                        await http.PostAsJsonAsync(trackingUrl, payload);
+                        System.Diagnostics.Debug.WriteLine("[BG-HEARTBEAT] Ping sent");
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[BG-HEARTBEAT] Ping failed: {ex.Message}");
+                    }
+
+                    try { await Task.Delay(2000, token); }
+                    catch (TaskCanceledException) { break; }
+                }
+                System.Diagnostics.Debug.WriteLine("[BG-HEARTBEAT] Ping loop stopped");
+            }, token);
+        }
+
         public override void OnDestroy()
         {
+            // Stop heartbeat pings
+            _pingCts?.Cancel();
+            _pingCts?.Dispose();
+            _pingCts = null;
+
             _locationService?.StopTrackingAsync();
             base.OnDestroy();
         }
