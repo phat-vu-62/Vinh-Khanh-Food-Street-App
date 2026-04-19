@@ -429,17 +429,17 @@ public class AdminDataService : IAdminDataService
             peakHourStr = $"{peakGroup.Hour:D2}:00 - {peakGroup.Hour + 1:D2}:00";
         }
 
-        // 5. Active Users Now (last 5 seconds - Super Realtime)
-        var fiveSecondsAgo = DateTime.UtcNow.AddSeconds(-5);
+        // 5. Active Users Now (last 4 seconds - Fast Offline Detection)
+        var recentThreshold = DateTime.UtcNow.AddSeconds(-4);
         var activeNow = await _dbContext.UserHistories.AsNoTracking()
-            .Where(h => h.VisitedAtUtc >= fiveSecondsAgo && (h.Action == "app_ping" || h.Action == "cms_ping"))
+            .Where(h => h.VisitedAtUtc >= recentThreshold && (h.Action == "app_ping" || h.Action == "cms_ping"))
             .Select(h => h.UserId)
             .Distinct()
             .CountAsync();
 
-        // 5b. Active QR Listeners (last 5 seconds)
+        // 5b. Active QR Listeners (last 4 seconds)
         var activeQrNow = await _dbContext.UserHistories.AsNoTracking()
-            .Where(h => h.VisitedAtUtc >= fiveSecondsAgo && h.Action == "qr_listen_ping")
+            .Where(h => h.VisitedAtUtc >= recentThreshold && h.Action == "qr_listen_ping")
             .Select(h => h.UserId)
             .Distinct()
             .CountAsync();

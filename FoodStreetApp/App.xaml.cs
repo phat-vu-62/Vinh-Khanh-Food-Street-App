@@ -25,6 +25,31 @@ namespace FoodStreetApp
             }
         }
 
+        protected override void OnSleep()
+        {
+            base.OnSleep();
+            // Only stop heartbeat if background tracking is OFF
+            // When background tracking is ON, the app is still running in background → keep Online
+            var bgTrackingEnabled = Preferences.Get("background_tracking", false);
+            if (!bgTrackingEnabled)
+            {
+                _heartbeatTimer?.Stop();
+                System.Diagnostics.Debug.WriteLine("[APP] Heartbeat stopped (OnSleep, no background tracking)");
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine("[APP] Heartbeat continues (OnSleep, background tracking ON)");
+            }
+        }
+
+        protected override void OnResume()
+        {
+            base.OnResume();
+            // Restart heartbeat when app comes back to foreground
+            _heartbeatTimer?.Start();
+            System.Diagnostics.Debug.WriteLine("[APP] Heartbeat resumed (OnResume)");
+        }
+
         private void StartHeartbeatTimer()
         {
             try
