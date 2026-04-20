@@ -2,6 +2,7 @@ using FoodStreetApp.CMS.Interfaces;
 using FoodStreetApp.Shared.Context;
 using FoodStreetApp.CMS.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Npgsql;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -54,10 +55,16 @@ if (!string.IsNullOrWhiteSpace(databaseUrl))
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddDbContext<CmsDbContext>(options => 
-    options.UseNpgsql(connectionString, x => x.MigrationsAssembly("FoodStreetApp.CMS")));
+{
+    options.UseNpgsql(connectionString, x => x.MigrationsAssembly("FoodStreetApp.CMS"));
+    options.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
+});
 // Factory for concurrent operations (dashboard timer, API pings, etc.)
 builder.Services.AddDbContextFactory<CmsDbContext>(options =>
-    options.UseNpgsql(connectionString, x => x.MigrationsAssembly("FoodStreetApp.CMS")), ServiceLifetime.Scoped);
+{
+    options.UseNpgsql(connectionString, x => x.MigrationsAssembly("FoodStreetApp.CMS"));
+    options.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
+}, ServiceLifetime.Scoped);
 
 // Register Gemini translation service
 builder.Services.AddHttpClient<IGeminiTranslationService, GeminiTranslationService>()

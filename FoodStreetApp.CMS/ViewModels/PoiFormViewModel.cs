@@ -30,6 +30,7 @@ public class PoiFormViewModel
 
     public int RadiusMeters { get; set; } = 15;
     public POIType Type { get; set; } = POIType.Food;
+    public int Priority { get; set; } = 0;
 
     // SaaS Enhancements
     public AudioSourceMode AudioMode { get; set; } = AudioSourceMode.File;

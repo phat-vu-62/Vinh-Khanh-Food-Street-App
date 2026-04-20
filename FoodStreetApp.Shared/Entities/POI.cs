@@ -15,6 +15,7 @@ public class POI
     public bool IsApproved { get; set; } = true;
 
     public POIType Type { get; set; } = POIType.Food;
+    public int Priority { get; set; } = 0;
     public string? ImageUrl { get; set; }
     public Guid? OwnerId { get; set; }
 

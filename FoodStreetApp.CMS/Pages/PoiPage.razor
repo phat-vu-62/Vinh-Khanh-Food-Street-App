@@ -243,13 +243,24 @@ else if (!_isLoading)
                                         <InputText class="form-control form-control-saas" @bind-Value="_form.Description" placeholder="Tóm tắt nét đặc sắc của địa điểm..." />
                                         <ValidationMessage For="@(() => _form.Description)" class="text-danger small mt-1" />
                                     </div>
-                                    <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded-3">
-                                        <div>
-                                            <div class="fw-bold small">Trạng thái hoạt động</div>
-                                            <div class="text-muted x-small">Địa điểm sẽ hiển thị với khách du lịch</div>
+                                    <div class="row g-3 mb-4">
+                                        <div class="col-6">
+                                            <label class="form-label-saas">Độ ưu tiên (1-100)</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-sort-numeric-down text-muted"></i></span>
+                                                <InputNumber class="form-control form-control-saas border-start-0" @bind-Value="_form.Priority" min="0" max="100" />
+                                            </div>
                                         </div>
-                                        <div class="form-check form-switch ps-0">
-                                            <InputCheckbox class="form-check-input" style="width: 3em; height: 1.5em; cursor: pointer;" id="isActiveCheck" @bind-Value="_form.IsActive" />
+                                        <div class="col-6">
+                                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded-3 h-100">
+                                                <div>
+                                                    <div class="fw-bold small">Trạng thái HĐ</div>
+                                                    <div class="text-muted x-small">Địa điểm đang hiển thị</div>
+                                                </div>
+                                                <div class="form-check form-switch ps-0">
+                                                    <InputCheckbox class="form-check-input" style="width: 3em; height: 1.5em; cursor: pointer;" id="isActiveCheck" @bind-Value="_form.IsActive" />
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -470,6 +481,7 @@ else if (!_isLoading)
         { 
             IsActive = true, 
             RadiusMeters = 15,
+            Priority = 0,
             AudioMode = AudioSourceMode.File
         };
         _isEditorOpen = true;
@@ -490,6 +502,7 @@ else if (!_isLoading)
             AudioUrl = poi.AudioUrl,
             IsActive = poi.IsActive,
             RadiusMeters = poi.RadiusMeters,
+            Priority = poi.Priority,
             Type = poi.Type,
             AudioMode = string.IsNullOrEmpty(poi.AudioUrl) && !string.IsNullOrEmpty(poi.TextContent) 
                          ? AudioSourceMode.TTS : AudioSourceMode.File,
@@ -580,6 +593,7 @@ else if (!_isLoading)
                 AudioUrl = _form.AudioMode == AudioSourceMode.File ? _form.AudioUrl : null,
                 IsActive = _form.IsActive,
                 RadiusMeters = _form.RadiusMeters,
+                Priority = _form.Priority,
                 Type = _form.Type,
                 TextContent = _form.TextContent,
                 // Preserve translation fields

@@ -58,7 +58,7 @@ public class SyncController : ControllerBase
         Longitude = p.Longitude,
         Radius = p.RadiusMeters,
         ApproachRadius = 200, // Default for mobile app
-        Priority = p.Id,
+        Priority = p.Priority,
         Rating = 4.5, // Mocked for now
         ReviewCount = 0,
         Description = p.Description,

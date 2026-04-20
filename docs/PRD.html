@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Du Lịch Ẩm Thực Vĩnh Khánh Q4</title>
+    <style>
+        :root {
+            --primary: #e65100;
+            --primary-light: #ff833a;
+            --primary-dark: #ac1900;
+            --accent: #00838f;
+            --accent-light: #4fb3bf;
+            --bg: #fafafa;
+            --surface: #ffffff;
+            --text: #212121;
+            --text-secondary: #616161;
+            --border: #e0e0e0;
+            --code-bg: #263238;
+            --code-text: #eeffff;
+            --success: #2e7d32;
+            --warning: #f57f17;
+            --info: #1565c0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            scroll-behavior: smooth;
+        }
+
+        /* ===== NAV ===== */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: var(--primary);
+            color: white;
+            padding: 0 2rem;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, .15);
+        }
+
+        nav .logo {
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: -.5px;
+        }
+
+        nav .nav-links {
+            display: flex;
+            gap: .5rem;
+            list-style: none;
+            flex-wrap: wrap;
+        }
+
+        nav .nav-links a {
+            color: rgba(255, 255, 255, .85);
+            text-decoration: none;
+            font-size: .82rem;
+            padding: .35rem .7rem;
+            border-radius: 4px;
+            transition: background .2s;
+        }
+
+        nav .nav-links a:hover,
+        nav .nav-links a.active {
+            background: rgba(255, 255, 255, .15);
+            color: #fff;
+        }
+
+        /* ===== HERO ===== */
+        .hero {
+            margin-top: 56px;
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary), var(--primary-light));
+            color: white;
+            padding: 4rem 2rem 3rem;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 2.4rem;
+            font-weight: 800;
+            margin-bottom: .5rem;
+            letter-spacing: -1px;
+        }
+
+        .hero .subtitle {
+            font-size: 1.15rem;
+            opacity: .9;
+            max-width: 700px;
+            margin: 0 auto 1.5rem;
+        }
+
+        .hero .badges {
+            display: flex;
+            justify-content: center;
+            gap: .6rem;
+            flex-wrap: wrap;
+        }
+
+        .hero .badge {
+            background: rgba(255, 255, 255, .2);
+            padding: .3rem .8rem;
+            border-radius: 20px;
+            font-size: .8rem;
+            backdrop-filter: blur(4px);
+        }
+
+        /* ===== SECTIONS ===== */
+        section {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+
+        section:nth-child(even) {
+            background: var(--surface);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: .8rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-header .icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+
+        .section-header h2 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .section-header .section-num {
+            font-size: .75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        /* ===== CARDS ===== */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.2rem;
+            margin: 1.5rem 0;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: box-shadow .2s, transform .2s;
+        }
+
+        .card:hover {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, .08);
+            transform: translateY(-2px);
+        }
+
+        .card h3 {
+            font-size: 1.05rem;
+            margin-bottom: .4rem;
+            color: var(--primary-dark);
+        }
+
+        .card p,
+        .card li {
+            font-size: .9rem;
+            color: var(--text-secondary);
+        }
+
+        .card ul {
+            padding-left: 1.2rem;
+            margin-top: .4rem;
+        }
+
+        .card li {
+            margin-bottom: .2rem;
+        }
+
+        /* ===== TABLES ===== */
+        .table-wrap {
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .88rem;
+        }
+
+        th {
+            background: var(--primary);
+            color: white;
+            padding: .6rem .8rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        td {
+            padding: .55rem .8rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr:hover td {
+            background: #fff3e0;
+        }
+
+        /* ===== CODE ===== */
+        .code-block {
+            background: var(--code-bg);
+            color: var(--code-text);
+            padding: 1.2rem 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+            font-size: .82rem;
+            line-height: 1.7;
+            margin: 1rem 0;
+        }
+
+        .code-block .comment {
+            color: #546e7a;
+        }
+
+        .code-block .keyword {
+            color: #c792ea;
+        }
+
+        .code-block .string {
+            color: #c3e88d;
+        }
+
+        .code-block .number {
+            color: #f78c6c;
+        }
+
+        .code-block .fn {
+            color: #82aaff;
+        }
+
+        code {
+            background: #eceff1;
+            padding: .15rem .4rem;
+            border-radius: 3px;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            font-size: .85em;
+        }
+
+        /* ===== FLOW DIAGRAMS ===== */
+        .flow {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            flex-wrap: wrap;
+            margin: 1rem 0;
+        }
+
+        .flow-step {
+            background: var(--primary);
+            color: white;
+            padding: .4rem .9rem;
+            border-radius: 8px;
+            font-size: .82rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .flow-step.alt {
+            background: var(--accent);
+        }
+
+        .flow-step.success {
+            background: var(--success);
+        }
+
+        .flow-step.warning {
+            background: var(--warning);
+            color: var(--text);
+        }
+
+        .flow-arrow {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+        }
+
+        /* ===== TIER BARS ===== */
+        .tier-list {
+            margin: 1rem 0;
+        }
+
+        .tier-item {
+            display: flex;
+            align-items: stretch;
+            margin-bottom: .6rem;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .tier-label {
+            width: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: .85rem;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .tier-content {
+            flex: 1;
+            padding: .7rem 1rem;
+            background: var(--surface);
+        }
+
+        .tier-content strong {
+            display: block;
+            font-size: .9rem;
+            margin-bottom: .2rem;
+        }
+
+        .tier-content span {
+            font-size: .82rem;
+            color: var(--text-secondary);
+        }
+
+        /* ===== STATS ROW ===== */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 1.2rem .8rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        .stat-card .value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--primary);
+        }
+
+        .stat-card .label {
+            font-size: .78rem;
+            color: var(--text-secondary);
+            margin-top: .2rem;
+        }
+
+        /* ===== TIMELINE ===== */
+        .timeline {
+            position: relative;
+            padding-left: 2rem;
+            margin: 1.5rem 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 8px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--primary);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -2rem;
+            top: 6px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 2px solid white;
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+
+        .timeline-item h4 {
+            font-size: .95rem;
+            color: var(--primary-dark);
+            margin-bottom: .3rem;
+        }
+
+        .timeline-item p {
+            font-size: .85rem;
+            color: var(--text-secondary);
+        }
+
+        /* ===== HIGHLIGHT BOX ===== */
+        .highlight {
+            border-left: 4px solid var(--primary);
+            background: #fff3e0;
+            padding: 1rem 1.2rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1rem 0;
+        }
+
+        .highlight.info {
+            border-color: var(--info);
+            background: #e3f2fd;
+        }
+
+        .highlight.success {
+            border-color: var(--success);
+            background: #e8f5e9;
+        }
+
+        .highlight strong {
+            color: var(--text);
+        }
+
+        /* ===== MERMAID ===== */
+        .mermaid-container {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+        }
+
+        .mermaid {
+            text-align: center;
+        }
+
+        /* ===== ARCHITECTURE DIAGRAM ===== */
+        .arch-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: .8rem;
+            margin: 1.5rem 0;
+        }
+
+        .arch-module {
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem;
+            text-align: center;
+            transition: all .2s;
+        }
+
+        .arch-module:hover {
+            border-color: var(--primary);
+            box-shadow: 0 2px 12px rgba(230, 81, 0, .15);
+        }
+
+        .arch-module .mod-icon {
+            font-size: 1.8rem;
+            margin-bottom: .3rem;
+        }
+
+        .arch-module .mod-name {
+            font-weight: 700;
+            font-size: .9rem;
+            color: var(--primary-dark);
+        }
+
+        .arch-module .mod-desc {
+            font-size: .75rem;
+            color: var(--text-secondary);
+            margin-top: .2rem;
+        }
+
+        .arch-module.reserved {
+            opacity: .5;
+            border-style: dashed;
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            text-align: center;
+            padding: 2rem;
+            background: var(--code-bg);
+            color: rgba(255, 255, 255, .6);
+            font-size: .8rem;
+        }
+
+        footer strong {
+            color: rgba(255, 255, 255, .9);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 1.6rem;
+            }
+
+            section {
+                padding: 2rem 1rem;
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .arch-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            nav .nav-links {
+                display: none;
+            }
+
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* ===== DIAGRAM BUTTONS & MODAL ===== */
+        .diagram-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .5rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .diagram-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            color: white;
+            border: none;
+            padding: .5rem 1.1rem;
+            border-radius: 22px;
+            font-size: .82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .25s;
+            box-shadow: 0 2px 6px rgba(0, 131, 143, .2);
+        }
+
+        .diagram-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 14px rgba(0, 131, 143, .35);
+        }
+
+        .diagram-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            background: rgba(0, 0, 0, .65);
+            backdrop-filter: blur(6px);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .diagram-overlay.active {
+            display: flex;
+        }
+
+        .diagram-modal {
+            background: white;
+            border-radius: 16px;
+            width: 96vw;
+            height: 92vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 24px 80px rgba(0, 0, 0, .4);
+            animation: modalIn .3s ease-out;
+        }
+
+        @keyframes modalIn {
+            from {
+                transform: scale(.92);
+                opacity: 0;
+            }
+
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .dm-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: .7rem 1.2rem;
+            background: var(--primary);
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .dm-header h3 {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .dm-ctrl {
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+        }
+
+        .dm-ctrl button {
+            background: rgba(255, 255, 255, .18);
+            color: white;
+            border: none;
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background .2s;
+        }
+
+        .dm-ctrl button:hover {
+            background: rgba(255, 255, 255, .32);
+        }
+
+        .dm-ctrl .zpct {
+            font-size: .78rem;
+            min-width: 3.5rem;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .dm-body {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            cursor: grab;
+            background: #fafafa;
+        }
+
+        .dm-body:active {
+            cursor: grabbing;
+        }
+
+        .dm-body .vp {
+            position: absolute;
+            transform-origin: 0 0;
+            padding: 2rem;
+            display: inline-block;
+        }
+
+        .dm-body .vp svg {
+            max-width: none !important;
+            height: auto !important;
+        }
+
+        .dm-body .loading-msg {
+            color: var(--text-secondary);
+            font-size: .9rem;
+            padding: 3rem;
+        }
+
+        .mermaid {
+            margin: 2rem 0;
+            overflow-x: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: sans-serif;
+            border: 1px solid #ddd;
+        }
+
+        .seq-title {
+            color: #00838f;
+            border-bottom: 2px solid #00838f;
+            padding-bottom: 5px;
+            margin-top: 3rem;
+        }
+    </style>
+    <!-- Thêm thư viện Mermaid để render biểu đồ UML -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>mermaid.initialize({ startOnLoad: true, theme: 'default' });</script>
+</head>
+
+<body>
+    <nav>
+        <div class="logo">🍜 Phố Ẩm Thực Vĩnh Khánh Quận 4</div>
+        <ul class="nav-links">
+            <li><a href="#actors">Kiến trúc & Actors</a></li>
+            <li><a href="#mobile">Phân hệ .NET MAUI</a></li>
+            <li><a href="#cms">Blazor CMS</a></li>
+            <li><a href="#geofence">GPS Geofence</a></li>
+            <li><a href="#audio">Audio/TTS</a></li>
+            <li><a href="#usecase">Sơ đồ Use Case</a></li>
+            <li><a href="#sequence">Sơ đồ Sequence</a></li>\n            <li><a href="#activity">Sơ đồ Activity</a></li>
+        </ul>
+    </nav>
+
+    <div class="hero">
+        <h1>Product Required Document (PRD) </h1>
+        <p class="subtitle">Mọi chức năng đồng thuận tuyệt đối với mã nguồn C# .NET MAUI và Blazor Minimal API.</p>
+        <div class="badges">
+            <span class="badge">.NET MAUI 10.0</span>
+            <span class="badge">Blazor Server Minimal API</span>
+            <span class="badge">PostgreSQL (EF Core)</span>
+            <span class="badge">Google Gemini 2.0 AI</span>
+        </div>
+    </div>
+
+    <!-- CHAPTER 01: ACTORS -->
+    <section id="actors">
+        <div class="section-header">
+            <div class="icon" style="background:#fff3e0;color:var(--primary);">👥</div>
+            <div>
+                <div class="section-num">Chapter 01</div>
+                <h2>Actors & Phân quyền Hệ Thống</h2>
+            </div>
+        </div>
+        <p>Hệ thống chia làm 3 Role cốt lõi với sự kiểm soát chặt chẽ qua Token JWT và Database Entity CmsDbContext.</p>
+        <div class="card-grid">
+            <div class="card">
+                <h3>🛡️ System Admin</h3>
+                <p>Quản trị toàn quyền thông qua CMS Blazor Server.</p>
+                <ul>
+                    <li>Duyệt / Từ chối mở gian hàng của Owner.</li>
+                    <li>Sử dụng tính năng Gemini AI tự động sinh bản dịch 5 ngôn ngữ.</li>
+                    <li>Quản lý Users, khóa tài khoản và theo dõi biểu đồ Doanh thu Nền tảng.</li>
+                    <li>Khởi tạo mã QR tĩnh truy xuất nhanh O2O.</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>🏪 Owner (Chủ quán)</h3>
+                <p>Nhà kinh doanh đăng ký điểm bán ẩm thực.</p>
+                <ul>
+                    <li>Truy cập /api/auth/register-merchant đăng ký công khai.</li>
+                    <li>Chỉnh sửa thông tin Tọa độ / Thuộc tính Audio của chính mình.</li>
+                    <li>Thống kê Lượt truy cập / Lượt phát Audio tại Quán qua Dashboard riêng.</li>
+                    <li>Trải qua luồng thanh toán Khơi tạo (Backend tự động ghi có Audit Log UserHistories).</li>
+                </ul>
+            </div>
+            <div class="card">
+                <h3>🧳 Tourist (Khách Du Lịch / EndUser)</h3>
+                <p>Khám phá bản đồ trực tiếp trên Mobile App Native MAUI.</p>
+                <ul>
+                    <li><b>Bắt buộc Auth Đăng nhập</b> khi mở App để theo dõi phiên (Tracking chống lạm dụng).</li>
+                    <li>Xem Bản đồ, quét GPS tự động và nghe Thuyết minh (TTS).</li>
+                    <li>Quét QR Code từ Owner -> Deep Linking mở App tức thì.</li>
+                    <li>Tự do thay đổi cục diện 5 ngôn ngữ (Language Selector rẽ nhánh Culture).</li>
+                </ul>
+            </div>
+        </div>
+
+    </section>
+
+    <!-- CHAPTER 02: MOBILE APP -->
+    <section id="mobile">
+        <div class="section-header">
+            <div class="icon" style="background:#e3f2fd;color:var(--info);">📱</div>
+            <div>
+                <div class="section-num">Chapter 02</div>
+                <h2>Mobile App — .NET 9/10 MAUI (Kiến trúc Native)</h2>
+            </div>
+        </div>
+        <p>Giao diện người dùng hướng Map-First, đồng bộ tương tác Real-time giữa SQLite Cache và Tracking API CMS.</p>
+        <ul style="padding-left: 1.5rem; color: var(--text-secondary);">
+            <li><b>Mandatory Startup Login:</b> Hủy bỏ Popup rườm rà ở trang con (Details), dời Trạm kiểm soát Đăng nhập
+                qua lớp Shell ngay từ đầu. Hủy luôn Offline-first của Visitor.</li>
+            <li><b>Thread-Safe Localization (.xaml):</b> Xử lý lỗi Crash do Conflict Thread UI Ngôn ngữ đa luồng. Dùng
+                Translation Key chuẩn hóa Single-Quotes. Hỗ trợ 5 ngôn ngữ.</li>
+            <li><b>QR Code O2O Deep Linking:</b> Giải mã scheme URI <code
+                    style="background: var(--code-bg); color: var(--code-text); padding: 2px 6px; border-radius: 4px;">foodstreet://poi?id=...</code>
+                đẩy thẳng lệnh chạy Audio TTS bypass GPS Geofence Check. Tránh giật lag khi rà GPS phố chật hẹp.</li>
+        </ul>
+    </section>
+
+    <!-- CHAPTER 03: CMS SERVER -->
+    <section id="cms">
+        <div class="section-header">
+            <div class="icon" style="background:#f3e5f5;color:#7B1FA2;">🌐</div>
+            <div>
+                <div class="section-num">Chapter 03</div>
+                <h2>CMS Server — Blazor Server Hướng Quản Trị</h2>
+            </div>
+        </div>
+        <p>Trung tâm đầu não lưu trữ (PostgreSQL), phát hành Minimal API và Cổng theo dõi tiến độ kinh doanh.</p>
+        <div class="table-wrap" style="overflow-x: auto; margin-top: 1.5rem;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <thead>
+                    <tr style="background:#f4f4f4;">
+                        <th style="padding:10px; border:1px solid #ddd;">Phân Hệ / Màn Hình</th>
+                        <th style="padding:10px; border:1px solid #ddd;">Chức Năng Phụ Trách</th>
+                        <th style="padding:10px; border:1px solid #ddd;">Tính Năng Nổi Bật Đặc Quyền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding:10px; border:1px solid #ddd;"><strong>Admin & Owner Dashboard</strong></td>
+                        <td style="padding:10px; border:1px solid #ddd;">Biểu đồ (Chart), Lượt Nghe, Doanh thu</td>
+                        <td style="padding:10px; border:1px solid #ddd;">Concurrency Guard
+                            (<strong>_isRefreshing</strong>) chống lỗi sập EF Core DbContext do Spam nút Refresh.</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:10px; border:1px solid #ddd;"><strong>POI Management / Review</strong></td>
+                        <td style="padding:10px; border:1px solid #ddd;">CRUD Danh sách Quán (Cấp Admin/Cấp Owner)</td>
+                        <td style="padding:10px; border:1px solid #ddd;">Nút Duyệt mở khóa (IsApproved) tự động Push qua
+                            nền API Mobile App cho khách thấy đường đi.</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:10px; border:1px solid #ddd;"><strong>AI Translation</strong></td>
+                        <td style="padding:10px; border:1px solid #ddd;">Điều phối đa ngôn ngữ</td>
+                        <td style="padding:10px; border:1px solid #ddd;">Gemini AI 2.0 quét tự động đẩy bản dịch sát
+                            nghĩa 5 Languages Database.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- CHAPTER 04: GEOFENCE -->
+    <section id="geofence">
+        <div class="section-header">
+            <div class="icon" style="background:#e8f5e9;color:var(--success);">📍</div>
+            <div>
+                <div class="section-num">Chapter 04</div>
+                <h2>GPS Geofencing + Auto Narration Defense</h2>
+            </div>
+        </div>
+        <p>Việc tải GPS không chỉ là xác định vị trí, mà là thuật toán chống Spam lặp âm thanh vòng lặp kinh điển trong
+            ứng dụng phố đi bộ hẹp m ngang.</p>
+        <div class="highlight info">
+            <strong>Block Spam 15m (Minimum Spacing Guard)</strong>: Thay vì dùng mốc đồng hồ (Cooldown Timer 2 phút) vô
+            nghĩa dễ làm khách đi xe đạp rớt trải nghiệm, dự án sử dụng vòng chặn khoảng cách Haversine. Khách phải đi
+            chuyển TỐI THIỂU 15m so với điểm cũ, Trình Geofence mới phá khóa chặn cấp phát Audio. Đảm bảo âm thanh êm ái
+            ở Phố Vĩnh Khánh san sát quán nhậu.
+        </div>
+    </section>
+
+    <!-- CHAPTER 05: AUDIO & TTS -->
+    <section id="audio">
+        <div class="section-header">
+            <div class="icon" style="background:#fff3e0;color:var(--primary);">🎧</div>
+            <div>
+                <div class="section-num">Chapter 05</div>
+                <h2>Hệ Điều Phối Âm Thanh (Hybrid 2-Tier Fallback)</h2>
+            </div>
+        </div>
+        <p>Giải bài toán trải nghiệm thính giác mượt mà 5 Ngôn Ngữ không gián đoạn.</p>
+        <div class="card-grid">
+            <div class="card">
+                <h3>Tier 1: Audio Gốc Tải Sẵn (File Tín Hiệu)</h3>
+                <p>Nạp MP3 trực tiếp qua Base Native. Đọc cờ <code>AudioUrlMp3</code>. Xử lý chuẩn nhất với giọng thu
+                    phòng thu do chủ gian hàng bồi đắp. Trọng số ưu tiên cao nhất.</p>
+            </div>
+            <div class="card">
+                <h3>Tier 2: System Text-To-Speech OS (Dynamic)</h3>
+                <p>Nếu Data trống AudioUrl, bật cờ <code>UseTts = True</code>. App gọi hàm
+                    <code>SpeakWithTtsAsync()</code> mượn gói giọng đọc đa chiều của Android/iOS (Locale Code Native) để
+                    đọc tức thời dữ liệu sinh từ Gemini AI.
+                </p>
+            </div>
+            <div class="card">
+                <h3>Tier 3: English Fallback Rescue</h3>
+                <p>Trường hợp HĐH không cài đặt gói âm bản địa (Ví dụ thiết bị nội địa thiếu Text Engine Tiếng
+                    Nhật/Tiếng Hàn), Catch Exception bắt lỗi -> Tự rơi xuống Engine mặc định tiếng Anh (en-US) đọc đè
+                    tạm thời.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- USE CASE -->
+    <div class="section-header">
+        <div class="icon" style="background:#e3f2fd;color:var(--info);">👤</div>
+        <div>
+            <div class="section-num">UML Diagram 1</div>
+            <h2>Sơ Đồ Use Case</h2>
+        </div>
+    </div>
+    <p>Bóc tách giới hạn các hành vi Actor. 16 nhóm Use Case tương ứng độc lập với mỗi Actor cụ thể.</p>
+
+    <div class="mermaid-container">
+        <div class="mermaid">
+            flowchart LR
+            classDef actor fill:#f4f4f4,stroke:#333,stroke-width:2px;
+
+            User(((Khách du lịch))):::actor
+            Owner(((Chủ quán))):::actor
+            Admin(((Ban Quản Trị))):::actor
+
+            subgraph UserGroup [Cụm tính năng Người Dùng Cuối / Mobile App]
+            direction TB
+            UC01([UC01: Khám phá Bản đồ Ẩm thực])
+            UC02([UC02: Quét Bán kính Tự động Geofencing])
+            UC03([UC03: Nghe Thuyết minh tự động TTS])
+            UC04([UC04: Quét QR Code Deep-Linking])
+            UC05([UC05: Cấu hình Đa ngôn ngữ Mobile])
+            UC06([UC06: Auth: Đăng nhập/Đăng ký EndUser])
+            end
+
+            subgraph OwnerGroup [Cụm tính năng Chủ Quán / CMS Portal]
+            direction TB
+            UC07([UC07: Đăng ký Gian hàng & Tạo Điểm đến])
+            UC08([UC08: Thanh toán Phí Khởi tạo Dịch vụ])
+            UC09([UC09: Thống Kê Lượt Quét/Lượt Nghe Cá Nhân])
+            UC10([UC10: Tra cứu Tổng Doanh Thu Lịch sử của Quán])
+            end
+
+            subgraph AdminGroup [Cụm tính năng Vận hành / Admin Dashboard]
+            direction TB
+            UC11([UC11: Giám Sát POI - CRUD Tọa Độ Quán])
+            UC12([UC12: Quản Lý Biên Dịch AI Đa Ngôn Ngữ])
+            UC13([UC13: Quản Lý Khóa/Mở Khóa Account Người Dùng])
+            UC14([UC14: Xét Duyệt Hồ Sơ Gian Hàng Pending])
+            UC15([UC15: Báo Cáo Tài Chính Tổng Đài Toàn Mạng])
+            UC16([UC16: Tổng cục Sinh & Xuất QR Code Tĩnh])
+            end
+
+            User --- UC01
+            User --- UC02
+            User --- UC03
+            User --- UC04
+            User --- UC05
+            User --- UC06
+
+            Owner --- UC07
+            Owner --- UC08
+            Owner --- UC09
+            Owner --- UC10
+
+            Admin --- UC11
+            Admin --- UC12
+            Admin --- UC13
+            Admin --- UC14
+            Admin --- UC15
+            Admin --- UC16
+        </div>
+    </div>
+    </section>
+
+    <!-- SEQUENCE DIAGRAMS -->
+    <section id="sequence">
+        <div class="section-header">
+            <div class="icon" style="background:#e8f5e9;color:var(--success);">🔄</div>
+            <div>
+                <div class="section-num">Sơ Đồ Tuần Tự (Sequence)</div>
+                <h2>Sơ đồ Sequence cốt lõi của Hệ thống</h2>
+            </div>
+        </div>
+
+        <h3 class="seq-title">UC01: Khám phá Bản đồ Ẩm thực (User)</h3>
+        <p>Quy trình tải điểm vị trí tĩnh và cluster bản đồ trên Mobile.</p>
+        <div class="mermaid">
+            sequenceDiagram
+            autonumber
+            actor User
+            participant View as HomeView_Map
+            participant VM as HomeViewModel
+            participant API as GET /api/sync/pois
+            participant DbLocal as SQLite (CmsDbContext)
+
+            User->>View: Mở Tab Bản Đồ Trên Điện Thoại
+            View->>VM: trigger InitializeAsync()
+            VM->>DbLocal: Query: _context.Pois.ToList()
+            alt Dữ liệu Nội bộ Cũ
+            VM->>API: Gọi Http Get Sync Đồng bộ Poi Server
+            API-->>VM: Trả về Danh Sách PoiDTO
+            VM->>DbLocal: Lưu cập nhật Update Range SQLite
+            end
+            VM-->>View: ObservableCollection[Poi]
+            View->>User: Vẽ chấm Pin Map trên giao diện Microsoft.Maui.Controls.Maps
+        </div>
+
+        <h3 class="seq-title">UC02: Quét Bán kính Tự động Geofencing (User)</h3>
+        <p>Quy trình thuật toán tránh lọt sóng GPS và chặn rác âm thanh ở khoảng cách 15 mét.</p>
+        <div class="mermaid">
+            sequenceDiagram
+            autonumber
+            actor User
+            participant LocSVC as LocationService
+            participant GeoSVC as GeofenceService
+            participant API as CMS Backend Tracking
+
+            User->>LocSVC: Bắt đầu đi bộ ở Phố Ẩm Thực
+            loop Mỗi Tracking Tick
+            LocSVC->>GeoSVC: Hàm CheckGeofences(Location)
+            GeoSVC->>GeoSVC: CalculateDistanceInMeters() Tới POIs
+
+            alt Khoảng cách hợp lệ và Nằm ngoài block khoảng cách 15m
+                GeoSVC->>API: Ghi nhật ký Tracking_Route_Entry()
+                API-->>GeoSVC: HTTP 200 (Record)
+                GeoSVC->>GeoSVC: Set Cờ True Trigger Qua UC03 Phát Nhạc
+            else Đứng Tĩnh Chưa đi qua khoảng cách Spam
+                GeoSVC->>GeoSVC: Return / Không kích hoạt
+            end
+        end
+        </div>
+
+        <h3 class="seq-title">UC03: Nghe Thuyết minh tự động TTS (User)</h3>
+        <p>Quy trình lấy Audio, Fallback thư viện đa giọng nói.</p>
+        <div class="mermaid">
+            sequenceDiagram
+            autonumber
+            participant GeoSVC as GeofenceService
+            participant NarSVC as NarrationService
+            participant AudioAPI as Plugin.Maui.Audio
+            participant TTSAPI as TextToSpeech API
+            participant CMS as Minimal API /listen/pay
+
+            GeoSVC->>NarSVC: Cấp Lệnh PlayNarrationAsync(poi)
+            NarSVC->>NarSVC: Thread Khởi tạo: ProcessSingleNarrationAsync(poi)
+
+            alt Có MP3 tải sẵn
+            NarSVC->>AudioAPI: Giao diện IAudioPlayer.Play()
+            else UseTts = True
+            NarSVC->>TTSAPI: Đọc văn bản hàm SpeakWithTtsAsync(ttsText, locale)
+            else Thiếu Engine Tiếng Bản Địa
+            NarSVC->>TTSAPI: Đọc Text Fallback Tiếng Anh Mặc Định (en-US)
+            end
+
+            NarSVC->>CMS: Gọi EndPoint: POST /api/listen/pay Trừ Phí Listen
+        </div>
+
+        <h3 class="seq-title">UC04: Quét QR Code Deep-Linking (User)</h3>
+        <p>Sử dụng AppLinks MAUI để bắt scheme "foodstreet://".</p>
+        <div class="mermaid">
+            sequenceDiagram
+            autonumber
+            actor User
+            participant Cam as Camera / Browser
+            participant App as App.xaml.cs (OnAppLinkReceived)
+            participant GeoSVC as GeofenceService
+            participant NarSVC as NarrationService
+
+            User->>Cam: Cầm máy quét mã dán trên bàn
+            Cam->>App: Mở uri foodstreet://poi?id=ID_123
+            App->>App: Extract parse ra id (ID_123)
+            App->>GeoSVC: Khởi chạy bypass TrackingGPS Geofence
+            GeoSVC->>NarSVC: Đẩy thẳng Lệnh PlayNarrationAsync(ID_123)
+            NarSVC->>User: Phát Audio Ngay Lập Tức
+        </div>
+
+        <h3 class="seq-title">UC05: Cấu hình Đa ngôn ngữ (User)</h3>
+        <p>Xử lý đồng bộ UI tránh Crash do rác Thread.</p>
+        <div class="mermaid">
+            sequenceDiagram
+            autonumber
+            actor User
+            participant SetView as SettingsView
+            participant LocMgr as LocalizationResourceManager
+            participant UI as Maui UI Thread
+
+            User->>SetView: Click thay đổi Ngôn Ngữ
+            SetView->>LocMgr: Gọi Translate() thay đổi CurrentCulture bằng System.Globalization
+            LocMgr->>LocMgr: Cập nhật Property Tracked (Thread Safe)
+            LocMgr->>UI: Kích hoạt PropertyChanged Event
+            UI->>User: XAML Text tự động thay đổi
+        </div>
+
+        <h3 class="seq-title">UC06: Đăng nhập Của Người Dùng App (User)</h3>
+        <p>Luồng bảo mật đăng nhập cho App bằng Api-Login.</p>
+        <div class="mermaid">
+            sequenceDiagram
+            autonumber
+            actor User
+            participant View as Login.xaml
+            participant API as POST /api/auth/api-login
+            participant JWT as AuthStore
+
+            User->>View: Nhập Username & Password EndUser
+            View->>API: HTTP Client Post
+            API->>API: Giải mã BCrypt.Verify Hash Database
+            API-->>View: Trả về { Token, RefreshToken, Role = 'EndUser' } Dạng JSON String
+            View->>JWT: Lưu ở không gian an toàn bằng SecureStorage.SetAsync
+            View->>User: Đăng Nhập Hoàn Tất -> Đi dạo phố
+        </div>
+
+        <h3 class="seq-title">UC07: Đăng ký Gian hàng & Tạo Điểm đến (Owner)</h3>
+        <p>Cơ chế CMS đẩy POI ẩn (Approval Process).</p>
+        <div class="mermaid">
+            sequenceDiagram
+            autonumber
+            actor Owner
+            participant UI as Page MerchantRegistration Web
+            participant API as Minimal /api/auth/register-merchant
+            participant DB as Postgres EF Core
+
+            Owner->>UI: Điền Tên Quán, Tọa Độ Geo (HandleRegister)
+            UI->>API: Post Params Username và PII Data
+            API->>API: Validate Check Duplicate SDT
+            API->>DB: Add User (Role="Owner") + Add POI (IsApproved=False)
+            API->>API: Cấp Khóa Nối poi.OwnerId = newUser.Id
+            API-->>UI: HTTP 200 OK -> Hiển thị Pop-up chờ duyệt
+        </div>
+
+        <h3 class="seq-title">UC08: Thanh toán Phí Khởi tạo Hệ thống (Owner)</h3>
+        <p>Ghi nhận hệ thống kế toán Audit UserHistory cho Chủ Quán.</p>
+        <div class="mermaid">
+            sequenceDiagram
+            autonumber
+            participant RegProcess as /api/auth/register-merchant (Phục vụ Chủ)
+            participant DB as Postgres (UserHistories)
+            participant Account as Kế Toán CMS
+
+            RegProcess->>Account: Kích hoạt tạo Lịch sử Thanh Toán Tiền (Ngầm Định Trong App)
+            Account->>DB: _context.UserHistories.Add(Action = 'register_merchant', Amount = 200,000 Đồng)
+            DB-->>RegProcess: SaveChangesAsync() Commit
+        </div>
+
+        <h3 class="seq-title">UC09: Thống Kê Tương Tác Của Quán (Owner)</h3>
+        <p>Hàm truy xuất dữ liệu cá nhân hóa qua OwnerDashboard.</p>
+        <div class="mermaid">
+            sequenceDiagram
+            autonumber
+            actor Owner
+            participant UI as OwnerDashboard.razor
+            participant API as CmsDbContext Query (DB)
+
+            Owner->>UI: Vào trang Chủ Quán Tổng Quan
+            UI->>API: Truy vấn Select(u => u.Action == 'audio_played' && u.OwnerId == SESSION_ID)
+            API-->>UI: List UserHistory Group By Date (Theo Từng Ngày)
+            UI->>Owner: DataGrid & Đồ thị trực quan bằng Radzen
+        </div>
+
+        <h3 class="seq-title">UC10: Lịch sử Doanh Thu Của Quán (Owner)</h3>
+        <p>Biên dịch số tiền thu/trừ của quán thông qua CSDL.</p>
+        <div class="mermaid">
+            sequenceDiagram
+            autonumber
+            actor Owner
+            participant UI as RevenueDashboard Tab
+            participant DB as Postgres CmsDbContext
+
+            Owner->>UI: Chọn Xem Doanh Thu
+            UI->>DB: Truy Xuất: Lấy Tổng Doanh Thu Liên Quan Action Group
+            DB-->>UI: Con Số Tổng Thể
+            UI->>Owner: Chart Báo Số Tiền & Export Nhu Cầu
+        </div>
+
+        <h3 class="seq-title">UC11: Giám Sát Tọa Độ Quán - CRUD POI (Admin)</h3>
+        <p>Chức năng Can Thiệp Tọa độ bằng RadzenGrid.</p>
+        <div class="mermaid">
+            sequenceDiagram
+            autonumber
+            actor Admin
+            participant UI as PoiManagement.razor
+            participant DB as Postgres EF Core
+
+            Admin->>UI: Chỉnh sửa lại Tọa Độ hoặc Bán Kính POI Lỗi
+            UI->>UI: Form Cấp Xác Nhận OnValidSubmit
+            UI->>DB: Gọi DbSet Mặc Định _context.Pois.Update(poi)
+            DB-->>UI: CmsDbContext SaveChangesAsync
+            UI->>Admin: Reflush Grid
+        </div>
+
+        <h3 class="seq-title">UC12: Quản Lý Biên Dịch AI Google Gemini (Admin)</h3>
+        <p>Tương tác Gemini 2.0 AI lấy mô tả đa ngôn ngữ.</p>
+        <div class="mermaid">
+            sequenceDiagram
+            autonumber
+            actor Admin
+            participant UI as Translations Page
+            participant AI as TranslationEngine (Gemini API Flash)
+            participant DB as Bảng Psql.Translations
+
+            Admin->>UI: Gọi Sự Kiện Gen Văn Bản
+            UI->>AI: Gửi Prompt & Nội dung Gốc tiếng Việt tới API Google AI 2.0
+            AI-->>UI: Payload JSON Văn Phong Chuyên Nghiệp (Tiếng Nhật, Hàn, Anh, Trung)
+            UI->>DB: Đổ Data Cột TextJa, TextKo, TextZh, TextEn
+            DB-->>UI: Gỡ lỗi và Lưu Trữ An Toàn CmsDbContext
+            UI->>Admin: Trực Quan Hóa Grid Sửa Chữa (Editor Mode)
+        </div>
+
+        <h3 class="seq-title">UC13: Khóa / Khôi Phục Account Chủ Quán (Admin)</h3>
+        <p>Kiểm soát đăng nhập bằng Checkpoint IsActive=False.</p>
+        <div class="mermaid">
+            sequenceDiagram
+            autonumber
+            actor Admin
+            participant UI as UserManagement.razor
+            participant DB as Database Users
+            participant Auth as Session Provider CMS
+
+            Admin->>UI: Kích Hoạt Nút "Khóa Trạng Thái/Vô Hiệu" Dành Cho Kẻ Giả Mạo
+            UI->>DB: Ghi đè Cột Field IsActive = False Của Record UserId
+            DB-->>UI: Commit Data
+            Auth->>Auth: Lúc Victim Login Mới Hàm BCrypt Check IsActive Sẽ Triệt Tiêu Session Báo Lỗi 403.
+        </div>
+
+        <h3 class="seq-title">UC14: Xét Duyệt Gian Hàng Pending & Đồng Bộ App (Admin)</h3>
+        <p>Sức mạnh Sync-Push để Map Mobile lập tức hiện Quán.</p>
+        <div class="mermaid">
+            sequenceDiagram
+            autonumber
+            actor Admin
+            participant UI as AdminDashboard Duyệt Grid
+            participant API as /api/sync/pois
+            participant App as Mobile App BackgroundWorkers
+
+            Admin->>UI: Tích ✔ Nút "Duyệt". Đặt biến _poi.IsApproved = True. Save.
+            UI->>API: POI Mới tự động được Bộc Lộ ra ở Public Endpoint API Lấy Dữ Liệu
+            App->>API: Cứ Mỗi Khi Start -> App Sẽ GET /sync/pois
+            API-->>App: Fetch được JSON mới Toanh Có Đối Tượng Mới
+            App->>App: Ghi đè vào LocalDb Và Nạp ngay Map Native
+        </div>
+
+        <h3 class="seq-title">UC15: Báo Cáo Tài Chính Tổng Đài Toàn Mạng (Admin)</h3>
+        <p>Sơ đồ tổng hành dinh Dashboard đo lường.</p>
+        <div class="mermaid">
+            sequenceDiagram
+            autonumber
+            actor Admin
+            participant UI as Admin Dashboard Analytics
+            participant DB as Bảng CmsDbContext.UserHistories
+
+            Admin->>UI: Tải Trang Chỉ Đạo Mặc Định Chủ Đầu Tư
+            UI->>DB: Lấy SUM() toàn bộ (Tiền Nghe Nhạc + Tiền Phí Chủ Gian Hàng) Tổng Hợp
+            DB-->>UI: Phân Bổ Mảng Theo Dòng Thời Gian DateTime
+            UI->>Admin: Vẽ Đồ thị Cột RadzenChart Doanh số, Lượt truy cập Và POI Online Ping
+        </div>
+
+        <h3 class="seq-title">UC16: Tổng cục Sinh & Xuất Mã QR Code (Admin)</h3>
+        <p>Module xử lý Logic Ảnh tĩnh QR.</p>
+        <div class="mermaid">
+            sequenceDiagram
+            autonumber
+            actor Admin
+            participant UI as Action Menu Management
+            participant JS as QrCode JSInterop Library (Radzen / NPM)
+
+            Admin->>UI: Bấm Xuất File Code
+            UI->>JS: Invoke Void Async: Hàm 'generateQR' Chuỗi Input ('foodstreet://poi?id=ID_QUA_A')
+            JS-->>UI: Base64 Source Nền Trong Suốt
+            UI->>Admin: Trả Biểu đồ Đẹp Mắt Nhấn Lưu Vào Bộ Nhớ Máy In Bạt Thả Quán
+        </div>
+    </section>
+
+
+    <!-- ACTIVITY DIAGRAM -->
+    <section id="activity">
+        <div class="section-header">
+            <div class="icon" style="background:#fff3e0;color:var(--warning);">⚙️</div>
+            <div>
+                <div class="section-num">Hoạt Động / Activity</div>
+                <h2>Hệ Thống Sơ đồ Activity System</h2>
+            </div>
+        </div>
+
+        <h3 class="seq-title" style="margin-top:20px;">Activity 1: Quy trình Khởi động App & Nạp SQLite Bản Đồ</h3>
+        <p>Mô tả luồng người dùng mở ứng dụng và tải Database Offline Sync.</p>
+        <div class="mermaid-container">
+            <div class="mermaid">
+                stateDiagram-v2
+                [*] --> Startup: User mở App MAUI
+                Startup --> LoginCheck: Auth Validator
+                LoginCheck --> RequiresLogin: Chưa Auth Token
+                RequiresLogin --> LoginCheck: Pass Auth
+                LoginCheck --> DatabaseCheck: Đã Có Token
+
+                state DatabaseCheck {
+                SQLiteLocal_Query: Trích xuất db cục bộ
+                ShowMap: Lập tức Render POI Map
+                FetchWebAPI: Call GET /api/sync/pois ngầm
+                MergeSQLite: Xóa cái cũ, Update cái Web mới
+                }
+
+                SQLiteLocal_Query --> ShowMap
+                ShowMap --> Lắng_Nghe_Tương_Tác
+                SQLiteLocal_Query --> FetchWebAPI
+                FetchWebAPI --> MergeSQLite
+                MergeSQLite --> Lắng_Nghe_Tương_Tác: Trigger NotifyPropertyChanged
+                Lắng_Nghe_Tương_Tác --> [*]
+            </div>
+        </div>
+
+        <h3 class="seq-title" style="margin-top:50px;">Activity 2: Luồng Chặn Spam 15m (Geofence Loop)</h3>
+        <p>Khống chế lượng tin Spam trigger ngầm định vị.</p>
+        <div class="mermaid-container">
+            <div class="mermaid">
+                stateDiagram-v2
+                [*] --> StartWalking: Khách đang ở Tab Map
+
+                StartWalking --> Geo_Check: Đồng hồ Polling Tick
+
+                state Geo_Check {
+                TinhToanToaDo: Haversine_Distance(Current, POI)
+                KiemTra_15m_BanKinh: Distance Tách Bạch POI
+                KiemTra_15m_KhoangCach_Cu: Tính Step Giãn Cách Spam
+                }
+
+                    Geo_Check --> Nằm_Ngoài_Vùng : Vượt giới hạn hiển thị
+                    Geo_Check --> Dung_Yen_Nhau : Bốc dỡ chống Spam Ồn
+                    Geo_Check --> Trigger_Hieu_Luc : Tín hiệu Sạch Sẽ
+
+                            Nằm_Ngoài_Vùng --> ResetCờ_KhảDụng : Set POI.HasPlayed = False
+                            Dung_Yen_Nhau --> BreakLoop : Block Tín Hiệu Play (Chống Ồn)
+                            Trigger_Hieu_Luc --> GoPlayAudio : Cấp lệnh Audio
+
+                            GoPlayAudio --> [*]
+                            BreakLoop --> [*]
+                            ResetCờ_KhảDụng --> [*]
+            </div>
+        </div>
+
+        <h3 class="seq-title" style="margin-top:50px;">Activity 3: Luồng Đọc Audio 3 Lớp Ngôn Ngữ</h3>
+        <p>Xử lý quyết định luồng chọn phát Fallback Voice.</p>
+        <div class="mermaid-container">
+            <div class="mermaid">
+                stateDiagram-v2
+                [*] --> LenhChoi: ProcessSingleNarrationAsync(poi)
+
+                LenhChoi --> KhopNgonNgu : Locale(Preference.Lang)
+
+                KhopNgonNgu --> DocDataThuocTinh : Get Poi Content
+
+                DocDataThuocTinh --> Phat_MP3 : Field AudioUrl != null
+                DocDataThuocTinh --> Phat_TTS_BanDia : AudioUrl == null & UseTts = True
+
+                Phat_MP3 --> Plugin_Maui_Audio: Phát Loa Âm Thanh Stream
+
+                state Phat_TTS_BanDia {
+                TryRead_Local: System TextToSpeech Read
+                ExceptionCatching: Gặp Lỗi Gói OS / Crash Engine
+                FallbackTo_En: Force Speak(en-US)
+                }
+
+                TryRead_Local --> Xong : Thành Công
+                TryRead_Local --> ExceptionCatching : OS Lỗi Tự Nhiên
+                ExceptionCatching --> FallbackTo_En
+
+                Plugin_Maui_Audio --> TrackEvent_DoanhThu
+                Xong --> TrackEvent_DoanhThu
+                FallbackTo_En --> TrackEvent_DoanhThu
+
+                TrackEvent_DoanhThu --> [*] : Lưu HTTP Backend Nghe Xong
+            </div>
+        </div>
+
+        <h3 class="seq-title" style="margin-top:50px;">Activity 4: Quy trình Hành Chính CMS (Admin Duyệt App)</h3>
+        <p>Chu trình rẽ nhánh từ Cửa hàng lên Hệ thống Trung tâm Duyệt Database.</p>
+        <div class="mermaid-container">
+            <div class="mermaid">
+                stateDiagram-v2
+                [*] --> FormRegister : Chủ Quán Submit Đăng Ký
+
+                FormRegister --> AutoPending_Log : Add(UserHistory: 200,000 VND)
+
+                AutoPending_Log --> Hold : Gian Hàng POI (Pending)
+
+                Hold --> AdminLogin : Đăng nhập Trang CMS
+                AdminLogin --> KiemDuyet : Admin Kích Nút 'Duyệt POI' / IsApproved = True
+
+                KiemDuyet --> Sync_Api : Open Nút Phơi Bày Trên Domain GET /sync/pois
+
+                state Client_Receive {
+                Phone1: ĐT1 Đang Đi Bộ -> Rút API Local Load Quán
+                Phone2: ĐT2 Quét QR Bằng Camera Web
+                }
+
+                Sync_Api --> Phone1
+                Sync_Api --> Phone2
+
+                Phone2 --> DeepLinking_Bypass : Gọi Bypass Geofence
+                DeepLinking_Bypass --> NgheNgayLapTuc : Thẳng Vào PlayAudio TTS
+
+                Phone1 --> [*]
+                NgheNgayLapTuc --> [*]
+            </div>
+        </div>
+    </section>
+    \n <footer style="margin-top: 3rem; text-align: center; color: gray; padding-bottom: 3rem;">
+        Dự án <strong>Hệ Thống Du Lịch Ẩm Thực Vĩnh Khánh Quận 4</strong><br>
+        Báo cáo kỹ thuật phát triển PWA & Native MAUI Architecture Version Tiêu Chuẩn Cao Cấp. (Tích hợp 16 Mô tả Chuẩn
+        Xác 100% Cú Pháp Code).
+        <br><br>
+        <span
+            style="border-radius:20px; background: #e0f2f1; color:#00695c; padding: 5px 12px; font-weight:600; font-size:12px;">Generated
+            & Compiled cho mục đích Final Project Báo Cáo Giáo Viên</span>
+    </footer>
+</body>
+
+</html>
