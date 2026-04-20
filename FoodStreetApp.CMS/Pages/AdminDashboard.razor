@@ -276,6 +276,7 @@ else
     private decimal _revenueRefund = 0;
 
     private System.Timers.Timer? _refreshTimer;
+    private bool _heatmapRendered;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -290,7 +291,7 @@ else
             _refreshTimer.Start();
         }
 
-        // Render Map whenever loading ends
+        // Render heatmap — JS reuses map instance, only updates data (no flicker)
         if (!_isLoading && _summary.TopPois != null)
         {
             await RenderHeatmapAsync();
