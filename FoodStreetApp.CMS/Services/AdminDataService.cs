@@ -52,6 +52,7 @@ public class AdminDataService : IAdminDataService
         item.Type = poi.Type;
 
         item.RadiusMeters = poi.RadiusMeters;
+        item.Priority = poi.Priority;
         item.ImageUrl = poi.ImageUrl;
         item.OwnerId = poi.OwnerId;
 
