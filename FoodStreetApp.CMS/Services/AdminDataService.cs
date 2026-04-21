@@ -364,7 +364,7 @@ public class AdminDataService : IAdminDataService
             .Select(g => new
             {
                 TotalAudio = g.Count(l => l.Action == "audio_played" || l.Action == "Listen"),
-                TotalViews = g.Count(l => l.Action == "poi_viewed" || l.Action == "POI viewed" || l.Action == "qr_scanned"),
+                TotalViews = g.Count(l => l.Action == "poi_viewed" || l.Action == "POI viewed" || l.Action == "qr_scanned" || l.Action == "Route_Entry"),
                 HighEngagement = g.Count(l => (l.Action == "audio_played" || l.Action == "Listen") && l.DurationSeconds > 10),
                 AvgDuration = g.Where(l => l.DurationSeconds.HasValue && l.DurationSeconds > 0).Average(l => (double?)l.DurationSeconds) ?? 0,
                 UniqueUsers = g.Select(l => l.UserId).Distinct().Count()
@@ -376,7 +376,8 @@ public class AdminDataService : IAdminDataService
         // 2. Top POIs
         var topPoiData = await (from h in query
                                 join p in db.Pois on h.PoiId equals p.Id // Skip deleted POIs
-                                where (h.Action == "qr_scanned" || h.Action == "poi_viewed" || h.Action == "POI viewed")
+                                where (h.Action == "qr_scanned" || h.Action == "poi_viewed" || h.Action == "POI viewed"
+                                    || h.Action == "audio_played" || h.Action == "Listen" || h.Action == "Route_Entry")
                                 group h by h.PoiId into g
                                 orderby g.Count() descending
                                 select new { Key = g.Key, Count = g.Count() })
@@ -409,7 +410,7 @@ public class AdminDataService : IAdminDataService
             .Select(g => new
             {
                 Date = g.Key,
-                Views = g.Count(l => l.Action == "poi_viewed" || l.Action == "POI viewed" || l.Action == "qr_scanned"),
+                Views = g.Count(l => l.Action == "poi_viewed" || l.Action == "POI viewed" || l.Action == "qr_scanned" || l.Action == "Route_Entry"),
                 Listens = g.Count(l => l.Action == "audio_played" || l.Action == "Listen")
             })
             .OrderBy(x => x.Date)
