@@ -25,41 +25,49 @@
 
 @if (!_isLoading)
 {
-    <!-- Statistics Section -->
-    <div class="row g-4 mb-5">
-        <div class="col-xl col-md-4">
+    @* ═══════════════════════════════════════════════════
+       ROW 1: KPI CARDS
+    ═══════════════════════════════════════════════════ *@
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
             <div class="saas-card stats-card border-primary h-100">
                 <span class="stats-label">Tổng địa điểm</span>
                 <div class="d-flex align-items-baseline justify-content-between">
-                    <span class="stats-value">@_myPoiCount</span>
+                    <span class="stats-value">@_data.MyPoiCount</span>
                     <i class="bi bi-geo-alt text-primary"></i>
                 </div>
-                <div class="progress mt-3" style="height: 4px;">
-                    <div class="progress-bar bg-primary" style="width: 100%;"></div>
-                </div>
+                <div class="progress mt-3" style="height: 4px;"><div class="progress-bar bg-primary" style="width: 100%;"></div></div>
             </div>
         </div>
-        <div class="col-xl col-md-4">
+        <div class="col-xl-3 col-md-6">
             <div class="saas-card stats-card border-success h-100">
-                <span class="stats-label">Đã duyệt</span>
+                <span class="stats-label">Tổng lượt truy cập</span>
                 <div class="d-flex align-items-baseline justify-content-between">
-                    <span class="stats-value">@(_myPoiCount - _summary.PendingApprovals)</span>
-                    <i class="bi bi-check-circle text-success"></i>
+                    <span class="stats-value">@_data.TotalScans.ToString("N0")</span>
+                    <i class="bi bi-qr-code text-success"></i>
                 </div>
-                <div class="progress mt-3" style="height: 4px;">
-                    <div class="progress-bar bg-success" style="width: 100%;"></div>
-                </div>
+                <div class="progress mt-3" style="height: 4px;"><div class="progress-bar bg-success" style="width: 100%;"></div></div>
             </div>
         </div>
-        <div class="col-xl col-md-4">
-            <div class="saas-card stats-card border-danger h-100 @(_summary.PendingApprovals > 0 ? "border-2 shadow-sm" : "opacity-75")">
-                <span class="stats-label">Đang chờ duyệt</span>
+        <div class="col-xl-3 col-md-6">
+            <div class="saas-card stats-card border-warning h-100">
+                <span class="stats-label">Doanh thu</span>
                 <div class="d-flex align-items-baseline justify-content-between">
-                    <span class="stats-value @(_summary.PendingApprovals > 0 ? "animate__animated animate__headShake animate__infinite d-inline-block" : "")">@_summary.PendingApprovals</span>
-                    <i class="bi bi-shield-lock @(_summary.PendingApprovals > 0 ? "text-danger" : "text-muted")"></i>
+                    <span class="stats-value" style="font-size: 1.1rem;">@_data.TotalRevenue.ToString("N0")₫</span>
+                    <i class="bi bi-cash-stack text-warning"></i>
+                </div>
+                <div class="progress mt-3" style="height: 4px;"><div class="progress-bar bg-warning" style="width: 100%;"></div></div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="saas-card stats-card border-danger h-100 @(_data.PendingApprovals > 0 ? "border-2 shadow-sm" : "opacity-75")">
+                <span class="stats-label">Chờ duyệt</span>
+                <div class="d-flex align-items-baseline justify-content-between">
+                    <span class="stats-value @(_data.PendingApprovals > 0 ? "animate__animated animate__headShake animate__infinite d-inline-block" : "")">@_data.PendingApprovals</span>
+                    <i class="bi bi-shield-lock @(_data.PendingApprovals > 0 ? "text-danger" : "text-muted")"></i>
                 </div>
                 <div class="mt-3">
-                    @if (_summary.PendingApprovals > 0)
+                    @if (_data.PendingApprovals > 0)
                     {
                         <a href="/owner/poi" class="btn btn-sm btn-outline-danger w-100 border-0 bg-danger bg-opacity-10 py-1" style="font-size: 0.7rem;">Xem danh sách <i class="bi bi-arrow-right"></i></a>
                     }
@@ -72,74 +80,149 @@
         </div>
     </div>
 
-
-    <div class="row g-4 mb-5">
-        <div class="col-lg-8">
+    @* ═══════════════════════════════════════════════════
+       ROW 2: ACTIVITY CHART + PEAK HOURS
+    ═══════════════════════════════════════════════════ *@
+    <div class="row g-4 mb-4">
+        <div class="col-lg-7">
             <div class="saas-card p-4 h-100">
-                <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
-                        <h6 class="fw-bold mb-0">Biểu đồ hoạt động (7 ngày qua)</h6>
+                        <h6 class="fw-bold mb-0"><i class="bi bi-graph-up me-2 text-primary"></i>Lượt truy cập 14 ngày qua</h6>
                         <small class="text-muted">Cập nhật lúc: @DateTime.UtcNow.AddHours(7).ToString("HH:mm:ss")</small>
                     </div>
                 </div>
-                
-                <div class="chart-container py-3" style="height: 250px;">
-                    <svg width="100%" height="200" viewBox="0 0 1000 200" preserveAspectRatio="none">
-                        <line x1="0" y1="50" x2="1000" y2="50" stroke="#f1f5f9" />
-                        <line x1="0" y1="100" x2="1000" y2="100" stroke="#f1f5f9" />
-                        <line x1="0" y1="150" x2="1000" y2="150" stroke="#f1f5f9" />
-                        
-                        <polyline points="@GenerateTrendPoints(true)" fill="none" stroke="var(--primary-color)" stroke-width="3" />
-                        <path d="M 0 200 L @GenerateTrendPoints(true) L 1000 200 Z" fill="var(--primary-color)" opacity="0.05" />
-                    </svg>
-                    <div class="d-flex justify-content-between mt-3 px-1 x-small text-muted">
-                        @foreach (var t in _summary.DailyTrends) { <span>@t.Date.ToString("dd/MM")</span> }
+                @if (_data.DailyScans.Any())
+                {
+                    <div style="height: 260px;"><canvas id="ownerChartActivity"></canvas></div>
+                }
+                else
+                {
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-inbox mb-2" style="font-size: 2rem;"></i>
+                        <p class="small">Chưa có dữ liệu hoạt động</p>
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="saas-card p-4 h-100">
+                <h6 class="fw-bold mb-3"><i class="bi bi-clock me-2 text-danger"></i>Giờ cao điểm (UTC+7)</h6>
+                @if (_data.PeakHours.Any(h => h.Count > 0))
+                {
+                    <div style="height: 260px;"><canvas id="ownerChartPeakHours"></canvas></div>
+                }
+                else
+                {
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-clock mb-2" style="font-size: 2rem;"></i>
+                        <p class="small">Chưa có dữ liệu giờ cao điểm</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ═══════════════════════════════════════════════════
+       ROW 3: POI PERFORMANCE TABLE
+    ═══════════════════════════════════════════════════ *@
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="saas-card p-4">
+                <h6 class="fw-bold mb-3"><i class="bi bi-bar-chart me-2 text-primary"></i>Hiệu suất từng địa điểm</h6>
+                @if (_data.PoiPerformance.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Tên địa điểm</th>
+                                    <th class="text-center">Trạng thái</th>
+                                    <th class="text-end">Lượt truy cập</th>
+                                    <th class="text-end">Doanh thu</th>
+                                    <th style="width: 200px;">Mức độ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{ int idx = 1; int maxScans = _data.PoiPerformance.Max(p => p.ScanCount); }
+                                @foreach (var poi in _data.PoiPerformance)
+                                {
+                                    <tr>
+                                        <td class="fw-semibold text-muted">@(idx++)</td>
+                                        <td class="fw-semibold">@poi.PoiName</td>
+                                        <td class="text-center">
+                                            @if (poi.IsApproved)
+                                            {
+                                                <span class="badge bg-success bg-opacity-10 text-success"><i class="bi bi-check-circle me-1"></i>Đã duyệt</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning bg-opacity-10 text-warning"><i class="bi bi-clock me-1"></i>Chờ duyệt</span>
+                                            }
+                                        </td>
+                                        <td class="text-end fw-semibold">@poi.ScanCount.ToString("N0")</td>
+                                        <td class="text-end">@poi.Revenue.ToString("N0")₫</td>
+                                        <td>
+                                            <div class="progress" style="height: 8px; border-radius: 4px;">
+                                                @{ var pct = maxScans > 0 ? Math.Min(100, poi.ScanCount * 100 / maxScans) : 0; }
+                                                <div class="progress-bar @(pct > 60 ? "bg-success" : pct > 30 ? "bg-warning" : "bg-danger")"
+                                                     style="width: @pct%;"></div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-inbox mb-2" style="font-size: 2rem;"></i>
+                        <p class="small">Chưa có địa điểm nào</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* ═══════════════════════════════════════════════════
+       ROW 4: ALERTS
+    ═══════════════════════════════════════════════════ *@
+    @if (_data.NoEngagementPois.Any() || _data.PendingApprovals > 0)
+    {
+        <div class="row g-4 mb-5 pb-5">
+            <div class="col-12">
+                <div class="saas-card p-4">
+                    <h6 class="fw-bold mb-3"><i class="bi bi-exclamation-triangle me-2 text-warning"></i>Cảnh báo</h6>
+                    <div class="d-flex flex-column gap-2">
+                        @if (_data.PendingApprovals > 0)
+                        {
+                            <div class="alert alert-warning py-2 px-3 mb-0 d-flex align-items-center gap-2" style="font-size: 0.85rem;">
+                                <i class="bi bi-shield-lock"></i>
+                                <span>Bạn có <strong>@_data.PendingApprovals</strong> địa điểm đang chờ Admin duyệt</span>
+                            </div>
+                        }
+                        @foreach (var name in _data.NoEngagementPois)
+                        {
+                            <div class="alert alert-danger py-2 px-3 mb-0 d-flex align-items-center gap-2" style="font-size: 0.85rem;">
+                                <i class="bi bi-exclamation-circle"></i>
+                                <span><strong>@name</strong> — chưa có lượt truy cập nào</span>
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
         </div>
-        <!-- SVG Bar Chart: Top Locations -->
-        <div class="col-lg-4">
-            <div class="saas-card p-4 h-100">
-                <h6 class="fw-bold mb-4">Top địa điểm phổ biến</h6>
-                <div class="d-flex flex-column gap-4">
-                    @if (!_summary.TopPois.Any())
-                    {
-                        <div class="text-center py-5 text-muted">
-                            <i class="bi bi-inbox mb-2" style="font-size: 2rem;"></i>
-                            <p class="small">Chưa có dữ liệu</p>
-                        </div>
-                    }
-                    else
-                    {
-                        @foreach (var p in _summary.TopPois)
-                        {
-                            <div>
-                                <div class="d-flex justify-content-between small mb-1">
-                                    <span class="fw-semibold">@p.PoiName</span>
-                                    <span class="text-muted">@p.Count lượt</span>
-                                </div>
-                                <div class="progress" style="height: 12px; border-radius: 6px;">
-                                    <div class="progress-bar bg-primary" 
-                                         style="width: @(Math.Min(100, (p.Count * 100 / (_summary.TopPois.First().Count))))%;"></div>
-                                </div>
-                            </div>
-                        }
-                    }
-                </div>
-            </div>
-        </div>
-    </div>
+    }
 }
 
 @code {
-    private AnalyticsSummary _summary = new();
-    private int _myPoiCount = 0;
+    private OwnerDashboardData _data = new();
     private bool _isLoading = true;
     private Guid _currentUserId;
-    private DateTime _lastUpdated = DateTime.Now;
-    private decimal _listenRevenue = 0;
-    private int _listenPayCount = 0;
+    private bool _chartsNeedRender;
 
     protected override async Task OnInitializedAsync()
     {
@@ -151,7 +234,7 @@
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
         var userIdClaim = user.FindFirst("userId")?.Value;
-        
+
         if (Guid.TryParse(userIdClaim, out var id))
         {
             if (_currentUserId != id)
@@ -170,12 +253,16 @@
     {
         if (firstRender)
         {
-            // Re-check after render because JS runtime is now available to retrieve token from localStorage
             await CheckAuthAndLoad();
             StateHasChanged();
         }
-    }
 
+        if (!_isLoading && _chartsNeedRender)
+        {
+            _chartsNeedRender = false;
+            await RenderChartsAsync();
+        }
+    }
 
     private bool _isRefreshing;
 
@@ -184,29 +271,14 @@
         if (_isRefreshing) return;
         _isRefreshing = true;
         _isLoading = true;
-        _lastUpdated = DateTime.Now;
         try
         {
-            _myPoiCount = DataService.GetPoisByOwnerId(_currentUserId).Count;
-            _summary = await DataService.GetAnalyticsSummaryAsync(null, null, _currentUserId);
-
-            // Load real listen revenue for owner's POIs
-            try
-            {
-                var resp = await Http.GetAsync($"api/auth/owner-revenue/{_currentUserId}");
-                if (resp.IsSuccessStatusCode)
-                {
-                    var json = await resp.Content.ReadAsStringAsync();
-                    var rev = JsonSerializer.Deserialize<JsonElement>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                    _listenRevenue = rev.TryGetProperty("listenRevenue", out var lr) ? lr.GetDecimal() : 0;
-                    _listenPayCount = rev.TryGetProperty("listenCount", out var lc) ? lc.GetInt32() : 0;
-                }
-            }
-            catch { /* revenue fetch failed */ }
+            _data = await DataService.GetOwnerDashboardAsync(_currentUserId);
+            _chartsNeedRender = true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Owner dashboard load error (ignored): {ex.Message}");
+            Console.WriteLine($"Owner dashboard load error: {ex.Message}");
         }
         finally
         {
@@ -215,18 +287,33 @@
         }
     }
 
-    private string GenerateTrendPoints(bool isListen)
+    private async Task RenderChartsAsync()
     {
-        if (!_summary.DailyTrends.Any()) return "0,200 1000,200";
-        var points = new List<string>();
-        var maxVal = Math.Max(1, _summary.DailyTrends.Max(t => Math.Max(t.Views, t.Listens)));
-        for (int i = 0; i < _summary.DailyTrends.Count; i++)
+        try
         {
-            var x = i * 1000 / Math.Max(1, _summary.DailyTrends.Count - 1);
-            var val = isListen ? _summary.DailyTrends[i].Listens : _summary.DailyTrends[i].Views;
-            var y = 180 - (val * 160 / maxVal);
-            points.Add($"{x},{y}");
+            // Activity Line Chart (14d)
+            if (_data.DailyScans.Any())
+            {
+                var labels = _data.DailyScans.Select(d => d.Date.ToString("dd/MM")).ToArray();
+                var datasets = new object[] {
+                    new { label = "Lượt truy cập", data = _data.DailyScans.Select(d => d.Views).ToArray(), color = "#4f46e5" }
+                };
+                await JSRuntime.InvokeVoidAsync("chartHelper.renderLineChart", "ownerChartActivity", labels, datasets);
+            }
+
+            // Peak Hours Bar
+            if (_data.PeakHours.Any(h => h.Count > 0))
+            {
+                var labels = _data.PeakHours.Select(h => $"{(h.Hour + 7) % 24}h").ToArray();
+                var data = _data.PeakHours.Select(h => h.Count).ToArray();
+                var maxCount = _data.PeakHours.Max(x => x.Count);
+                var colors = _data.PeakHours.Select(h => h.Count == maxCount && maxCount > 0 ? "#ef4444" : "#94a3b8").ToArray();
+                await JSRuntime.InvokeVoidAsync("chartHelper.renderBarChart", "ownerChartPeakHours", labels, data, colors, false);
+            }
         }
-        return string.Join(" ", points);
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Owner chart render error: {ex.Message}");
+        }
     }
 }

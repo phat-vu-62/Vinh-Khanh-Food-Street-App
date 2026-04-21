@@ -499,6 +499,252 @@ public class AdminDataService : IAdminDataService
 
         return (items, total);
     }
+
+    // ================================================================
+    // NEW: Full Admin Dashboard
+    // ================================================================
+    private static readonly string[] InteractionActions = { "qr_scanned", "poi_viewed", "POI viewed", "audio_played", "Listen", "Route_Entry" };
+    private static readonly string[] ScanActions = { "qr_scanned", "poi_viewed", "POI viewed", "Route_Entry" };
+
+    public async Task<FoodStreetApp.CMS.Models.AdminDashboardData> GetAdminDashboardAsync()
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        var now = DateTime.UtcNow;
+        var thirtyDaysAgo = now.AddDays(-30);
+        var sevenDaysAgo = now.AddDays(-7);
+
+        var result = new FoodStreetApp.CMS.Models.AdminDashboardData();
+
+        // ── KPI Cards ──
+        result.TotalPois = await db.Pois.CountAsync(p => p.IsApproved);
+        result.PendingApprovals = await db.Pois.CountAsync(p => !p.IsApproved);
+
+        var last30 = db.UserHistories.AsNoTracking().Where(h => h.VisitedAtUtc >= thirtyDaysAgo);
+
+        result.TotalQrScans = await last30.CountAsync(h => ScanActions.Contains(h.Action));
+        result.TotalUniqueUsers = await last30
+            .Where(h => h.Action != "app_ping" && h.Action != "cms_ping" && h.Action != "qr_listen_ping")
+            .Select(h => h.UserId).Distinct().CountAsync();
+
+        // Active users now
+        var recentThreshold = now.AddSeconds(-4);
+        result.ActiveUsersNow = await db.UserHistories.AsNoTracking()
+            .Where(h => h.VisitedAtUtc >= recentThreshold && (h.Action == "app_ping" || h.Action == "cms_ping"))
+            .Select(h => h.UserId).Distinct().CountAsync();
+        result.ActiveQrUsersNow = await db.UserHistories.AsNoTracking()
+            .Where(h => h.VisitedAtUtc >= recentThreshold && h.Action == "qr_listen_ping")
+            .Select(h => h.UserId).Distinct().CountAsync();
+
+        // ── Revenue (from Amount field in UserHistories) ──
+        result.TotalRevenue = await db.UserHistories.AsNoTracking()
+            .Where(h => h.Amount.HasValue && h.Amount > 0)
+            .SumAsync(h => h.Amount ?? 0);
+        result.RevenueRefund = await db.UserHistories.AsNoTracking()
+            .Where(h => h.Amount.HasValue && h.Amount < 0)
+            .SumAsync(h => Math.Abs(h.Amount ?? 0));
+        result.TotalRevenue -= result.RevenueRefund;
+
+        // ── Growth Analytics: Daily Activity (30d) ──
+        result.DailyActivity = await last30
+            .Where(h => InteractionActions.Contains(h.Action))
+            .GroupBy(h => h.VisitedAtUtc.Date)
+            .Select(g => new FoodStreetApp.CMS.Models.TrendPoint
+            {
+                Date = g.Key,
+                Views = g.Count(x => ScanActions.Contains(x.Action)),
+                Listens = g.Count(x => x.Action == "audio_played" || x.Action == "Listen")
+            })
+            .OrderBy(x => x.Date)
+            .ToListAsync();
+
+        // ── Top 10 POIs by scans ──
+        var topData = await (from h in last30
+                             join p in db.Pois on h.PoiId equals p.Id
+                             where ScanActions.Contains(h.Action)
+                             group h by new { h.PoiId, p.Name } into g
+                             orderby g.Count() descending
+                             select new FoodStreetApp.CMS.Models.PoiRankMetric
+                             {
+                                 PoiId = g.Key.PoiId,
+                                 PoiName = g.Key.Name,
+                                 ScanCount = g.Count(),
+                                 Revenue = g.Sum(x => x.Amount ?? 0)
+                             })
+                             .Take(10)
+                             .ToListAsync();
+        result.Top10Pois = topData;
+
+        // ── Bottom 5 POIs (approved, fewest scans) ──
+        var allPoiIds = await db.Pois.Where(p => p.IsApproved).Select(p => new { p.Id, p.Name }).ToListAsync();
+        var scanCounts = await last30
+            .Where(h => ScanActions.Contains(h.Action))
+            .GroupBy(h => h.PoiId)
+            .Select(g => new { PoiId = g.Key, Count = g.Count() })
+            .ToListAsync();
+        var scanDict = scanCounts.ToDictionary(x => x.PoiId, x => x.Count);
+        result.Bottom5Pois = allPoiIds
+            .Select(p => new FoodStreetApp.CMS.Models.PoiRankMetric
+            {
+                PoiId = p.Id,
+                PoiName = p.Name,
+                ScanCount = scanDict.GetValueOrDefault(p.Id, 0)
+            })
+            .OrderBy(x => x.ScanCount)
+            .Take(5)
+            .ToList();
+
+        // ── Revenue by Day (30d) ──
+        result.RevenueByDay = await db.UserHistories.AsNoTracking()
+            .Where(h => h.VisitedAtUtc >= thirtyDaysAgo && h.Amount.HasValue && h.Amount > 0)
+            .GroupBy(h => h.VisitedAtUtc.Date)
+            .Select(g => new FoodStreetApp.CMS.Models.RevenueTrendPoint
+            {
+                Date = g.Key,
+                Amount = g.Sum(x => x.Amount ?? 0)
+            })
+            .OrderBy(x => x.Date)
+            .ToListAsync();
+
+        // ── Revenue by POI (Doughnut) ──
+        result.RevenueByPoi = await (from h in db.UserHistories.AsNoTracking()
+                                     join p in db.Pois on h.PoiId equals p.Id
+                                     where h.Amount.HasValue && h.Amount > 0
+                                     group h by p.Name into g
+                                     orderby g.Sum(x => x.Amount ?? 0) descending
+                                     select new FoodStreetApp.CMS.Models.PoiRevenueMetric
+                                     {
+                                         PoiName = g.Key,
+                                         Revenue = g.Sum(x => x.Amount ?? 0)
+                                     })
+                                     .Take(8)
+                                     .ToListAsync();
+
+        // ── User Behavior ──
+        var interactionUsers = await last30
+            .Where(h => InteractionActions.Contains(h.Action))
+            .ToListAsync();
+
+        var totalInteractions = interactionUsers.Count;
+        var distinctUsers = interactionUsers.Select(h => h.UserId).Distinct().Count();
+        result.AvgScansPerUser = distinctUsers > 0 ? (double)totalInteractions / distinctUsers : 0;
+
+        // New vs Returning (last 7 days)
+        var last7dUsers = await db.UserHistories.AsNoTracking()
+            .Where(h => h.VisitedAtUtc >= sevenDaysAgo && InteractionActions.Contains(h.Action))
+            .Select(h => h.UserId).Distinct().ToListAsync();
+        var usersBeforeLast7d = await db.UserHistories.AsNoTracking()
+            .Where(h => h.VisitedAtUtc < sevenDaysAgo && InteractionActions.Contains(h.Action))
+            .Select(h => h.UserId).Distinct().ToListAsync();
+        var returningSet = new HashSet<string>(usersBeforeLast7d);
+        result.ReturningUsersLast7d = last7dUsers.Count(u => returningSet.Contains(u));
+        result.NewUsersLast7d = last7dUsers.Count - result.ReturningUsersLast7d;
+
+        // ── Peak Hours (24h bar chart) ──
+        result.PeakHours = await last30
+            .Where(h => InteractionActions.Contains(h.Action))
+            .GroupBy(h => h.VisitedAtUtc.Hour)
+            .Select(g => new FoodStreetApp.CMS.Models.HourlyActivity { Hour = g.Key, Count = g.Count() })
+            .OrderBy(x => x.Hour)
+            .ToListAsync();
+        // Fill missing hours with 0
+        var peakDict = result.PeakHours.ToDictionary(x => x.Hour, x => x.Count);
+        result.PeakHours = Enumerable.Range(0, 24)
+            .Select(h => new FoodStreetApp.CMS.Models.HourlyActivity { Hour = h, Count = peakDict.GetValueOrDefault(h, 0) })
+            .ToList();
+
+        // ── Alerts: POIs with zero scans ──
+        result.ZeroScanPois = allPoiIds
+            .Where(p => !scanDict.ContainsKey(p.Id) || scanDict[p.Id] == 0)
+            .Select(p => p.Name)
+            .ToList();
+
+        return result;
+    }
+
+    // ================================================================
+    // NEW: Full Owner Dashboard
+    // ================================================================
+
+    public async Task<FoodStreetApp.CMS.Models.OwnerDashboardData> GetOwnerDashboardAsync(Guid ownerId)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        var now = DateTime.UtcNow;
+        var fourteenDaysAgo = now.AddDays(-14);
+
+        var result = new FoodStreetApp.CMS.Models.OwnerDashboardData();
+
+        // Get owner's POIs
+        var myPois = await db.Pois.Where(p => p.OwnerId == ownerId).ToListAsync();
+        var myPoiIds = myPois.Select(p => p.Id).ToList();
+
+        result.MyPoiCount = myPois.Count;
+        result.PendingApprovals = myPois.Count(p => !p.IsApproved);
+
+        if (myPoiIds.Count == 0) return result;
+
+        var myHistory = db.UserHistories.AsNoTracking()
+            .Where(h => myPoiIds.Contains(h.PoiId));
+
+        // ── KPIs ──
+        result.TotalScans = await myHistory.CountAsync(h => ScanActions.Contains(h.Action));
+        result.TotalRevenue = await myHistory
+            .Where(h => h.Amount.HasValue && h.Amount > 0)
+            .SumAsync(h => h.Amount ?? 0);
+
+        // ── POI Performance table ──
+        var scansByPoi = await myHistory
+            .Where(h => ScanActions.Contains(h.Action))
+            .GroupBy(h => h.PoiId)
+            .Select(g => new { PoiId = g.Key, Count = g.Count() })
+            .ToListAsync();
+        var revByPoi = await myHistory
+            .Where(h => h.Amount.HasValue && h.Amount > 0)
+            .GroupBy(h => h.PoiId)
+            .Select(g => new { PoiId = g.Key, Rev = g.Sum(x => x.Amount ?? 0) })
+            .ToListAsync();
+        var scanMap = scansByPoi.ToDictionary(x => x.PoiId, x => x.Count);
+        var revMap = revByPoi.ToDictionary(x => x.PoiId, x => x.Rev);
+        result.PoiPerformance = myPois.Select(p => new FoodStreetApp.CMS.Models.OwnerPoiPerformance
+        {
+            PoiId = p.Id,
+            PoiName = p.Name,
+            ScanCount = scanMap.GetValueOrDefault(p.Id, 0),
+            Revenue = revMap.GetValueOrDefault(p.Id, 0),
+            IsApproved = p.IsApproved
+        }).OrderByDescending(x => x.ScanCount).ToList();
+
+        // ── Daily Scans (14d) ──
+        result.DailyScans = await myHistory
+            .Where(h => h.VisitedAtUtc >= fourteenDaysAgo && ScanActions.Contains(h.Action))
+            .GroupBy(h => h.VisitedAtUtc.Date)
+            .Select(g => new FoodStreetApp.CMS.Models.TrendPoint
+            {
+                Date = g.Key,
+                Views = g.Count()
+            })
+            .OrderBy(x => x.Date)
+            .ToListAsync();
+
+        // ── Peak Hours ──
+        result.PeakHours = await myHistory
+            .Where(h => InteractionActions.Contains(h.Action))
+            .GroupBy(h => h.VisitedAtUtc.Hour)
+            .Select(g => new FoodStreetApp.CMS.Models.HourlyActivity { Hour = g.Key, Count = g.Count() })
+            .OrderBy(x => x.Hour)
+            .ToListAsync();
+        var peakDict = result.PeakHours.ToDictionary(x => x.Hour, x => x.Count);
+        result.PeakHours = Enumerable.Range(0, 24)
+            .Select(h => new FoodStreetApp.CMS.Models.HourlyActivity { Hour = h, Count = peakDict.GetValueOrDefault(h, 0) })
+            .ToList();
+
+        // ── Alerts ──
+        result.NoEngagementPois = result.PoiPerformance
+            .Where(p => p.ScanCount == 0)
+            .Select(p => p.PoiName)
+            .ToList();
+
+        return result;
+    }
 }
 
 

@@ -51,6 +51,16 @@ public interface IAdminDataService
     /// </summary>
     Task<FoodStreetApp.CMS.Models.AnalyticsSummary> GetAnalyticsSummaryAsync(DateTime? startDate = null, DateTime? endDate = null, Guid? ownerId = null);
 
+    /// <summary>
+    /// Full admin analytics dashboard data (charts, rankings, revenue, user behavior).
+    /// </summary>
+    Task<FoodStreetApp.CMS.Models.AdminDashboardData> GetAdminDashboardAsync();
+
+    /// <summary>
+    /// Full owner analytics dashboard data filtered to the owner's POIs.
+    /// </summary>
+    Task<FoodStreetApp.CMS.Models.OwnerDashboardData> GetOwnerDashboardAsync(Guid ownerId);
+
 
     /// <summary>
     /// Gets a paged list of usage histories with optional filtering.
