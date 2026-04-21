@@ -377,7 +377,7 @@ public class AdminDataService : IAdminDataService
         var topPoiData = await (from h in query
                                 join p in db.Pois on h.PoiId equals p.Id // Skip deleted POIs
                                 where (h.Action == "qr_scanned" || h.Action == "poi_viewed" || h.Action == "POI viewed"
-                                    || h.Action == "audio_played" || h.Action == "Listen" || h.Action == "Route_Entry")
+                                    || h.Action == "audio_played" || h.Action == "Listen")
                                 group h by h.PoiId into g
                                 orderby g.Count() descending
                                 select new { Key = g.Key, Count = g.Count() })
