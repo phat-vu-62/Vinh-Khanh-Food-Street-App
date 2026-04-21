@@ -1,4 +1,5 @@
 @page "/owner"
+@implements IDisposable
 @using FoodStreetApp.Shared.Entities
 @using FoodStreetApp.CMS.Interfaces
 @using FoodStreetApp.CMS.Models
@@ -89,7 +90,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <div>
                         <h6 class="fw-bold mb-0"><i class="bi bi-graph-up me-2 text-primary"></i>Lượt truy cập 14 ngày qua</h6>
-                        <small class="text-muted">Cập nhật lúc: @DateTime.UtcNow.AddHours(7).ToString("HH:mm:ss")</small>
+                        <small class="text-muted">Cập nhật lúc: @_lastUpdated.ToString("HH:mm:ss")</small>
                     </div>
                 </div>
                 @if (_data.DailyScans.Any())
@@ -223,6 +224,8 @@
     private bool _isLoading = true;
     private Guid _currentUserId;
     private bool _chartsNeedRender;
+    private DateTime _lastUpdated = DateTime.UtcNow.AddHours(7);
+    private System.Timers.Timer? _refreshTimer;
 
     protected override async Task OnInitializedAsync()
     {
@@ -255,6 +258,11 @@
         {
             await CheckAuthAndLoad();
             StateHasChanged();
+
+            // Auto-refresh every 5 seconds
+            _refreshTimer = new System.Timers.Timer(5000);
+            _refreshTimer.Elapsed += async (sender, e) => await InvokeAsync(SilentRefreshAsync);
+            _refreshTimer.Start();
         }
 
         if (!_isLoading && _chartsNeedRender)
@@ -264,6 +272,26 @@
         }
     }
 
+    private async Task SilentRefreshAsync()
+    {
+        try
+        {
+            var newData = await DataService.GetOwnerDashboardAsync(_currentUserId);
+            _data.MyPoiCount = newData.MyPoiCount;
+            _data.TotalScans = newData.TotalScans;
+            _data.TotalRevenue = newData.TotalRevenue;
+            _data.PendingApprovals = newData.PendingApprovals;
+            _lastUpdated = DateTime.UtcNow.AddHours(7);
+            StateHasChanged();
+        }
+        catch { /* ignore silent refresh errors */ }
+    }
+
+    public void Dispose()
+    {
+        _refreshTimer?.Dispose();
+    }
+
     private bool _isRefreshing;
 
     private async Task LoadAsync()
@@ -271,6 +299,7 @@
         if (_isRefreshing) return;
         _isRefreshing = true;
         _isLoading = true;
+        _lastUpdated = DateTime.UtcNow.AddHours(7);
         try
         {
             _data = await DataService.GetOwnerDashboardAsync(_currentUserId);
