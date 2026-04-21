@@ -505,6 +505,32 @@ public class AdminDataService : IAdminDataService
     // ================================================================
     private static readonly string[] InteractionActions = { "qr_scanned", "poi_viewed", "POI viewed", "audio_played", "Listen", "Route_Entry" };
     private static readonly string[] ScanActions = { "qr_scanned", "poi_viewed", "POI viewed", "Route_Entry" };
+    private static readonly string[] RevenueActions = { "payment_listen", "register_merchant", "payment_create_poi" };
+
+    /// <summary>
+    /// Lightweight query for 5s auto-refresh — only fetches live metrics.
+    /// </summary>
+    public async Task<(int ActiveUsers, int ActiveQr, int TotalScans, int UniqueUsers)> GetLiveMetricsAsync()
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        var recentThreshold = DateTime.UtcNow.AddSeconds(-4);
+        var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+
+        var activeUsers = await db.UserHistories.AsNoTracking()
+            .Where(h => h.VisitedAtUtc >= recentThreshold && (h.Action == "app_ping" || h.Action == "cms_ping"))
+            .Select(h => h.UserId).Distinct().CountAsync();
+        var activeQr = await db.UserHistories.AsNoTracking()
+            .Where(h => h.VisitedAtUtc >= recentThreshold && h.Action == "qr_listen_ping")
+            .Select(h => h.UserId).Distinct().CountAsync();
+        var totalScans = await db.UserHistories.AsNoTracking()
+            .Where(h => h.VisitedAtUtc >= thirtyDaysAgo && ScanActions.Contains(h.Action))
+            .CountAsync();
+        var uniqueUsers = await db.UserHistories.AsNoTracking()
+            .Where(h => h.VisitedAtUtc >= thirtyDaysAgo && h.Action != "app_ping" && h.Action != "cms_ping" && h.Action != "qr_listen_ping")
+            .Select(h => h.UserId).Distinct().CountAsync();
+
+        return (activeUsers, activeQr, totalScans, uniqueUsers);
+    }
 
     public async Task<FoodStreetApp.CMS.Models.AdminDashboardData> GetAdminDashboardAsync()
     {
@@ -535,14 +561,15 @@ public class AdminDataService : IAdminDataService
             .Where(h => h.VisitedAtUtc >= recentThreshold && h.Action == "qr_listen_ping")
             .Select(h => h.UserId).Distinct().CountAsync();
 
-        // ── Revenue (from Amount field in UserHistories) ──
-        result.TotalRevenue = await db.UserHistories.AsNoTracking()
-            .Where(h => h.Amount.HasValue && h.Amount > 0)
-            .SumAsync(h => h.Amount ?? 0);
-        result.RevenueRefund = await db.UserHistories.AsNoTracking()
-            .Where(h => h.Amount.HasValue && h.Amount < 0)
-            .SumAsync(h => Math.Abs(h.Amount ?? 0));
-        result.TotalRevenue -= result.RevenueRefund;
+        // ── Revenue (matching /api/auth/revenue logic) ──
+        var allHist = db.UserHistories.AsNoTracking();
+        var registerRev = await allHist.Where(h => h.Action == "register_merchant" && h.Amount > 0).SumAsync(h => h.Amount ?? 0);
+        var listenRev = await allHist.Where(h => h.Action == "payment_listen" && h.Amount > 0).SumAsync(h => h.Amount ?? 0);
+        var createPoiGross = await allHist.Where(h => h.Action == "payment_create_poi" && h.Amount > 0).SumAsync(h => h.Amount ?? 0);
+        result.RevenueRefund = Math.Abs(await allHist.Where(h => h.Amount < 0).SumAsync(h => h.Amount ?? 0));
+        result.RevenueQr = listenRev;
+        result.RevenueCreatePoi = createPoiGross;
+        result.TotalRevenue = registerRev + listenRev + createPoiGross - result.RevenueRefund;
 
         // ── Growth Analytics: Daily Activity (30d) ──
         result.DailyActivity = await last30
@@ -595,7 +622,7 @@ public class AdminDataService : IAdminDataService
 
         // ── Revenue by Day (30d) ──
         result.RevenueByDay = await db.UserHistories.AsNoTracking()
-            .Where(h => h.VisitedAtUtc >= thirtyDaysAgo && h.Amount.HasValue && h.Amount > 0)
+            .Where(h => h.VisitedAtUtc >= thirtyDaysAgo && RevenueActions.Contains(h.Action) && h.Amount > 0)
             .GroupBy(h => h.VisitedAtUtc.Date)
             .Select(g => new FoodStreetApp.CMS.Models.RevenueTrendPoint
             {
@@ -608,7 +635,7 @@ public class AdminDataService : IAdminDataService
         // ── Revenue by POI (Doughnut) ──
         result.RevenueByPoi = await (from h in db.UserHistories.AsNoTracking()
                                      join p in db.Pois on h.PoiId equals p.Id
-                                     where h.Amount.HasValue && h.Amount > 0
+                                     where RevenueActions.Contains(h.Action) && h.Amount > 0
                                      group h by p.Name into g
                                      orderby g.Sum(x => x.Amount ?? 0) descending
                                      select new FoodStreetApp.CMS.Models.PoiRevenueMetric
@@ -688,7 +715,7 @@ public class AdminDataService : IAdminDataService
         // ── KPIs ──
         result.TotalScans = await myHistory.CountAsync(h => ScanActions.Contains(h.Action));
         result.TotalRevenue = await myHistory
-            .Where(h => h.Amount.HasValue && h.Amount > 0)
+            .Where(h => RevenueActions.Contains(h.Action) && h.Amount > 0)
             .SumAsync(h => h.Amount ?? 0);
 
         // ── POI Performance table ──
@@ -698,7 +725,7 @@ public class AdminDataService : IAdminDataService
             .Select(g => new { PoiId = g.Key, Count = g.Count() })
             .ToListAsync();
         var revByPoi = await myHistory
-            .Where(h => h.Amount.HasValue && h.Amount > 0)
+            .Where(h => RevenueActions.Contains(h.Action) && h.Amount > 0)
             .GroupBy(h => h.PoiId)
             .Select(g => new { PoiId = g.Key, Rev = g.Sum(x => x.Amount ?? 0) })
             .ToListAsync();

@@ -291,11 +291,8 @@ else
 @code {
     private AdminDashboardData _data = new();
     private bool _isLoading = true;
-    private DateTime _lastUpdated = DateTime.Now;
+    private DateTime _lastUpdated = DateTime.UtcNow.AddHours(7);
     private System.Timers.Timer? _refreshTimer;
-
-    // For heatmap (kept from old dashboard)
-    private AnalyticsSummary _summary = new();
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -318,7 +315,7 @@ else
         }
 
         // Render heatmap — JS reuses map instance, only updates data (no flicker)
-        if (!_isLoading && _summary.TopPois != null)
+        if (!_isLoading && _data.Top10Pois != null && _data.Top10Pois.Any())
         {
             await RenderHeatmapAsync();
         }
@@ -330,13 +327,12 @@ else
     {
         try
         {
-            var newData = await DataService.GetAdminDashboardAsync();
-            // Update only live metrics without re-rendering charts
-            _data.ActiveUsersNow = newData.ActiveUsersNow;
-            _data.ActiveQrUsersNow = newData.ActiveQrUsersNow;
-            _data.TotalQrScans = newData.TotalQrScans;
-            _data.TotalUniqueUsers = newData.TotalUniqueUsers;
-            _lastUpdated = DateTime.Now;
+            var (activeUsers, activeQr, totalScans, uniqueUsers) = await DataService.GetLiveMetricsAsync();
+            _data.ActiveUsersNow = activeUsers;
+            _data.ActiveQrUsersNow = activeQr;
+            _data.TotalQrScans = totalScans;
+            _data.TotalUniqueUsers = uniqueUsers;
+            _lastUpdated = DateTime.UtcNow.AddHours(7);
             StateHasChanged();
         }
         catch { /* ignore silent refresh errors */ }
@@ -354,14 +350,11 @@ else
         if (_isRefreshing) return;
         _isRefreshing = true;
         _isLoading = true;
-        _lastUpdated = DateTime.Now;
+        _lastUpdated = DateTime.UtcNow.AddHours(7);
 
         try
         {
             _data = await DataService.GetAdminDashboardAsync();
-
-            // Also load summary for heatmap
-            _summary = await DataService.GetAnalyticsSummaryAsync();
 
             _chartsNeedRender = true;
         }
@@ -404,7 +397,7 @@ else
             {
                 var labels = _data.RevenueByDay.Select(d => d.Date.ToString("dd/MM")).ToArray();
                 var datasets = new object[] {
-                    new { label = "Doanh thu (₫)", data = _data.RevenueByDay.Select(d => (int)d.Amount).ToArray(), color = "#10b981" }
+                    new { label = "Doanh thu (₫)", data = _data.RevenueByDay.Select(d => (double)d.Amount).ToArray(), color = "#10b981" }
                 };
                 await JSRuntime.InvokeVoidAsync("chartHelper.renderLineChart", "chartRevenue", labels, datasets);
             }
@@ -413,16 +406,22 @@ else
             if (_data.RevenueByPoi.Any())
             {
                 var labels = _data.RevenueByPoi.Select(p => p.PoiName).ToArray();
-                var data = _data.RevenueByPoi.Select(p => (int)p.Revenue).ToArray();
+                var data = _data.RevenueByPoi.Select(p => (double)p.Revenue).ToArray();
                 await JSRuntime.InvokeVoidAsync("chartHelper.renderDoughnutChart", "chartRevPie", labels, data, (object?)null);
             }
 
             // 5. Peak Hours Bar
             if (_data.PeakHours.Any())
             {
-                var labels = _data.PeakHours.Select(h => $"{(h.Hour + 7) % 24}h").ToArray();
-                var data = _data.PeakHours.Select(h => h.Count).ToArray();
-                var colors = _data.PeakHours.Select(h => h.Count == _data.PeakHours.Max(x => x.Count) ? "#ef4444" : "#94a3b8").ToArray();
+                // Reorder by Vietnam time (UTC+7) so chart reads 0h-23h VN
+                var vnOrdered = _data.PeakHours
+                    .Select(h => new { VnHour = (h.Hour + 7) % 24, h.Count })
+                    .OrderBy(h => h.VnHour)
+                    .ToList();
+                var labels = vnOrdered.Select(h => $"{h.VnHour}h").ToArray();
+                var data = vnOrdered.Select(h => h.Count).ToArray();
+                var maxCount = vnOrdered.Max(x => x.Count);
+                var colors = vnOrdered.Select(h => h.Count == maxCount && maxCount > 0 ? "#ef4444" : "#94a3b8").ToArray();
                 await JSRuntime.InvokeVoidAsync("chartHelper.renderBarChart", "chartPeakHours", labels, data, colors, false);
             }
         }
@@ -439,13 +438,14 @@ else
             var pois = DataService.GetPois();
             var heatData = new List<double[]>();
 
-            foreach (var topPoi in _summary.TopPois)
+            // Use Top10Pois from dashboard data instead of separate query
+            foreach (var topPoi in _data.Top10Pois)
             {
                 var poi = pois.FirstOrDefault(p => p.Id == topPoi.PoiId);
                 if (poi != null && poi.Latitude != 0 && poi.Longitude != 0)
                 {
-                    var maxCount = _summary.TopPois.Max(x => x.Count);
-                    double intensity = maxCount > 0 ? (double)topPoi.Count / maxCount : 0.5;
+                    var maxCount = _data.Top10Pois.Max(x => x.ScanCount);
+                    double intensity = maxCount > 0 ? (double)topPoi.ScanCount / maxCount : 0.5;
                     heatData.Add(new double[] { poi.Latitude, poi.Longitude, Math.Max(0.2, intensity) });
                 }
             }

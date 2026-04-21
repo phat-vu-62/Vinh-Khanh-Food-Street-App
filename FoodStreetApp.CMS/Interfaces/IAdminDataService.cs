@@ -57,6 +57,11 @@ public interface IAdminDataService
     Task<FoodStreetApp.CMS.Models.AdminDashboardData> GetAdminDashboardAsync();
 
     /// <summary>
+    /// Lightweight live metrics for 5s auto-refresh (online users, scan counts).
+    /// </summary>
+    Task<(int ActiveUsers, int ActiveQr, int TotalScans, int UniqueUsers)> GetLiveMetricsAsync();
+
+    /// <summary>
     /// Full owner analytics dashboard data filtered to the owner's POIs.
     /// </summary>
     Task<FoodStreetApp.CMS.Models.OwnerDashboardData> GetOwnerDashboardAsync(Guid ownerId);
