@@ -215,19 +215,7 @@ else
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <div>
                         <h6 class="fw-bold mb-0"><i class="bi bi-fire text-danger me-2"></i>Bản đồ nhiệt tương tác (Heatmap)</h6>
-                        <small class="text-muted">Mật độ tương tác thực tế tại các khu vực</small>
-                    </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <input type="date" class="form-control form-control-sm" style="width:160px;"
-                               value="@(_heatmapDate?.ToString("yyyy-MM-dd") ?? "")"
-                               max="@DateTime.Now.ToString("yyyy-MM-dd")"
-                               @onchange="OnHeatmapDateChanged" />
-                        @if (_heatmapDate.HasValue)
-                        {
-                            <button class="btn btn-sm btn-outline-secondary" @onclick="ClearHeatmapDate" title="Xoá bộ lọc">
-                                <i class="bi bi-x-lg"></i>
-                            </button>
-                        }
+                        <small class="text-muted">Mật độ tương tác thực tế tại các khu vực (30 ngày)</small>
                     </div>
                 </div>
                 <div id="admin-heatmap" style="height: 400px; border-radius: 16px; z-index: 1;"></div>
@@ -329,7 +317,6 @@ else
     }
 
     private bool _chartsNeedRender;
-    private DateTime? _heatmapDate;
 
     private async Task SilentRefreshAsync()
     {
@@ -443,7 +430,7 @@ else
     {
         try
         {
-            var data = await DataService.GetHeatmapDataAsync(_heatmapDate);
+            var data = await DataService.GetHeatmapDataAsync(null);
             var heatData = new List<double[]>();
 
             if (data.Any())
@@ -462,24 +449,5 @@ else
         {
             Console.WriteLine($"Heatmap Render Error: {ex.Message}");
         }
-    }
-
-    private async Task OnHeatmapDateChanged(ChangeEventArgs e)
-    {
-        if (DateTime.TryParse(e.Value?.ToString(), out var selected))
-        {
-            _heatmapDate = selected;
-        }
-        else
-        {
-            _heatmapDate = null;
-        }
-        await RenderHeatmapAsync();
-    }
-
-    private async Task ClearHeatmapDate()
-    {
-        _heatmapDate = null;
-        await RenderHeatmapAsync();
     }
 }
