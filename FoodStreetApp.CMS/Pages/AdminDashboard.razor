@@ -324,16 +324,18 @@ else
         {
             _chartsNeedRender = false;
             await RenderAllChartsAsync();
-        }
 
-        // Render heatmap — JS reuses map instance, only updates data (no flicker)
-        if (!_isLoading && _data.Top10Pois != null && _data.Top10Pois.Any())
-        {
-            await RenderHeatmapAsync();
+            // Render heatmap once after first data load
+            if (!_heatmapRendered)
+            {
+                _heatmapRendered = true;
+                await RenderHeatmapAsync();
+            }
         }
     }
 
     private bool _chartsNeedRender;
+    private bool _heatmapRendered;
     private DateTime? _heatmapDate;
 
     private async Task SilentRefreshAsync()

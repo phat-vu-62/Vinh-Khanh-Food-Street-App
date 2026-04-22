@@ -1,6 +1,20 @@
 let adminHeatmapInstance = null;
 let adminHeatLayer = null;
 
+const HEAT_OPTIONS = {
+    radius: 25,
+    blur: 15,
+    maxZoom: 17,
+    max: 1.0,
+    gradient: {
+        0.2: 'blue',
+        0.4: 'cyan',
+        0.6: 'lime',
+        0.8: 'yellow',
+        1.0: 'red'
+    }
+};
+
 window.renderHeatmap = (containerId, dataPoints) => {
     const container = document.getElementById(containerId);
     if (!container) return;
@@ -11,34 +25,44 @@ window.renderHeatmap = (containerId, dataPoints) => {
         center = [dataPoints[0][0], dataPoints[0][1]];
     }
 
-    // Detect stale instance: if the container was re-created by Blazor but JS still holds old ref
+    // Detect stale instance (Blazor reconnect replaced DOM)
     if (adminHeatmapInstance !== null) {
-        // Check if the old map's container is still the same DOM element
         try {
             const oldContainer = adminHeatmapInstance.getContainer();
             if (!oldContainer || oldContainer !== container || !document.body.contains(oldContainer)) {
-                // Container was replaced by Blazor reconnect — destroy old instance
                 adminHeatmapInstance.remove();
                 adminHeatmapInstance = null;
                 adminHeatLayer = null;
             }
         } catch (e) {
-            // Any error means map is stale
             adminHeatmapInstance = null;
             adminHeatLayer = null;
         }
     }
 
-    // If map still alive, just update data — no flicker
+    // Map already exists → update heat layer data
     if (adminHeatmapInstance !== null) {
-        if (adminHeatLayer) {
-            adminHeatLayer.setLatLngs(dataPoints || []);
+        if (dataPoints && dataPoints.length > 0) {
+            if (adminHeatLayer) {
+                // Update existing layer + force visual redraw
+                adminHeatLayer.setLatLngs(dataPoints);
+                adminHeatLayer.redraw();
+            } else {
+                // Layer didn't exist yet (first render had no data) → create it now
+                adminHeatLayer = L.heatLayer(dataPoints, HEAT_OPTIONS).addTo(adminHeatmapInstance);
+            }
+        } else {
+            // No data for this date → remove heat layer
+            if (adminHeatLayer) {
+                adminHeatmapInstance.removeLayer(adminHeatLayer);
+                adminHeatLayer = null;
+            }
         }
         adminHeatmapInstance.invalidateSize();
         return;
     }
 
-    // First-time initialization (or after stale cleanup)
+    // First-time initialization
     adminHeatmapInstance = L.map(containerId).setView(center, 16);
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
@@ -47,26 +71,11 @@ window.renderHeatmap = (containerId, dataPoints) => {
         maxZoom: 20
     }).addTo(adminHeatmapInstance);
 
-    // Create Heatmap Layer once
     if (dataPoints && dataPoints.length > 0) {
-        adminHeatLayer = L.heatLayer(dataPoints, {
-            radius: 25,
-            blur: 15,
-            maxZoom: 17,
-            max: 1.0,
-            gradient: {
-                0.2: 'blue', 
-                0.4: 'cyan', 
-                0.6: 'lime', 
-                0.8: 'yellow', 
-                1.0: 'red'
-            }
-        }).addTo(adminHeatmapInstance);
+        adminHeatLayer = L.heatLayer(dataPoints, HEAT_OPTIONS).addTo(adminHeatmapInstance);
     }
 
-    // Force Leaflet to recalculate container size after Blazor render
     setTimeout(() => {
         if (adminHeatmapInstance) adminHeatmapInstance.invalidateSize();
     }, 200);
 };
-
