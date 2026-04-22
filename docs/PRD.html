@@ -7,17 +7,17 @@
     <title>Hệ Thống Du Lịch Ẩm Thực Vĩnh Khánh Q4</title>
     <style>
         :root {
-            --primary: #e65100;
-            --primary-light: #ff833a;
-            --primary-dark: #ac1900;
-            --accent: #00838f;
-            --accent-light: #4fb3bf;
+            --primary: #4f46e5;
+            --primary-light: #6366f1;
+            --primary-dark: #3730a3;
+            --accent: #0891b2;
+            --accent-light: #22d3ee;
             --bg: #fafafa;
             --surface: #ffffff;
             --text: #212121;
             --text-secondary: #616161;
             --border: #e0e0e0;
-            --code-bg: #263238;
+            --code-bg: #1e1b4b;
             --code-text: #eeffff;
             --success: #2e7d32;
             --warning: #f57f17;
@@ -232,7 +232,7 @@
         }
 
         tr:hover td {
-            background: #fff3e0;
+            background: #eef2ff;
         }
 
         /* ===== CODE ===== */
@@ -432,7 +432,7 @@
         /* ===== HIGHLIGHT BOX ===== */
         .highlight {
             border-left: 4px solid var(--primary);
-            background: #fff3e0;
+            background: #eef2ff;
             padding: 1rem 1.2rem;
             border-radius: 0 8px 8px 0;
             margin: 1rem 0;
@@ -484,7 +484,7 @@
 
         .arch-module:hover {
             border-color: var(--primary);
-            box-shadow: 0 2px 12px rgba(230, 81, 0, .15);
+            box-shadow: 0 2px 12px rgba(79, 70, 229, .15);
         }
 
         .arch-module .mod-icon {
@@ -570,12 +570,12 @@
             font-weight: 600;
             cursor: pointer;
             transition: all .25s;
-            box-shadow: 0 2px 6px rgba(0, 131, 143, .2);
+            box-shadow: 0 2px 6px rgba(8, 145, 178, .2);
         }
 
         .diagram-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 14px rgba(0, 131, 143, .35);
+            box-shadow: 0 4px 14px rgba(8, 145, 178, .35);
         }
 
         .diagram-overlay {
@@ -705,10 +705,20 @@
         }
 
         .seq-title {
-            color: #00838f;
-            border-bottom: 2px solid #00838f;
+            color: var(--primary);
+            border-bottom: 2px solid var(--primary);
             padding-bottom: 5px;
             margin-top: 3rem;
+        }
+
+        .seq-note {
+            font-size: .82rem;
+            color: var(--text-secondary);
+            background: #eef2ff;
+            border-left: 3px solid var(--primary);
+            padding: .5rem .8rem;
+            border-radius: 0 6px 6px 0;
+            margin: .5rem 0 1rem;
         }
     </style>
     <!-- Thêm thư viện Mermaid để render biểu đồ UML -->
@@ -726,7 +736,8 @@
             <li><a href="#geofence">GPS Geofence</a></li>
             <li><a href="#audio">Audio/TTS</a></li>
             <li><a href="#usecase">Sơ đồ Use Case</a></li>
-            <li><a href="#sequence">Sơ đồ Sequence</a></li>\n            <li><a href="#activity">Sơ đồ Activity</a></li>
+            <li><a href="#sequence">Sơ đồ Sequence</a></li>
+            <li><a href="#activity">Sơ đồ Activity</a></li>
         </ul>
     </nav>
 
@@ -744,7 +755,7 @@
     <!-- CHAPTER 01: ACTORS -->
     <section id="actors">
         <div class="section-header">
-            <div class="icon" style="background:#fff3e0;color:var(--primary);">👥</div>
+            <div class="icon" style="background:#eef2ff;color:var(--primary);">👥</div>
             <div>
                 <div class="section-num">Chapter 01</div>
                 <h2>Actors & Phân quyền Hệ Thống</h2>
@@ -768,8 +779,8 @@
                 <ul>
                     <li>Truy cập /api/auth/register-merchant đăng ký công khai.</li>
                     <li>Chỉnh sửa thông tin Tọa độ / Thuộc tính Audio của chính mình.</li>
-                    <li>Thống kê Lượt truy cập / Lượt phát Audio tại Quán qua Dashboard riêng.</li>
-                    <li>Trải qua luồng thanh toán Khơi tạo (Backend tự động ghi có Audit Log UserHistories).</li>
+                    <li>Thống kê Lượt truy cập / Doanh thu tại Quán qua Dashboard riêng (<code>GetOwnerDashboardAsync</code>).</li>
+                    <li>Trải qua luồng thanh toán Khởi tạo (Backend tự động ghi có Audit Log UserHistories).</li>
                 </ul>
             </div>
             <div class="card">
@@ -828,10 +839,14 @@
                 </thead>
                 <tbody>
                     <tr>
-                        <td style="padding:10px; border:1px solid #ddd;"><strong>Admin & Owner Dashboard</strong></td>
-                        <td style="padding:10px; border:1px solid #ddd;">Biểu đồ (Chart), Lượt Nghe, Doanh thu</td>
-                        <td style="padding:10px; border:1px solid #ddd;">Concurrency Guard
-                            (<strong>_isRefreshing</strong>) chống lỗi sập EF Core DbContext do Spam nút Refresh.</td>
+                        <td style="padding:10px; border:1px solid #ddd;"><strong>Admin Dashboard</strong></td>
+                        <td style="padding:10px; border:1px solid #ddd;">Biểu đồ Chart.js, Doanh thu, Lượt truy cập, Heatmap</td>
+                        <td style="padding:10px; border:1px solid #ddd;">Auto-refresh 5 giây qua <strong>GetLiveMetricsAsync()</strong> (lightweight 4 queries). Full reload qua <strong>GetAdminDashboardAsync()</strong>.</td>
+                    </tr>
+                    <tr>
+                        <td style="padding:10px; border:1px solid #ddd;"><strong>Owner Dashboard</strong></td>
+                        <td style="padding:10px; border:1px solid #ddd;">Doanh thu quán, Lượt truy cập, Giờ cao điểm</td>
+                        <td style="padding:10px; border:1px solid #ddd;">Auto-refresh 5 giây qua <strong>SilentRefreshAsync()</strong>. Doanh thu tính đúng action <code>payment_listen</code>, <code>register_merchant</code>, <code>payment_create_poi</code>.</td>
                     </tr>
                     <tr>
                         <td style="padding:10px; border:1px solid #ddd;"><strong>POI Management / Review</strong></td>
@@ -862,17 +877,20 @@
         <p>Việc tải GPS không chỉ là xác định vị trí, mà là thuật toán chống Spam lặp âm thanh vòng lặp kinh điển trong
             ứng dụng phố đi bộ hẹp m ngang.</p>
         <div class="highlight info">
-            <strong>Block Spam 15m (Minimum Spacing Guard)</strong>: Thay vì dùng mốc đồng hồ (Cooldown Timer 2 phút) vô
-            nghĩa dễ làm khách đi xe đạp rớt trải nghiệm, dự án sử dụng vòng chặn khoảng cách Haversine. Khách phải đi
-            chuyển TỐI THIỂU 15m so với điểm cũ, Trình Geofence mới phá khóa chặn cấp phát Audio. Đảm bảo âm thanh êm ái
+            <strong>Block Spam 15m (MinimumSpacingMeters Guard)</strong>: Thay vì dùng mốc đồng hồ (Cooldown Timer 2 phút) vô
+            nghĩa dễ làm khách đi xe đạp rớt trải nghiệm, dự án sử dụng vòng chặn khoảng cách Haversine. Khách phải di
+            chuyển TỐI THIỂU 15m so với điểm cũ (<code>_lastNarratedPoi</code>), hàm <code>CheckGeofences()</code> mới phá khóa chặn cấp phát Audio. Đảm bảo âm thanh êm ái
             ở Phố Vĩnh Khánh san sát quán nhậu.
+        </div>
+        <div class="highlight">
+            <strong>Boundary-Crossing Detection (_enteredPoiIds HashSet)</strong>: POI chỉ join queue khi user ENTER bán kính (<code>isNowInside &amp;&amp; wasOutside</code>). Kết hợp cờ <code>poi.HasPlayed</code> và cooldown <code>poi.LastTriggered</code> (configurable qua Preferences <code>cooldown_minutes</code>, mặc định 5 phút) để mỗi POI chỉ narrate đúng 1 lần mỗi phiên.
         </div>
     </section>
 
     <!-- CHAPTER 05: AUDIO & TTS -->
     <section id="audio">
         <div class="section-header">
-            <div class="icon" style="background:#fff3e0;color:var(--primary);">🎧</div>
+            <div class="icon" style="background:#eef2ff;color:var(--primary);">🎧</div>
             <div>
                 <div class="section-num">Chapter 05</div>
                 <h2>Hệ Điều Phối Âm Thanh (Hybrid 2-Tier Fallback)</h2>
@@ -881,37 +899,31 @@
         <p>Giải bài toán trải nghiệm thính giác mượt mà 5 Ngôn Ngữ không gián đoạn.</p>
         <div class="card-grid">
             <div class="card">
-                <h3>Tier 1: Audio Gốc Tải Sẵn (File Tín Hiệu)</h3>
-                <p>Nạp MP3 trực tiếp qua Base Native. Đọc cờ <code>AudioUrlMp3</code>. Xử lý chuẩn nhất với giọng thu
-                    phòng thu do chủ gian hàng bồi đắp. Trọng số ưu tiên cao nhất.</p>
+                <h3>Tier 1: TTS Bản Địa (Ưu tiên cao nhất)</h3>
+                <p>Nếu <code>poi.UseTts = true</code>, hàm <code>ProcessSingleNarrationAsync(poi)</code> gọi <code>TextToSpeech.Default.SpeakAsync()</code> với locale tương ứng ngôn ngữ hiện tại. Đọc trực tiếp từ dữ liệu mô tả sinh bởi Gemini AI.</p>
             </div>
             <div class="card">
-                <h3>Tier 2: System Text-To-Speech OS (Dynamic)</h3>
-                <p>Nếu Data trống AudioUrl, bật cờ <code>UseTts = True</code>. App gọi hàm
-                    <code>SpeakWithTtsAsync()</code> mượn gói giọng đọc đa chiều của Android/iOS (Locale Code Native) để
-                    đọc tức thời dữ liệu sinh từ Gemini AI.
-                </p>
+                <h3>Tier 2: Audio File MP3 (Plugin.Maui.Audio)</h3>
+                <p>Nếu <code>UseTts = false</code> và có <code>poi.AudioFile</code>, dùng <code>_audioManager.CreatePlayer()</code> để stream file MP3 từ storage. Giọng thu phòng thu chuyên nghiệp do chủ gian hàng cung cấp.</p>
             </div>
             <div class="card">
                 <h3>Tier 3: English Fallback Rescue</h3>
-                <p>Trường hợp HĐH không cài đặt gói âm bản địa (Ví dụ thiết bị nội địa thiếu Text Engine Tiếng
-                    Nhật/Tiếng Hàn), Catch Exception bắt lỗi -> Tự rơi xuống Engine mặc định tiếng Anh (en-US) đọc đè
-                    tạm thời.</p>
+                <p>Trường hợp HĐH không cài đặt gói âm bản địa (thiếu Text Engine Tiếng Nhật/Hàn), <code>GetLocaleFromCache()</code> trả về <code>null</code> → Catch Exception → Force đọc Tiếng Anh (en-US) đọc đè tạm thời.</p>
             </div>
         </div>
     </section>
 
     <!-- USE CASE -->
-    <div class="section-header">
+    <div class="section-header" style="max-width:1100px;margin:0 auto;padding:3rem 2rem 0;">
         <div class="icon" style="background:#e3f2fd;color:var(--info);">👤</div>
         <div>
             <div class="section-num">UML Diagram 1</div>
             <h2>Sơ Đồ Use Case</h2>
         </div>
     </div>
-    <p>Bóc tách giới hạn các hành vi Actor. 16 nhóm Use Case tương ứng độc lập với mỗi Actor cụ thể.</p>
+    <p style="max-width:1100px;margin:0 auto;padding:0 2rem;">Bóc tách giới hạn các hành vi Actor. 16 nhóm Use Case tương ứng độc lập với mỗi Actor cụ thể.</p>
 
-    <div class="mermaid-container">
+    <div class="mermaid-container" style="max-width:1100px;margin:1rem auto;padding:1.5rem 2rem;">
         <div class="mermaid">
             flowchart LR
             classDef actor fill:#f4f4f4,stroke:#333,stroke-width:2px;
@@ -922,30 +934,32 @@
 
             subgraph UserGroup [Cụm tính năng Người Dùng Cuối / Mobile App]
             direction TB
-            UC01([UC01: Khám phá Bản đồ Ẩm thực])
-            UC02([UC02: Quét Bán kính Tự động Geofencing])
-            UC03([UC03: Nghe Thuyết minh tự động TTS])
-            UC04([UC04: Quét QR Code Deep-Linking])
-            UC05([UC05: Cấu hình Đa ngôn ngữ Mobile])
-            UC06([UC06: Auth: Đăng nhập/Đăng ký EndUser])
+            UC01([UC01: Xem Bản Đồ Du Lịch Ẩm Thực])
+            UC02([UC02: Phát Hiện Điểm Đến Theo Vị Trí])
+            UC03([UC03: Nghe Thuyết Minh Điểm Đến])
+            UC04([UC04: Truy Cập Điểm Đến Qua Mã QR])
+            UC05([UC05: Cài Đặt Ngôn Ngữ Ứng Dụng])
+            UC06([UC06: Xác Thực Người Dùng])
+            UC17([UC17: Xử Lý Vùng Phủ Sóng Chồng Lấn])
+            UC18([UC18: Phát Âm Thanh Đồng Thời Nhiều Thiết Bị])
             end
 
             subgraph OwnerGroup [Cụm tính năng Chủ Quán / CMS Portal]
             direction TB
-            UC07([UC07: Đăng ký Gian hàng & Tạo Điểm đến])
-            UC08([UC08: Thanh toán Phí Khởi tạo Dịch vụ])
-            UC09([UC09: Thống Kê Lượt Quét/Lượt Nghe Cá Nhân])
-            UC10([UC10: Tra cứu Tổng Doanh Thu Lịch sử của Quán])
+            UC07([UC07: Đăng Ký &amp; Quản Lý Gian Hàng])
+            UC08([UC08: Thanh Toán Phí Dịch Vụ])
+            UC09([UC09: Thống Kê Tương Tác Cá Nhân])
+            UC10([UC10: Xem Doanh Thu Lịch Sử])
             end
 
             subgraph AdminGroup [Cụm tính năng Vận hành / Admin Dashboard]
             direction TB
-            UC11([UC11: Giám Sát POI - CRUD Tọa Độ Quán])
-            UC12([UC12: Quản Lý Biên Dịch AI Đa Ngôn Ngữ])
-            UC13([UC13: Quản Lý Khóa/Mở Khóa Account Người Dùng])
-            UC14([UC14: Xét Duyệt Hồ Sơ Gian Hàng Pending])
-            UC15([UC15: Báo Cáo Tài Chính Tổng Đài Toàn Mạng])
-            UC16([UC16: Tổng cục Sinh & Xuất QR Code Tĩnh])
+            UC11([UC11: Quản Lý Điểm Đến (POI)])
+            UC12([UC12: Quản Lý Nội Dung Đa Ngôn Ngữ])
+            UC13([UC13: Quản Lý Tài Khoản Người Dùng])
+            UC14([UC14: Duyệt Đăng Ký Gian Hàng])
+            UC15([UC15: Giám Sát Dashboard &amp; Báo Cáo])
+            UC16([UC16: Tạo &amp; Xuất Mã QR])
             end
 
             User --- UC01
@@ -954,6 +968,8 @@
             User --- UC04
             User --- UC05
             User --- UC06
+            User --- UC17
+            User --- UC18
 
             Owner --- UC07
             Owner --- UC08
@@ -980,116 +996,136 @@
             </div>
         </div>
 
-        <h3 class="seq-title">UC01: Khám phá Bản đồ Ẩm thực (User)</h3>
+        <h3 class="seq-title">UC01: Xem Bản Đồ Du Lịch Ẩm Thực (User)</h3>
         <p>Quy trình tải điểm vị trí tĩnh và cluster bản đồ trên Mobile.</p>
         <div class="mermaid">
             sequenceDiagram
             autonumber
             actor User
-            participant View as HomeView_Map
-            participant VM as HomeViewModel
+            participant View as MapPage.xaml
+            participant VM as MapPageViewModel
+            participant GeoSVC as GeofenceService
             participant API as GET /api/sync/pois
-            participant DbLocal as SQLite (CmsDbContext)
+            participant DbLocal as SQLite Local
 
             User->>View: Mở Tab Bản Đồ Trên Điện Thoại
             View->>VM: trigger InitializeAsync()
-            VM->>DbLocal: Query: _context.Pois.ToList()
-            alt Dữ liệu Nội bộ Cũ
-            VM->>API: Gọi Http Get Sync Đồng bộ Poi Server
-            API-->>VM: Trả về Danh Sách PoiDTO
-            VM->>DbLocal: Lưu cập nhật Update Range SQLite
+            VM->>DbLocal: _context.Pois.ToListAsync()
+            alt Dữ liệu Nội bộ Cũ hoặc Rỗng
+            VM->>API: HttpClient.GetFromJsonAsync("/api/sync/pois")
+            API-->>VM: Trả về List&lt;POI&gt; JSON
+            VM->>DbLocal: Xóa cũ, lưu lại mới (BulkUpdate SQLite)
             end
-            VM-->>View: ObservableCollection[Poi]
-            View->>User: Vẽ chấm Pin Map trên giao diện Microsoft.Maui.Controls.Maps
+            VM->>GeoSVC: InitializeAsync(pois)
+            GeoSVC->>GeoSVC: ApplyClusteringFilter(pois)
+            VM-->>View: ObservableCollection[Poi] (NotifyPropertyChanged)
+            View->>User: Vẽ chấm Pin Map trên Microsoft.Maui.Controls.Maps
         </div>
 
-        <h3 class="seq-title">UC02: Quét Bán kính Tự động Geofencing (User)</h3>
-        <p>Quy trình thuật toán tránh lọt sóng GPS và chặn rác âm thanh ở khoảng cách 15 mét.</p>
+        <h3 class="seq-title">UC02: Phát Hiện Điểm Đến Theo Vị Trí (User)</h3>
+        <p>Thuật toán boundary-crossing + spacing guard 15m chống spam audio.</p>
+        <div class="seq-note">📌 Hàm chính: <code>CheckGeofences(Location)</code> — <code>CalculateDistanceInMeters()</code> — <code>TrackEventAsync(poiId, "Route_Entry")</code></div>
         <div class="mermaid">
             sequenceDiagram
             autonumber
             actor User
-            participant LocSVC as LocationService
+            participant LocSVC as LocationService (GPS Tick)
             participant GeoSVC as GeofenceService
-            participant API as CMS Backend Tracking
+            participant NarSVC as NarrationService
+            participant API as POST /api/history
 
             User->>LocSVC: Bắt đầu đi bộ ở Phố Ẩm Thực
-            loop Mỗi Tracking Tick
-            LocSVC->>GeoSVC: Hàm CheckGeofences(Location)
-            GeoSVC->>GeoSVC: CalculateDistanceInMeters() Tới POIs
-
-            alt Khoảng cách hợp lệ và Nằm ngoài block khoảng cách 15m
-                GeoSVC->>API: Ghi nhật ký Tracking_Route_Entry()
-                API-->>GeoSVC: HTTP 200 (Record)
-                GeoSVC->>GeoSVC: Set Cờ True Trigger Qua UC03 Phát Nhạc
-            else Đứng Tĩnh Chưa đi qua khoảng cách Spam
-                GeoSVC->>GeoSVC: Return / Không kích hoạt
+            loop Mỗi GPS Tracking Tick
+            LocSVC->>GeoSVC: CheckGeofences(currentLocation)
+            GeoSVC->>GeoSVC: CalculateDistanceInMeters(user, _lastNarratedPoi)
+            alt Chưa di chuyển đủ 15m (MinimumSpacingMeters)
+                GeoSVC-->>LocSVC: return null (spacing guard blocked)
+            else Đã di chuyển đủ khoảng cách
+                GeoSVC->>GeoSVC: Sort POIs nearest-first, update _enteredPoiIds
+                alt POI nằm trong bán kính & HasPlayed=false & cooldown hết
+                    GeoSVC->>API: TrackEventAsync(poi.Id, "Route_Entry")
+                    API-->>GeoSVC: HTTP 200 (Ghi nhật ký)
+                    GeoSVC->>GeoSVC: poi.HasPlayed=true, _lastNarratedPoi=poi
+                    GeoSVC->>NarSVC: PlayNarrationAsync(best.poi)
+                else Tất cả POIs đã played hoặc ngoài bán kính
+                    GeoSVC-->>LocSVC: return null
+                end
             end
-        end
+            end
         </div>
 
-        <h3 class="seq-title">UC03: Nghe Thuyết minh tự động TTS (User)</h3>
+        <h3 class="seq-title">UC03: Nghe Thuyết Minh Điểm Đến (User)</h3>
         <p>Quy trình lấy Audio, Fallback thư viện đa giọng nói.</p>
+        <div class="seq-note">📌 Hàm chính: <code>PlayNarrationAsync(poi)</code> → <code>ProcessSingleNarrationAsync(poi)</code> → <code>TextToSpeech.Default.SpeakAsync()</code></div>
         <div class="mermaid">
             sequenceDiagram
             autonumber
             participant GeoSVC as GeofenceService
             participant NarSVC as NarrationService
-            participant AudioAPI as Plugin.Maui.Audio
-            participant TTSAPI as TextToSpeech API
-            participant CMS as Minimal API /listen/pay
+            participant AudioMgr as Plugin.Maui.Audio (IAudioManager)
+            participant TTSAPI as TextToSpeech.Default
+            participant CMS as POST /api/history
 
-            GeoSVC->>NarSVC: Cấp Lệnh PlayNarrationAsync(poi)
-            NarSVC->>NarSVC: Thread Khởi tạo: ProcessSingleNarrationAsync(poi)
+            GeoSVC->>NarSVC: PlayNarrationAsync(poi)
+            NarSVC->>NarSVC: Enqueue(poi) → ProcessQueueAsync()
+            NarSVC->>NarSVC: ProcessSingleNarrationAsync(poi)
+            NarSVC->>NarSVC: StopNarrationAsync() dừng audio đang chạy
 
-            alt Có MP3 tải sẵn
-            NarSVC->>AudioAPI: Giao diện IAudioPlayer.Play()
-            else UseTts = True
-            NarSVC->>TTSAPI: Đọc văn bản hàm SpeakWithTtsAsync(ttsText, locale)
-            else Thiếu Engine Tiếng Bản Địa
-            NarSVC->>TTSAPI: Đọc Text Fallback Tiếng Anh Mặc Định (en-US)
+            alt poi.UseTts = true
+                NarSVC->>NarSVC: GetLocaleFromCache(_currentLanguage)
+                alt Locale tìm thấy
+                    NarSVC->>TTSAPI: SpeakAsync(ttsText, SpeechOptions{Locale})
+                else Thiếu Engine Tiếng Bản Địa
+                    NarSVC->>TTSAPI: SpeakAsync(textEn, en-US) — English fallback
+                end
+            else poi.UseTts = false & có AudioFile
+                NarSVC->>AudioMgr: _audioManager.CreatePlayer(stream)
+                AudioMgr->>AudioMgr: IAudioPlayer.Play()
             end
 
-            NarSVC->>CMS: Gọi EndPoint: POST /api/listen/pay Trừ Phí Listen
+            NarSVC->>CMS: TrackEventAsync(poi.Id, "audio_played", durationSeconds)
         </div>
 
-        <h3 class="seq-title">UC04: Quét QR Code Deep-Linking (User)</h3>
+        <h3 class="seq-title">UC04: Truy Cập Điểm Đến Qua Mã QR (User)</h3>
         <p>Sử dụng AppLinks MAUI để bắt scheme "foodstreet://".</p>
         <div class="mermaid">
             sequenceDiagram
             autonumber
             actor User
             participant Cam as Camera / Browser
-            participant App as App.xaml.cs (OnAppLinkReceived)
+            participant App as App.xaml.cs (OnAppLinkRequestReceived)
             participant GeoSVC as GeofenceService
             participant NarSVC as NarrationService
 
             User->>Cam: Cầm máy quét mã dán trên bàn
             Cam->>App: Mở uri foodstreet://poi?id=ID_123
-            App->>App: Extract parse ra id (ID_123)
-            App->>GeoSVC: Khởi chạy bypass TrackingGPS Geofence
-            GeoSVC->>NarSVC: Đẩy thẳng Lệnh PlayNarrationAsync(ID_123)
-            NarSVC->>User: Phát Audio Ngay Lập Tức
+            App->>App: Extract parse ra poiId (ID_123)
+            App->>GeoSVC: Bypass Geofence → trực tiếp resolve POI
+            GeoSVC->>NarSVC: PlayNarrationAsync(poi, isManual=true)
+            NarSVC->>NarSVC: StopNarrationAsync() + ProcessSingleNarrationAsync(poi)
+            NarSVC->>User: Phát Audio Ngay Lập Tức (không cần GPS)
         </div>
 
-        <h3 class="seq-title">UC05: Cấu hình Đa ngôn ngữ (User)</h3>
+        <h3 class="seq-title">UC05: Cài Đặt Ngôn Ngữ Ứng Dụng (User)</h3>
         <p>Xử lý đồng bộ UI tránh Crash do rác Thread.</p>
         <div class="mermaid">
             sequenceDiagram
             autonumber
             actor User
-            participant SetView as SettingsView
+            participant SetView as SettingsPage.xaml
             participant LocMgr as LocalizationResourceManager
+            participant NarSVC as NarrationService
             participant UI as Maui UI Thread
 
             User->>SetView: Click thay đổi Ngôn Ngữ
-            SetView->>LocMgr: Gọi Translate() thay đổi CurrentCulture bằng System.Globalization
-            LocMgr->>LocMgr: Cập nhật Property Tracked (Thread Safe)
+            SetView->>LocMgr: SetLanguage(languageCode) — System.Globalization.CultureInfo
+            LocMgr->>LocMgr: Cập nhật CurrentCulture (Thread Safe)
             LocMgr->>UI: Kích hoạt PropertyChanged Event
-            UI->>User: XAML Text tự động thay đổi
+            SetView->>NarSVC: SetLanguage(languageCode) — lưu Preferences
+            UI->>User: XAML Text tự động thay đổi (Binding cập nhật)
         </div>
 
-        <h3 class="seq-title">UC06: Đăng nhập Của Người Dùng App (User)</h3>
+        <h3 class="seq-title">UC06: Xác Thực Người Dùng (User)</h3>
         <p>Luồng bảo mật đăng nhập cho App bằng Api-Login.</p>
         <div class="mermaid">
             sequenceDiagram
@@ -1097,181 +1133,286 @@
             actor User
             participant View as Login.xaml
             participant API as POST /api/auth/api-login
-            participant JWT as AuthStore
+            participant JWT as SecureStorage (AuthStore)
 
             User->>View: Nhập Username & Password EndUser
-            View->>API: HTTP Client Post
-            API->>API: Giải mã BCrypt.Verify Hash Database
-            API-->>View: Trả về { Token, RefreshToken, Role = 'EndUser' } Dạng JSON String
-            View->>JWT: Lưu ở không gian an toàn bằng SecureStorage.SetAsync
-            View->>User: Đăng Nhập Hoàn Tất -> Đi dạo phố
+            View->>API: HttpClient.PostAsJsonAsync("/api/auth/api-login")
+            API->>API: BCrypt.Verify(password, hash) + kiểm tra IsActive
+            API-->>View: { Token, RefreshToken, Role = 'EndUser' } JSON
+            View->>JWT: SecureStorage.SetAsync("jwt_token", token)
+            View->>User: Đăng Nhập Hoàn Tất → Redirect Map Tab
         </div>
 
-        <h3 class="seq-title">UC07: Đăng ký Gian hàng & Tạo Điểm đến (Owner)</h3>
+        <h3 class="seq-title">UC07: Đăng Ký & Quản Lý Gian Hàng (Owner)</h3>
         <p>Cơ chế CMS đẩy POI ẩn (Approval Process).</p>
         <div class="mermaid">
             sequenceDiagram
             autonumber
             actor Owner
-            participant UI as Page MerchantRegistration Web
-            participant API as Minimal /api/auth/register-merchant
-            participant DB as Postgres EF Core
+            participant UI as MerchantRegistration.razor
+            participant API as POST /api/auth/register-merchant
+            participant DB as PostgreSQL (EF Core)
 
-            Owner->>UI: Điền Tên Quán, Tọa Độ Geo (HandleRegister)
-            UI->>API: Post Params Username và PII Data
-            API->>API: Validate Check Duplicate SDT
-            API->>DB: Add User (Role="Owner") + Add POI (IsApproved=False)
-            API->>API: Cấp Khóa Nối poi.OwnerId = newUser.Id
-            API-->>UI: HTTP 200 OK -> Hiển thị Pop-up chờ duyệt
+            Owner->>UI: Điền Tên Quán, Tọa Độ Geo
+            UI->>API: HttpClient.PostAsync (Username, PII Data)
+            API->>API: Validate: Check Duplicate Username/Email
+            API->>DB: db.Users.Add(Role="Owner") + db.Pois.Add(IsApproved=false)
+            API->>DB: poi.OwnerId = newUser.Id (liên kết chủ quán)
+            API->>DB: db.UserHistories.Add(Action="register_merchant", Amount=200000)
+            DB-->>API: SaveChangesAsync() Commit
+            API-->>UI: HTTP 200 OK
+            UI->>Owner: Hiển thị Pop-up chờ Admin duyệt
         </div>
 
-        <h3 class="seq-title">UC08: Thanh toán Phí Khởi tạo Hệ thống (Owner)</h3>
+        <h3 class="seq-title">UC08: Thanh Toán Phí Dịch Vụ (Owner)</h3>
         <p>Ghi nhận hệ thống kế toán Audit UserHistory cho Chủ Quán.</p>
         <div class="mermaid">
             sequenceDiagram
             autonumber
-            participant RegProcess as /api/auth/register-merchant (Phục vụ Chủ)
-            participant DB as Postgres (UserHistories)
-            participant Account as Kế Toán CMS
+            participant RegProcess as /api/auth/register-merchant
+            participant DB as PostgreSQL (UserHistories)
+            participant Dashboard as AdminDashboard (GetAdminDashboardAsync)
 
-            RegProcess->>Account: Kích hoạt tạo Lịch sử Thanh Toán Tiền (Ngầm Định Trong App)
-            Account->>DB: _context.UserHistories.Add(Action = 'register_merchant', Amount = 200,000 Đồng)
+            RegProcess->>DB: UserHistories.Add(Action="register_merchant", Amount=200000)
             DB-->>RegProcess: SaveChangesAsync() Commit
+            Note over Dashboard: Khi Admin reload dashboard
+            Dashboard->>DB: SUM WHERE Action IN ('register_merchant','payment_listen','payment_create_poi')
+            DB-->>Dashboard: TotalRevenue tính đúng
         </div>
 
-        <h3 class="seq-title">UC09: Thống Kê Tương Tác Của Quán (Owner)</h3>
+        <h3 class="seq-title">UC09: Thống Kê Tương Tác Cá Nhân (Owner)</h3>
         <p>Hàm truy xuất dữ liệu cá nhân hóa qua OwnerDashboard.</p>
+        <div class="seq-note">📌 Hàm chính: <code>GetOwnerDashboardAsync(ownerId)</code> — lọc theo <code>myPoiIds</code> — chỉ tính action <code>ScanActions</code></div>
         <div class="mermaid">
             sequenceDiagram
             autonumber
             actor Owner
             participant UI as OwnerDashboard.razor
-            participant API as CmsDbContext Query (DB)
+            participant SVC as AdminDataService
+            participant DB as PostgreSQL (UserHistories)
+            participant Timer as System.Timers.Timer (5s)
 
-            Owner->>UI: Vào trang Chủ Quán Tổng Quan
-            UI->>API: Truy vấn Select(u => u.Action == 'audio_played' && u.OwnerId == SESSION_ID)
-            API-->>UI: List UserHistory Group By Date (Theo Từng Ngày)
-            UI->>Owner: DataGrid & Đồ thị trực quan bằng Radzen
+            Owner->>UI: Vào trang /owner (Tổng Quan Cửa hàng)
+            UI->>UI: OnAfterRenderAsync(firstRender=true)
+            UI->>SVC: GetOwnerDashboardAsync(ownerId)
+            SVC->>DB: SELECT pois WHERE OwnerId=ownerId → myPoiIds
+            SVC->>DB: COUNT WHERE PoiId IN myPoiIds AND Action IN ScanActions
+            SVC->>DB: SUM Amount WHERE Action IN RevenueActions AND PoiId IN myPoiIds
+            SVC->>DB: GROUP BY VisitedAtUtc.Hour → PeakHours (UTC+7)
+            DB-->>SVC: OwnerDashboardData
+            SVC-->>UI: Render KPIs + Charts (Chart.js)
+            Timer->>UI: SilentRefreshAsync() mỗi 5 giây
+            UI->>UI: Cập nhật _lastUpdated = DateTime.UtcNow.AddHours(7)
         </div>
 
-        <h3 class="seq-title">UC10: Lịch sử Doanh Thu Của Quán (Owner)</h3>
-        <p>Biên dịch số tiền thu/trừ của quán thông qua CSDL.</p>
+        <h3 class="seq-title">UC10: Xem Doanh Thu Lịch Sử (Owner)</h3>
+        <p>Biên dịch số tiền thu/trừ của quán thông qua CSDL — chỉ tính đúng các action doanh thu.</p>
+        <div class="seq-note">📌 RevenueActions = { "payment_listen", "register_merchant", "payment_create_poi" }</div>
         <div class="mermaid">
             sequenceDiagram
             autonumber
             actor Owner
-            participant UI as RevenueDashboard Tab
-            participant DB as Postgres CmsDbContext
+            participant UI as OwnerDashboard.razor (Tab Doanh thu)
+            participant SVC as AdminDataService.GetOwnerDashboardAsync
+            participant DB as PostgreSQL (UserHistories)
 
-            Owner->>UI: Chọn Xem Doanh Thu
-            UI->>DB: Truy Xuất: Lấy Tổng Doanh Thu Liên Quan Action Group
-            DB-->>UI: Con Số Tổng Thể
-            UI->>Owner: Chart Báo Số Tiền & Export Nhu Cầu
+            Owner->>UI: Xem card Doanh thu
+            UI->>SVC: GetOwnerDashboardAsync(ownerId)
+            SVC->>DB: SELECT SUM(Amount) WHERE Action IN RevenueActions AND PoiId IN myPoiIds AND Amount > 0
+            DB-->>SVC: TotalRevenue (chỉ tính payment thực, loại bỏ pings và views)
+            SVC->>DB: GROUP BY VisitedAtUtc.Date → DailyScans (14 ngày)
+            DB-->>SVC: List&lt;DailyActivity&gt;
+            SVC-->>UI: OwnerDashboardData.TotalRevenue
+            UI->>Owner: Hiển thị số tiền & Chart.js Line Chart 14 ngày
         </div>
 
-        <h3 class="seq-title">UC11: Giám Sát Tọa Độ Quán - CRUD POI (Admin)</h3>
-        <p>Chức năng Can Thiệp Tọa độ bằng RadzenGrid.</p>
+        <h3 class="seq-title">UC11: Quản Lý Điểm Đến - POI (Admin)</h3>
+        <p>Chức năng Can Thiệp Tọa độ bằng DataGrid.</p>
         <div class="mermaid">
             sequenceDiagram
             autonumber
             actor Admin
-            participant UI as PoiManagement.razor
-            participant DB as Postgres EF Core
+            participant UI as PoiPage.razor
+            participant SVC as AdminDataService
+            participant DB as PostgreSQL (Pois)
 
             Admin->>UI: Chỉnh sửa lại Tọa Độ hoặc Bán Kính POI Lỗi
             UI->>UI: Form Cấp Xác Nhận OnValidSubmit
-            UI->>DB: Gọi DbSet Mặc Định _context.Pois.Update(poi)
-            DB-->>UI: CmsDbContext SaveChangesAsync
-            UI->>Admin: Reflush Grid
+            UI->>SVC: UpdatePoi(poi)
+            SVC->>DB: _context.Pois.Update(poi) + SaveChangesAsync()
+            DB-->>SVC: OK
+            SVC-->>UI: bool true
+            UI->>Admin: Refresh Grid (StateHasChanged)
         </div>
 
-        <h3 class="seq-title">UC12: Quản Lý Biên Dịch AI Google Gemini (Admin)</h3>
+        <h3 class="seq-title">UC12: Quản Lý Nội Dung Đa Ngôn Ngữ (Admin)</h3>
         <p>Tương tác Gemini 2.0 AI lấy mô tả đa ngôn ngữ.</p>
         <div class="mermaid">
             sequenceDiagram
             autonumber
             actor Admin
-            participant UI as Translations Page
-            participant AI as TranslationEngine (Gemini API Flash)
-            participant DB as Bảng Psql.Translations
+            participant UI as TranslationsPage.razor
+            participant AI as GeminiTranslationService
+            participant DB as PostgreSQL (Translations)
 
             Admin->>UI: Gọi Sự Kiện Gen Văn Bản
-            UI->>AI: Gửi Prompt & Nội dung Gốc tiếng Việt tới API Google AI 2.0
-            AI-->>UI: Payload JSON Văn Phong Chuyên Nghiệp (Tiếng Nhật, Hàn, Anh, Trung)
-            UI->>DB: Đổ Data Cột TextJa, TextKo, TextZh, TextEn
-            DB-->>UI: Gỡ lỗi và Lưu Trữ An Toàn CmsDbContext
-            UI->>Admin: Trực Quan Hóa Grid Sửa Chữa (Editor Mode)
+            UI->>AI: TranslatePoiAsync(poiId)
+            AI->>AI: Gửi Prompt & Nội dung Gốc tiếng Việt tới Gemini API 2.0
+            AI-->>UI: JSON {TextEn, TextJa, TextKo, TextZh}
+            UI->>DB: _context.Translations.Add/Update() + SaveChangesAsync()
+            DB-->>UI: Commit OK
+            UI->>Admin: Hiển thị Grid kết quả đa ngôn ngữ
         </div>
 
-        <h3 class="seq-title">UC13: Khóa / Khôi Phục Account Chủ Quán (Admin)</h3>
+        <h3 class="seq-title">UC13: Quản Lý Tài Khoản Người Dùng (Admin)</h3>
         <p>Kiểm soát đăng nhập bằng Checkpoint IsActive=False.</p>
         <div class="mermaid">
             sequenceDiagram
             autonumber
             actor Admin
-            participant UI as UserManagement.razor
-            participant DB as Database Users
-            participant Auth as Session Provider CMS
+            participant UI as UsersPage.razor
+            participant DB as PostgreSQL (Users)
+            participant Auth as /api/auth/cms-login
 
-            Admin->>UI: Kích Hoạt Nút "Khóa Trạng Thái/Vô Hiệu" Dành Cho Kẻ Giả Mạo
-            UI->>DB: Ghi đè Cột Field IsActive = False Của Record UserId
+            Admin->>UI: Kích Hoạt Nút Khóa/Mở Khóa Account
+            UI->>DB: user.IsActive = false + SaveChangesAsync()
             DB-->>UI: Commit Data
-            Auth->>Auth: Lúc Victim Login Mới Hàm BCrypt Check IsActive Sẽ Triệt Tiêu Session Báo Lỗi 403.
+            Note over Auth: Khi Victim đăng nhập lại
+            Auth->>DB: SELECT user WHERE Username = X
+            DB-->>Auth: user.IsActive = false
+            Auth-->>Auth: Trả về 403 Forbidden (Tài khoản bị khóa)
         </div>
 
-        <h3 class="seq-title">UC14: Xét Duyệt Gian Hàng Pending & Đồng Bộ App (Admin)</h3>
+        <h3 class="seq-title">UC14: Duyệt Đăng Ký Gian Hàng (Admin)</h3>
         <p>Sức mạnh Sync-Push để Map Mobile lập tức hiện Quán.</p>
         <div class="mermaid">
             sequenceDiagram
             autonumber
             actor Admin
-            participant UI as AdminDashboard Duyệt Grid
-            participant API as /api/sync/pois
-            participant App as Mobile App BackgroundWorkers
+            participant UI as PoiPage.razor (Admin)
+            participant SVC as AdminDataService.ApprovePoiAsync
+            participant API as GET /api/sync/pois
+            participant App as Mobile App (InitializeAsync)
 
-            Admin->>UI: Tích ✔ Nút "Duyệt". Đặt biến _poi.IsApproved = True. Save.
-            UI->>API: POI Mới tự động được Bộc Lộ ra ở Public Endpoint API Lấy Dữ Liệu
-            App->>API: Cứ Mỗi Khi Start -> App Sẽ GET /sync/pois
-            API-->>App: Fetch được JSON mới Toanh Có Đối Tượng Mới
-            App->>App: Ghi đè vào LocalDb Và Nạp ngay Map Native
+            Admin->>UI: Tích ✔ Nút "Duyệt". poi.IsApproved = true.
+            UI->>SVC: ApprovePoiAsync(poiId)
+            SVC->>SVC: _context.Pois.Update(poi) + SaveChangesAsync()
+            Note over API: POI giờ có IsApproved=true
+            App->>API: GET /api/sync/pois (mỗi lần khởi động App)
+            API-->>App: JSON bao gồm POI mới được duyệt
+            App->>App: InitializeAsync(pois) — nạp lại GeofenceService
+            App->>App: Map Native render Pin mới
         </div>
 
-        <h3 class="seq-title">UC15: Báo Cáo Tài Chính Tổng Đài Toàn Mạng (Admin)</h3>
-        <p>Sơ đồ tổng hành dinh Dashboard đo lường.</p>
+        <h3 class="seq-title">UC15: Giám Sát Dashboard & Báo Cáo (Admin)</h3>
+        <p>Full load khi mở trang + auto-refresh 5 giây qua timer nhẹ. Không render lại charts khi refresh.</p>
+        <div class="seq-note">📌 Full load: <code>LoadAsync()</code> → <code>GetAdminDashboardAsync()</code> → <code>RenderAllChartsAsync()</code> &nbsp;|&nbsp; Refresh: <code>SilentRefreshAsync()</code> → <code>GetLiveMetricsAsync()</code> (4 queries)</div>
         <div class="mermaid">
             sequenceDiagram
             autonumber
             actor Admin
-            participant UI as Admin Dashboard Analytics
-            participant DB as Bảng CmsDbContext.UserHistories
+            participant Razor as AdminDashboard.razor
+            participant SVC as AdminDataService
+            participant DB as PostgreSQL
+            participant JS as chart_helper.js
+            participant Timer as Timer(5000ms)
 
-            Admin->>UI: Tải Trang Chỉ Đạo Mặc Định Chủ Đầu Tư
-            UI->>DB: Lấy SUM() toàn bộ (Tiền Nghe Nhạc + Tiền Phí Chủ Gian Hàng) Tổng Hợp
-            DB-->>UI: Phân Bổ Mảng Theo Dòng Thời Gian DateTime
-            UI->>Admin: Vẽ Đồ thị Cột RadzenChart Doanh số, Lượt truy cập Và POI Online Ping
+            Admin->>Razor: Mở /admin
+            Razor->>Razor: OnAfterRenderAsync → LoadAsync()
+            Razor->>SVC: GetAdminDashboardAsync()
+            SVC->>DB: COUNT Pois, ScanActions(30d), DistinctUsers(30d)
+            SVC->>DB: SUM register_merchant + payment_listen + payment_create_poi
+            SVC->>DB: GROUP BY Date → DailyActivity | TOP 10 POIs | PeakHours(UTC+7)
+            DB-->>SVC: AdminDashboardData
+            SVC-->>Razor: _chartsNeedRender=true
+            Razor->>JS: renderLineChart / renderBarChart / renderDoughnutChart (5 charts)
+            Razor->>Admin: Dashboard đầy đủ ✅ | new Timer(5000).Start()
+
+            loop Mỗi 5 giây — KHÔNG render lại charts
+            Timer->>Razor: SilentRefreshAsync()
+            Razor->>SVC: GetLiveMetricsAsync()
+            SVC->>DB: COUNT app_ping/cms_ping trong 4s gần nhất
+            SVC->>DB: COUNT qr_listen_ping, ScanActions(30d), DistinctUsers(30d)
+            DB-->>SVC: (ActiveUsers, ActiveQr, TotalScans, UniqueUsers)
+            Razor->>Razor: _lastUpdated = DateTime.UtcNow.AddHours(7)
+            Razor->>Admin: StateHasChanged() — KPI cards nhảy live
+            end
         </div>
 
-        <h3 class="seq-title">UC16: Tổng cục Sinh & Xuất Mã QR Code (Admin)</h3>
+        <h3 class="seq-title">UC16: Tạo & Xuất Mã QR (Admin)</h3>
         <p>Module xử lý Logic Ảnh tĩnh QR.</p>
         <div class="mermaid">
             sequenceDiagram
             autonumber
             actor Admin
-            participant UI as Action Menu Management
-            participant JS as QrCode JSInterop Library (Radzen / NPM)
+            participant UI as QrPage.razor
+            participant JS as JS Interop (generateQR)
 
-            Admin->>UI: Bấm Xuất File Code
-            UI->>JS: Invoke Void Async: Hàm 'generateQR' Chuỗi Input ('foodstreet://poi?id=ID_QUA_A')
-            JS-->>UI: Base64 Source Nền Trong Suốt
-            UI->>Admin: Trả Biểu đồ Đẹp Mắt Nhấn Lưu Vào Bộ Nhớ Máy In Bạt Thả Quán
+            Admin->>UI: Bấm Xuất File QR
+            UI->>JS: JSRuntime.InvokeVoidAsync("generateQR", "foodstreet://poi?id=ID_QUA_A")
+            JS-->>UI: Base64 PNG Source (nền trong suốt)
+            UI->>Admin: Hiển thị QR → Nhấn lưu vào máy/in bạt
         </div>
-    </section>
 
+        <h3 class="seq-title">UC17: Xử Lý Vùng Phủ Sóng Chồng Lấn (User)</h3>
+        <p>Kịch bản: User bước vào vùng giao 2 bán kính — POI_A (12m) và POI_B (10m). Hệ thống dùng Nearest-wins để chọn 1 phát trước.</p>
+        <div class="seq-note">📌 Quy tắc: <code>OrderBy(distance)</code> → POI gần nhất thắng → POI thua vẫn trong <code>_enteredPoiIds</code>, chờ spacing guard mở</div>
+        <div class="mermaid">
+            sequenceDiagram
+            autonumber
+            participant GPS as GPS Tick (LocationService)
+            participant GeoSVC as GeofenceService.CheckGeofences
+            participant NarSVC as NarrationService
+            participant API as POST /api/history
+
+            GPS->>GeoSVC: CheckGeofences(currentLocation)
+            Note over GeoSVC: Spacing guard OK (đã đi đủ 15m từ POI cuối)
+            GeoSVC->>GeoSVC: CalculateDistanceInMeters → POI_A=12m, POI_B=10m
+            GeoSVC->>GeoSVC: _enteredPoiIds.Add(POI_A, POI_B)
+            GeoSVC->>API: TrackEventAsync(POI_A.Id, "Route_Entry")
+            GeoSVC->>API: TrackEventAsync(POI_B.Id, "Route_Entry")
+            Note over GeoSVC: OrderBy(dist) → POI_B(10m) WIN, POI_A(12m) chờ
+            GeoSVC->>GeoSVC: POI_B.HasPlayed=true, _lastNarratedPoi=POI_B
+            GeoSVC->>NarSVC: PlayNarrationAsync(POI_B)
+            NarSVC->>NarSVC: Enqueue(POI_B) → ProcessQueueAsync() → ProcessSingleNarrationAsync(POI_B)
+            Note over GeoSVC: POI_A.HasPlayed=false — fire khi user đi xa POI_B >= 15m
+        </div>
+
+        <h3 class="seq-title">UC18: Phát Âm Thanh Đồng Thời Nhiều Thiết Bị (User)</h3>
+        <p>Kịch bản: User_A và User_B cùng vào bán kính POI. Mỗi thiết bị có Queue audio riêng — không xung đột nhau và không sập server.</p>
+        <div class="seq-note">📌 <code>_narrationQueue = new Queue&lt;POI&gt;()</code> — mỗi thiết bị độc lập | Backend: .NET Kestrel Thread Pool xử lý 2 request song song</div>
+        <div class="mermaid">
+            sequenceDiagram
+            autonumber
+            participant DevA as Device A (User_A)
+            participant DevB as Device B (User_B)
+            participant NarA as NarrationService A
+            participant NarB as NarrationService B
+            participant API as POST /api/history
+            participant DB as PostgreSQL
+
+            par Device A
+            DevA->>NarA: CheckGeofences() → PlayNarrationAsync(POI)
+            NarA->>NarA: Enqueue(POI) → ProcessQueueAsync() → ProcessSingleNarrationAsync(POI)
+            NarA->>API: TrackEventAsync(POI.Id, "Route_Entry") [UserId=UUID_A]
+            API->>DB: INSERT (UserId=UUID_A, PoiId=POI.Id)
+            NarA->>NarA: TextToSpeech.Default.SpeakAsync() — Device A
+            and Device B (cùng lúc)
+            DevB->>NarB: CheckGeofences() → PlayNarrationAsync(POI)
+            NarB->>NarB: Enqueue(POI) → ProcessQueueAsync() → ProcessSingleNarrationAsync(POI)
+            NarB->>API: TrackEventAsync(POI.Id, "Route_Entry") [UserId=UUID_B]
+            API->>DB: INSERT (UserId=UUID_B, PoiId=POI.Id)
+            NarB->>NarB: TextToSpeech.Default.SpeakAsync() — Device B
+            end
+            Note over DB: 2 rows, cùng PoiId, khác UserId → Dashboard COUNT đúng 2 users
+        </div>
+
+    <!-- ACTIVITY DIAGRAM -->
 
     <!-- ACTIVITY DIAGRAM -->
     <section id="activity">
         <div class="section-header">
-            <div class="icon" style="background:#fff3e0;color:var(--warning);">⚙️</div>
+            <div class="icon" style="background:#eef2ff;color:var(--warning);">⚙️</div>
             <div>
                 <div class="section-num">Hoạt Động / Activity</div>
                 <h2>Hệ Thống Sơ đồ Activity System</h2>
@@ -1293,78 +1434,81 @@
                 SQLiteLocal_Query: Trích xuất db cục bộ
                 ShowMap: Lập tức Render POI Map
                 FetchWebAPI: Call GET /api/sync/pois ngầm
-                MergeSQLite: Xóa cái cũ, Update cái Web mới
+                MergeSQLite: Xóa cũ, Update mới từ Web
                 }
 
                 SQLiteLocal_Query --> ShowMap
                 ShowMap --> Lắng_Nghe_Tương_Tác
                 SQLiteLocal_Query --> FetchWebAPI
                 FetchWebAPI --> MergeSQLite
-                MergeSQLite --> Lắng_Nghe_Tương_Tác: Trigger NotifyPropertyChanged
+                MergeSQLite --> Lắng_Nghe_Tương_Tác: GeofenceService.InitializeAsync(pois)
                 Lắng_Nghe_Tương_Tác --> [*]
             </div>
         </div>
 
         <h3 class="seq-title" style="margin-top:50px;">Activity 2: Luồng Chặn Spam 15m (Geofence Loop)</h3>
-        <p>Khống chế lượng tin Spam trigger ngầm định vị.</p>
+        <p>Khống chế lượng tin Spam trigger ngầm định vị — CheckGeofences() chạy mỗi GPS tick.</p>
         <div class="mermaid-container">
             <div class="mermaid">
                 stateDiagram-v2
                 [*] --> StartWalking: Khách đang ở Tab Map
 
-                StartWalking --> Geo_Check: Đồng hồ Polling Tick
+                StartWalking --> Geo_Check: GPS Polling Tick
 
                 state Geo_Check {
-                TinhToanToaDo: Haversine_Distance(Current, POI)
-                KiemTra_15m_BanKinh: Distance Tách Bạch POI
-                KiemTra_15m_KhoangCach_Cu: Tính Step Giãn Cách Spam
+                TinhToanToaDo: CalculateDistanceInMeters(user, _lastNarratedPoi)
+                KiemTra_SpacingGuard: distance < MinimumSpacingMeters(15m)?
+                KiemTra_BanKinh: distance <= TriggerRadiusMeters(user setting, default 15m)?
+                KiemTra_HasPlayed: poi.HasPlayed == false?
+                KiemTra_Cooldown: cooldown_minutes hết hạn?
                 }
 
-                    Geo_Check --> Nằm_Ngoài_Vùng : Vượt giới hạn hiển thị
-                    Geo_Check --> Dung_Yen_Nhau : Bốc dỡ chống Spam Ồn
-                    Geo_Check --> Trigger_Hieu_Luc : Tín hiệu Sạch Sẽ
+                Geo_Check --> Blocked_SpacingGuard: Chưa đi đủ 15m từ lần narrate cuối
+                Geo_Check --> Nằm_Ngoài_Vùng: Vượt bán kính → _enteredPoiIds.Remove
+                Geo_Check --> Trigger_Hieu_Luc: Trong bán kính + HasPlayed=false + cooldown OK
 
-                            Nằm_Ngoài_Vùng --> ResetCờ_KhảDụng : Set POI.HasPlayed = False
-                            Dung_Yen_Nhau --> BreakLoop : Block Tín Hiệu Play (Chống Ồn)
-                            Trigger_Hieu_Luc --> GoPlayAudio : Cấp lệnh Audio
+                Blocked_SpacingGuard --> BreakLoop: return null
+                Nằm_Ngoài_Vùng --> ResetCờ: poi.LastDistance cập nhật
+                Trigger_Hieu_Luc --> GoPlayAudio: _enteredPoiIds.Add + TrackEventAsync
 
-                            GoPlayAudio --> [*]
-                            BreakLoop --> [*]
-                            ResetCờ_KhảDụng --> [*]
+                GoPlayAudio --> [*]: PlayNarrationAsync(best.poi)
+                BreakLoop --> [*]
+                ResetCờ --> [*]
             </div>
         </div>
 
         <h3 class="seq-title" style="margin-top:50px;">Activity 3: Luồng Đọc Audio 3 Lớp Ngôn Ngữ</h3>
-        <p>Xử lý quyết định luồng chọn phát Fallback Voice.</p>
+        <p>Xử lý quyết định luồng chọn phát Fallback Voice — ProcessSingleNarrationAsync(poi).</p>
         <div class="mermaid-container">
             <div class="mermaid">
                 stateDiagram-v2
-                [*] --> LenhChoi: ProcessSingleNarrationAsync(poi)
+                [*] --> LenhChoi: PlayNarrationAsync(poi) → ProcessSingleNarrationAsync(poi)
 
-                LenhChoi --> KhopNgonNgu : Locale(Preference.Lang)
+                LenhChoi --> StopCurrentAudio: StopNarrationAsync()
+                StopCurrentAudio --> KhopNgonNgu: _currentLanguage từ Preferences
 
-                KhopNgonNgu --> DocDataThuocTinh : Get Poi Content
+                KhopNgonNgu --> Check_UseTts: poi.UseTts?
 
-                DocDataThuocTinh --> Phat_MP3 : Field AudioUrl != null
-                DocDataThuocTinh --> Phat_TTS_BanDia : AudioUrl == null & UseTts = True
+                Check_UseTts --> Phat_TTS: UseTts = true → GetLocaleFromCache(lang)
+                Check_UseTts --> Phat_MP3: UseTts = false → có AudioFile
 
-                Phat_MP3 --> Plugin_Maui_Audio: Phát Loa Âm Thanh Stream
+                Phat_MP3 --> Plugin_Maui_Audio: _audioManager.CreatePlayer(stream).Play()
 
-                state Phat_TTS_BanDia {
-                TryRead_Local: System TextToSpeech Read
-                ExceptionCatching: Gặp Lỗi Gói OS / Crash Engine
-                FallbackTo_En: Force Speak(en-US)
+                state Phat_TTS {
+                TryRead_Local: TextToSpeech.Default.SpeakAsync(text, locale)
+                ExceptionCatching: Locale null / OS crash
+                FallbackTo_En: SpeakAsync(textEn, en-US)
                 }
 
-                TryRead_Local --> Xong : Thành Công
-                TryRead_Local --> ExceptionCatching : OS Lỗi Tự Nhiên
+                TryRead_Local --> Xong: Thành Công
+                TryRead_Local --> ExceptionCatching: OS Lỗi Tự Nhiên
                 ExceptionCatching --> FallbackTo_En
 
                 Plugin_Maui_Audio --> TrackEvent_DoanhThu
                 Xong --> TrackEvent_DoanhThu
                 FallbackTo_En --> TrackEvent_DoanhThu
 
-                TrackEvent_DoanhThu --> [*] : Lưu HTTP Backend Nghe Xong
+                TrackEvent_DoanhThu --> [*]: TrackEventAsync(poi.Id, "audio_played", durationSec)
             </div>
         </div>
 
@@ -1375,39 +1519,39 @@
                 stateDiagram-v2
                 [*] --> FormRegister : Chủ Quán Submit Đăng Ký
 
-                FormRegister --> AutoPending_Log : Add(UserHistory: 200,000 VND)
+                FormRegister --> AutoPending_Log : Add(UserHistory: register_merchant 200,000 VND)
 
-                AutoPending_Log --> Hold : Gian Hàng POI (Pending)
+                AutoPending_Log --> Hold : Gian Hàng POI (IsApproved=false)
 
                 Hold --> AdminLogin : Đăng nhập Trang CMS
-                AdminLogin --> KiemDuyet : Admin Kích Nút 'Duyệt POI' / IsApproved = True
+                AdminLogin --> KiemDuyet : ApprovePoiAsync(poiId) → IsApproved=true
 
-                KiemDuyet --> Sync_Api : Open Nút Phơi Bày Trên Domain GET /sync/pois
+                KiemDuyet --> Sync_Api : POI xuất hiện trên GET /api/sync/pois
 
                 state Client_Receive {
-                Phone1: ĐT1 Đang Đi Bộ -> Rút API Local Load Quán
+                Phone1: ĐT1 Đang Đi Bộ → InitializeAsync(pois) Rút API Local Load Quán
                 Phone2: ĐT2 Quét QR Bằng Camera Web
                 }
 
                 Sync_Api --> Phone1
                 Sync_Api --> Phone2
 
-                Phone2 --> DeepLinking_Bypass : Gọi Bypass Geofence
-                DeepLinking_Bypass --> NgheNgayLapTuc : Thẳng Vào PlayAudio TTS
+                Phone2 --> DeepLinking_Bypass : OnAppLinkRequestReceived → PlayNarrationAsync(isManual=true)
+                DeepLinking_Bypass --> NgheNgayLapTuc : ProcessSingleNarrationAsync(poi) bypass GPS
 
                 Phone1 --> [*]
                 NgheNgayLapTuc --> [*]
             </div>
         </div>
     </section>
-    \n <footer style="margin-top: 3rem; text-align: center; color: gray; padding-bottom: 3rem;">
+    <footer style="margin-top: 3rem; text-align: center; color: gray; padding-bottom: 3rem;">
         Dự án <strong>Hệ Thống Du Lịch Ẩm Thực Vĩnh Khánh Quận 4</strong><br>
         Báo cáo kỹ thuật phát triển PWA & Native MAUI Architecture Version Tiêu Chuẩn Cao Cấp. (Tích hợp 16 Mô tả Chuẩn
         Xác 100% Cú Pháp Code).
         <br><br>
         <span
-            style="border-radius:20px; background: #e0f2f1; color:#00695c; padding: 5px 12px; font-weight:600; font-size:12px;">Generated
-            & Compiled cho mục đích Final Project Báo Cáo Giáo Viên</span>
+            style="border-radius:20px; background: #eef2ff; color:#3730a3; padding: 5px 12px; font-weight:600; font-size:12px;">Generated
+            &amp; Compiled cho mục đích Final Project Báo Cáo Giáo Viên</span>
     </footer>
 </body>
 
