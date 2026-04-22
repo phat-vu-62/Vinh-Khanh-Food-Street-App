@@ -217,6 +217,18 @@ else
                         <h6 class="fw-bold mb-0"><i class="bi bi-fire text-danger me-2"></i>Bản đồ nhiệt tương tác (Heatmap)</h6>
                         <small class="text-muted">Mật độ tương tác thực tế tại các khu vực</small>
                     </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <input type="date" class="form-control form-control-sm" style="width:160px;"
+                               value="@(_heatmapDate?.ToString("yyyy-MM-dd") ?? "")"
+                               max="@DateTime.Now.ToString("yyyy-MM-dd")"
+                               @onchange="OnHeatmapDateChanged" />
+                        @if (_heatmapDate.HasValue)
+                        {
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="ClearHeatmapDate" title="Xoá bộ lọc">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        }
+                    </div>
                 </div>
                 <div id="admin-heatmap" style="height: 400px; border-radius: 16px; z-index: 1;"></div>
             </div>
@@ -255,7 +267,7 @@ else
         </div>
         <div class="col-lg-6">
             <div class="saas-card p-4 h-100">
-                <h6 class="fw-bold mb-3"><i class="bi bi-exclamation-triangle me-2 text-warning"></i>Cảnh báo hệ thống</h6>
+                <h6 class="fw-bold mb-3"><i class="bi bi-bell me-2 text-primary"></i>Thông báo truy cập</h6>
                 @if (!_data.ZeroScanPois.Any() && _data.PendingApprovals == 0)
                 {
                     <div class="text-center py-4">
@@ -322,6 +334,7 @@ else
     }
 
     private bool _chartsNeedRender;
+    private DateTime? _heatmapDate;
 
     private async Task SilentRefreshAsync()
     {
@@ -435,18 +448,16 @@ else
     {
         try
         {
-            var pois = DataService.GetPois();
+            var data = await DataService.GetHeatmapDataAsync(_heatmapDate);
             var heatData = new List<double[]>();
 
-            // Use Top10Pois from dashboard data instead of separate query
-            foreach (var topPoi in _data.Top10Pois)
+            if (data.Any())
             {
-                var poi = pois.FirstOrDefault(p => p.Id == topPoi.PoiId);
-                if (poi != null && poi.Latitude != 0 && poi.Longitude != 0)
+                var maxCount = data.Max(x => x.ScanCount);
+                foreach (var item in data)
                 {
-                    var maxCount = _data.Top10Pois.Max(x => x.ScanCount);
-                    double intensity = maxCount > 0 ? (double)topPoi.ScanCount / maxCount : 0.5;
-                    heatData.Add(new double[] { poi.Latitude, poi.Longitude, Math.Max(0.2, intensity) });
+                    double intensity = maxCount > 0 ? (double)item.ScanCount / maxCount : 0.5;
+                    heatData.Add(new double[] { item.Lat, item.Lng, Math.Max(0.2, intensity) });
                 }
             }
 
@@ -456,5 +467,24 @@ else
         {
             Console.WriteLine($"Heatmap Render Error: {ex.Message}");
         }
+    }
+
+    private async Task OnHeatmapDateChanged(ChangeEventArgs e)
+    {
+        if (DateTime.TryParse(e.Value?.ToString(), out var selected))
+        {
+            _heatmapDate = selected;
+        }
+        else
+        {
+            _heatmapDate = null;
+        }
+        await RenderHeatmapAsync();
+    }
+
+    private async Task ClearHeatmapDate()
+    {
+        _heatmapDate = null;
+        await RenderHeatmapAsync();
     }
 }

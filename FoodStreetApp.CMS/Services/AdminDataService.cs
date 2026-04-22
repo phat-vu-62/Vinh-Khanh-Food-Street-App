@@ -508,6 +508,54 @@ public class AdminDataService : IAdminDataService
     private static readonly string[] RevenueActions = { "payment_listen", "register_merchant", "payment_create_poi" };
 
     /// <summary>
+    /// Heatmap data optionally filtered by a specific date. Returns POI coordinates + scan counts.
+    /// </summary>
+    public async Task<List<(int PoiId, string PoiName, double Lat, double Lng, int ScanCount)>> GetHeatmapDataAsync(DateTime? date)
+    {
+        using var scope = _scopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+        var query = db.UserHistories.AsNoTracking()
+            .Where(h => ScanActions.Contains(h.Action));
+
+        if (date.HasValue)
+        {
+            // Convert Vietnam date to UTC range
+            var vnDate = date.Value.Date;
+            var utcStart = vnDate.AddHours(-7); // 00:00 VN = 17:00 UTC (day before)
+            var utcEnd = utcStart.AddDays(1);
+            query = query.Where(h => h.VisitedAtUtc >= utcStart && h.VisitedAtUtc < utcEnd);
+        }
+        else
+        {
+            // Default: last 30 days
+            var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+            query = query.Where(h => h.VisitedAtUtc >= thirtyDaysAgo);
+        }
+
+        var poiScans = await query
+            .GroupBy(h => h.PoiId)
+            .Select(g => new { PoiId = g.Key, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .Take(20)
+            .ToListAsync();
+
+        var pois = await db.Pois.AsNoTracking().ToListAsync();
+        var result = new List<(int PoiId, string PoiName, double Lat, double Lng, int ScanCount)>();
+
+        foreach (var ps in poiScans)
+        {
+            var poi = pois.FirstOrDefault(p => p.Id == ps.PoiId);
+            if (poi != null && poi.Latitude != 0 && poi.Longitude != 0)
+            {
+                result.Add((poi.Id, poi.Name ?? $"POI #{poi.Id}", poi.Latitude, poi.Longitude, ps.Count));
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>
     /// Lightweight query for 5s auto-refresh — only fetches live metrics.
     /// </summary>
     public async Task<(int ActiveUsers, int ActiveQr, int TotalScans, int UniqueUsers)> GetLiveMetricsAsync()

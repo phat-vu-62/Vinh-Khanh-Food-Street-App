@@ -62,6 +62,11 @@ public interface IAdminDataService
     Task<(int ActiveUsers, int ActiveQr, int TotalScans, int UniqueUsers)> GetLiveMetricsAsync();
 
     /// <summary>
+    /// Heatmap data filtered by date: returns list of (PoiId, PoiName, Lat, Lng, ScanCount).
+    /// </summary>
+    Task<List<(int PoiId, string PoiName, double Lat, double Lng, int ScanCount)>> GetHeatmapDataAsync(DateTime? date);
+
+    /// <summary>
     /// Full owner analytics dashboard data filtered to the owner's POIs.
     /// </summary>
     Task<FoodStreetApp.CMS.Models.OwnerDashboardData> GetOwnerDashboardAsync(Guid ownerId);
