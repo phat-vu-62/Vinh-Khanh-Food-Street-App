@@ -23,7 +23,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddEnvironmentVariables();
 
 // Configure Port & Protocol at builder stage
-var port = int.Parse(Environment.GetEnvironmentVariable("PORT") ?? "10000");
+var port = int.Parse(Environment.GetEnvironmentVariable("PORT") ?? "5003");
 builder.WebHost.ConfigureKestrel(options => {
     options.ListenAnyIP(port, listenOptions => {
         listenOptions.Protocols = Microsoft.AspNetCore.Server.Kestrel.Core.HttpProtocols.Http1;
