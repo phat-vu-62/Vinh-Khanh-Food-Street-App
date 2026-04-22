@@ -25,8 +25,16 @@ namespace FoodStreetApp
                 if (bgEnabled)
                 {
 #if ANDROID
-                    var intent = new Android.Content.Intent(Platform.AppContext, typeof(FoodStreetApp.Platforms.Android.Services.LocationBackgroundService));
-                    Platform.AppContext.StartForegroundService(intent);
+                    try
+                    {
+                        var intent = new Android.Content.Intent(Platform.AppContext, typeof(FoodStreetApp.Platforms.Android.Services.LocationBackgroundService));
+                        Platform.AppContext.StartForegroundService(intent);
+                        System.Diagnostics.Debug.WriteLine("[APP] Background service started from OnStart");
+                    }
+                    catch (Exception bgEx)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"[APP] Failed to start BG service: {bgEx.Message}");
+                    }
 #endif
                 }
             }
@@ -39,19 +47,17 @@ namespace FoodStreetApp
         protected override void OnSleep()
         {
             base.OnSleep();
-            // Only stop heartbeat if background tracking is OFF
-            // When background tracking is ON, the background service handles pings
+            // Always stop UI dispatcher timer — it won't fire reliably in background anyway
+            _heartbeatTimer?.Stop();
+
             var bgTrackingEnabled = Preferences.Get("background_tracking", false);
-            if (!bgTrackingEnabled)
+            if (bgTrackingEnabled)
             {
-                _heartbeatTimer?.Stop();
-                System.Diagnostics.Debug.WriteLine("[APP] Heartbeat stopped (OnSleep, no background tracking)");
+                System.Diagnostics.Debug.WriteLine("[APP] UI heartbeat stopped (OnSleep, BG service handles pings)");
             }
             else
             {
-                // Stop UI timer — background service ping loop handles it
-                _heartbeatTimer?.Stop();
-                System.Diagnostics.Debug.WriteLine("[APP] UI heartbeat stopped (OnSleep, BG service handles pings)");
+                System.Diagnostics.Debug.WriteLine("[APP] Heartbeat stopped (OnSleep, no background tracking)");
             }
         }
 
@@ -67,14 +73,25 @@ namespace FoodStreetApp
 
         private void SendImmediatePing()
         {
-            Task.Run(() =>
+            Task.Run(async () =>
             {
                 try
                 {
-                    var tracker = IPlatformApplication.Current?.Services?.GetService<Services.ITrackingService>();
-                    tracker?.TrackEventAsync(0, "app_ping");
+                    var tracker = GetTrackingService();
+                    if (tracker != null)
+                    {
+                        await tracker.TrackEventAsync(0, "app_ping");
+                        System.Diagnostics.Debug.WriteLine("[APP] Immediate ping sent");
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine("[APP] Immediate ping skipped — tracker is null");
+                    }
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[APP] Immediate ping error: {ex.Message}");
+                }
             });
         }
 
@@ -86,13 +103,15 @@ namespace FoodStreetApp
                 
                 _heartbeatTimer = Application.Current.Dispatcher.CreateTimer();
                 _heartbeatTimer.Interval = TimeSpan.FromSeconds(2);
-                _heartbeatTimer.Tick += (s, e) =>
+                _heartbeatTimer.Tick += async (s, e) =>
                 {
                     try
                     {
-                        // Always send heartbeat — app is anonymous, no login check needed
-                        var tracker = Handler?.MauiContext?.Services.GetService<Services.ITrackingService>();
-                        tracker?.TrackEventAsync(0, "app_ping");
+                        var tracker = GetTrackingService();
+                        if (tracker != null)
+                        {
+                            await tracker.TrackEventAsync(0, "app_ping");
+                        }
                     }
                     catch { /* Services chưa sẵn sàng */ }
                 };
@@ -102,6 +121,30 @@ namespace FoodStreetApp
             {
                 System.Diagnostics.Debug.WriteLine($"[APP] Heartbeat timer error: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Reliable way to get ITrackingService — tries multiple resolution paths
+        /// </summary>
+        private Services.ITrackingService? GetTrackingService()
+        {
+            // Try 1: IPlatformApplication (most reliable, works early in lifecycle)
+            try
+            {
+                var svc = IPlatformApplication.Current?.Services?.GetService<Services.ITrackingService>();
+                if (svc != null) return svc;
+            }
+            catch { }
+
+            // Try 2: Handler.MauiContext (works after window is created)
+            try
+            {
+                var svc = Handler?.MauiContext?.Services.GetService<Services.ITrackingService>();
+                if (svc != null) return svc;
+            }
+            catch { }
+
+            return null;
         }
 
 

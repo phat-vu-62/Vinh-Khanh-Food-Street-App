@@ -16,6 +16,7 @@ namespace FoodStreetApp.Platforms.Android.Services
         private ILocationService? _locationService;
         private CancellationTokenSource? _pingCts;
         private PowerManager.WakeLock? _wakeLock;
+        private Android.Net.Wifi.WifiManager.WifiLock? _wifiLock;
 
         public override IBinder? OnBind(Intent? intent)
         {
@@ -67,6 +68,22 @@ namespace FoodStreetApp.Platforms.Android.Services
                 {
                     _wakeLock = powerManager.NewWakeLock(WakeLockFlags.Partial, "FoodStreetApp::LocationHeartbeat");
                     _wakeLock?.Acquire();
+                }
+
+                // Acquire WiFi lock to prevent Xiaomi/MIUI from throttling network in background
+                try
+                {
+                    var wifiManager = (Android.Net.Wifi.WifiManager?)GetSystemService(WifiService);
+                    if (wifiManager != null)
+                    {
+                        _wifiLock = wifiManager.CreateWifiLock(Android.Net.WifiMode.FullHighPerf, "FoodStreetApp::BgNetwork");
+                        _wifiLock?.Acquire();
+                        System.Diagnostics.Debug.WriteLine(">>> WiFi lock acquired");
+                    }
+                }
+                catch (Exception wifiEx)
+                {
+                    System.Diagnostics.Debug.WriteLine($">>> WiFi lock failed: {wifiEx.Message}");
                 }
 
                 // Start location tracking
@@ -127,7 +144,7 @@ namespace FoodStreetApp.Platforms.Android.Services
                 {
                     ServerCertificateCustomValidationCallback = (msg, cert, chain, err) => true
                 };
-                using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(10) };
+                using var http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
                 while (!token.IsCancellationRequested)
                 {
                     try
@@ -146,7 +163,7 @@ namespace FoodStreetApp.Platforms.Android.Services
                         System.Diagnostics.Debug.WriteLine($"[BG-HEARTBEAT] Ping failed: {ex.Message}");
                     }
 
-                    try { await Task.Delay(2000, token); }
+                    try { await Task.Delay(3000, token); }
                     catch (TaskCanceledException) { break; }
                 }
                 System.Diagnostics.Debug.WriteLine("[BG-HEARTBEAT] Ping loop stopped");
@@ -164,6 +181,12 @@ namespace FoodStreetApp.Platforms.Android.Services
             {
                 _wakeLock.Release();
                 _wakeLock = null;
+            }
+
+            if (_wifiLock?.IsHeld == true)
+            {
+                _wifiLock.Release();
+                _wifiLock = null;
             }
 
             _locationService?.StopTrackingAsync();
