@@ -47,17 +47,19 @@ namespace FoodStreetApp
         protected override void OnSleep()
         {
             base.OnSleep();
-            // Always stop UI dispatcher timer — it won't fire reliably in background anyway
-            _heartbeatTimer?.Stop();
-
             var bgTrackingEnabled = Preferences.Get("background_tracking", false);
-            if (bgTrackingEnabled)
+            if (!bgTrackingEnabled)
             {
-                System.Diagnostics.Debug.WriteLine("[APP] UI heartbeat stopped (OnSleep, BG service handles pings)");
+                // No background tracking — stop heartbeat, user will show offline
+                _heartbeatTimer?.Stop();
+                System.Diagnostics.Debug.WriteLine("[APP] Heartbeat stopped (OnSleep, no background tracking)");
             }
             else
             {
-                System.Diagnostics.Debug.WriteLine("[APP] Heartbeat stopped (OnSleep, no background tracking)");
+                // Background tracking ON — keep UI heartbeat running as backup
+                // MAUI dispatcher may still fire in background on some devices
+                // Background service also sends pings independently
+                System.Diagnostics.Debug.WriteLine("[APP] Heartbeat continues (OnSleep, background tracking ON)");
             }
         }
 
