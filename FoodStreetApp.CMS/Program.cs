@@ -591,10 +591,10 @@ app.MapPost("/api/auth/cms-ping", async (ClaimsPrincipal user, CmsDbContext db) 
     await db.SaveChangesAsync();
     return Results.Ok();
 }).RequireAuthorization();
-// Get list of currently online user IDs (app_ping, cms_ping, qr_listen_ping in last 6 seconds)
+// Get list of currently online user IDs (app_ping, cms_ping, qr_listen_ping in last 15 seconds)
 app.MapGet("/api/auth/online-users", async (CmsDbContext db) =>
 {
-    var threshold = DateTime.UtcNow.AddSeconds(-6);
+    var threshold = DateTime.UtcNow.AddSeconds(-15);
     var onlineUserIds = await db.UserHistories.AsNoTracking()
         .Where(h => (h.Action == "app_ping" || h.Action == "cms_ping" || h.Action == "qr_listen_ping") && h.VisitedAtUtc >= threshold)
         .Select(h => h.UserId)
@@ -606,7 +606,7 @@ app.MapGet("/api/auth/online-users", async (CmsDbContext db) =>
 // Get online QR listeners count (separate from app users)
 app.MapGet("/api/auth/online-qr-count", async (CmsDbContext db) =>
 {
-    var qrThreshold = DateTime.UtcNow.AddSeconds(-4);
+    var qrThreshold = DateTime.UtcNow.AddSeconds(-15);
     var count = await db.UserHistories.AsNoTracking()
         .Where(h => h.Action == "qr_listen_ping" && h.VisitedAtUtc >= qrThreshold)
         .Select(h => h.UserId)
