@@ -512,10 +512,9 @@ public class AdminDataService : IAdminDataService
     /// </summary>
     public async Task<List<(int PoiId, string PoiName, double Lat, double Lng, int ScanCount)>> GetHeatmapDataAsync(DateTime? date)
     {
-        using var scope = _scopeFactory.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await using var db = await _dbFactory.CreateDbContextAsync();
 
-        var query = db.UserHistories.AsNoTracking()
+        IQueryable<UserHistory> query = db.UserHistories.AsNoTracking()
             .Where(h => ScanActions.Contains(h.Action));
 
         if (date.HasValue)
