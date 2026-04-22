@@ -16,7 +16,7 @@ namespace FoodStreetApp.Platforms.Android.Services
         private ILocationService? _locationService;
         private CancellationTokenSource? _pingCts;
         private PowerManager.WakeLock? _wakeLock;
-        private Android.Net.Wifi.WifiManager.WifiLock? _wifiLock;
+        private global::Android.Net.Wifi.WifiManager.WifiLock? _wifiLock;
 
         public override IBinder? OnBind(Intent? intent)
         {
@@ -73,10 +73,10 @@ namespace FoodStreetApp.Platforms.Android.Services
                 // Acquire WiFi lock to prevent Xiaomi/MIUI from throttling network in background
                 try
                 {
-                    var wifiManager = (Android.Net.Wifi.WifiManager?)GetSystemService(WifiService);
+                    var wifiManager = (global::Android.Net.Wifi.WifiManager?)GetSystemService(WifiService);
                     if (wifiManager != null)
                     {
-                        _wifiLock = wifiManager.CreateWifiLock(Android.Net.WifiMode.FullHighPerf, "FoodStreetApp::BgNetwork");
+                        _wifiLock = wifiManager.CreateWifiLock(global::Android.Net.WifiMode.FullHighPerf, "FoodStreetApp::BgNetwork");
                         _wifiLock?.Acquire();
                         System.Diagnostics.Debug.WriteLine(">>> WiFi lock acquired");
                     }
