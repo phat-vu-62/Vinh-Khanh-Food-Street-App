@@ -196,6 +196,15 @@ namespace FoodStreetApp.Platforms.Android.Services
             base.OnDestroy();
         }
 
+        public override void OnTaskRemoved(Intent? rootIntent)
+        {
+            System.Diagnostics.Debug.WriteLine(">>> LocationBackgroundService: OnTaskRemoved (App swiped away)");
+            // Force the service to stop when the user swipes the app away from recent apps.
+            // This ensures the ping stops immediately and the user shows as Offline.
+            StopSelf();
+            base.OnTaskRemoved(rootIntent);
+        }
+
         private void CreateNotificationChannel()
         {
             if (Build.VERSION.SdkInt >= BuildVersionCodes.O)
