@@ -436,8 +436,8 @@ public class AdminDataService : IAdminDataService
             peakHourStr = $"{peakGroup.Hour:D2}:00 - {peakGroup.Hour + 1:D2}:00";
         }
 
-        // 5. Active Users Now (last 15 seconds - accounts for background service latency)
-        var recentThreshold = DateTime.UtcNow.AddSeconds(-15);
+        // 5. Active Users Now (last 4 seconds)
+        var recentThreshold = DateTime.UtcNow.AddSeconds(-4);
         var activeNow = await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= recentThreshold && (h.Action == "app_ping" || h.Action == "cms_ping"))
             .Select(h => h.UserId)
@@ -560,7 +560,7 @@ public class AdminDataService : IAdminDataService
     public async Task<(int ActiveUsers, int ActiveQr, int TotalScans, int UniqueUsers)> GetLiveMetricsAsync()
     {
         await using var db = await _dbFactory.CreateDbContextAsync();
-        var recentThreshold = DateTime.UtcNow.AddSeconds(-15);
+        var recentThreshold = DateTime.UtcNow.AddSeconds(-4);
         var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
 
         var activeUsers = await db.UserHistories.AsNoTracking()
@@ -600,7 +600,7 @@ public class AdminDataService : IAdminDataService
             .Select(h => h.UserId).Distinct().CountAsync();
 
         // Active users now
-        var recentThreshold = now.AddSeconds(-15);
+        var recentThreshold = now.AddSeconds(-4);
         result.ActiveUsersNow = await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= recentThreshold && (h.Action == "app_ping" || h.Action == "cms_ping"))
             .Select(h => h.UserId).Distinct().CountAsync();

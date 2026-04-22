@@ -121,7 +121,10 @@ namespace FoodStreetApp.Platforms.Android.Services
                 // Start background heartbeat ping (runs on background thread, not UI dispatcher)
                 StartBackgroundHeartbeat();
 
-                return StartCommandResult.Sticky;
+                // Return NotSticky so that if the user force-closes (swipes away) the app,
+                // the service dies completely and is NOT automatically restarted by Android.
+                // This makes the user appear Offline when the app is swiped away.
+                return StartCommandResult.NotSticky;
             }
             catch (Exception ex)
             {
