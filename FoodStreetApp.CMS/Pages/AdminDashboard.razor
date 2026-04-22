@@ -324,18 +324,11 @@ else
         {
             _chartsNeedRender = false;
             await RenderAllChartsAsync();
-
-            // Render heatmap once after first data load
-            if (!_heatmapRendered)
-            {
-                _heatmapRendered = true;
-                await RenderHeatmapAsync();
-            }
+            await RenderHeatmapAsync();
         }
     }
 
     private bool _chartsNeedRender;
-    private bool _heatmapRendered;
     private DateTime? _heatmapDate;
 
     private async Task SilentRefreshAsync()
