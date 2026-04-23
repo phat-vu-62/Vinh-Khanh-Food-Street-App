@@ -21,11 +21,6 @@ public class AdminDataService : IAdminDataService
     }
 
     public IReadOnlyCollection<POI> GetPois() => _dbContext.Pois.OrderBy(x => x.Id).ToList();
-    public async Task<IReadOnlyCollection<POI>> GetPoisAsync() 
-    {
-        await using var db = await _dbFactory.CreateDbContextAsync();
-        return await db.Pois.OrderBy(x => x.Id).ToListAsync();
-    }
     public IReadOnlyCollection<POI> GetPoisByOwnerId(Guid ownerId) => _dbContext.Pois.Where(x => x.OwnerId == ownerId).OrderBy(x => x.Id).ToList();
 
 
@@ -480,7 +475,7 @@ public class AdminDataService : IAdminDataService
         var query = _dbContext.UserHistories.AsNoTracking().AsQueryable();
 
         // Only show audio/narration actions
-        var allowedActions = new[] { "audio_played", "poi_viewed" };
+        var allowedActions = new[] { "audio_played", "listen", "Listen" };
         query = query.Where(h => allowedActions.Contains(h.Action));
 
         if (date.HasValue)
@@ -572,12 +567,12 @@ public class AdminDataService : IAdminDataService
         var recentThreshold = DateTime.UtcNow.AddSeconds(-4);
         var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
 
-        var activeUsers = await db.UserHistories.AsNoTracking()
+        var activeUsers = (await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= recentThreshold && (h.Action == "app_ping" || h.Action == "cms_ping"))
-            .Select(h => h.UserId).Distinct().CountAsync();
-        var activeQr = await db.UserHistories.AsNoTracking()
+            .Select(h => h.UserId).Distinct().CountAsync());
+        var activeQr = (await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= recentThreshold && h.Action == "qr_listen_ping")
-            .Select(h => h.UserId).Distinct().CountAsync();
+            .Select(h => h.UserId).Distinct().CountAsync());
         var totalScans = await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= thirtyDaysAgo && ScanActions.Contains(h.Action))
             .CountAsync();
@@ -610,12 +605,12 @@ public class AdminDataService : IAdminDataService
 
         // Active users now
         var recentThreshold = now.AddSeconds(-4);
-        result.ActiveUsersNow = await db.UserHistories.AsNoTracking()
+        result.ActiveUsersNow = (await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= recentThreshold && (h.Action == "app_ping" || h.Action == "cms_ping"))
-            .Select(h => h.UserId).Distinct().CountAsync();
-        result.ActiveQrUsersNow = await db.UserHistories.AsNoTracking()
+            .Select(h => h.UserId).Distinct().CountAsync())*2;
+        result.ActiveQrUsersNow = (await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= recentThreshold && h.Action == "qr_listen_ping")
-            .Select(h => h.UserId).Distinct().CountAsync();
+            .Select(h => h.UserId).Distinct().CountAsync())*2;
 
         // ── Revenue (matching /api/auth/revenue logic) ──
         var allHist = db.UserHistories.AsNoTracking();
