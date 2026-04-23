@@ -21,6 +21,11 @@ public class AdminDataService : IAdminDataService
     }
 
     public IReadOnlyCollection<POI> GetPois() => _dbContext.Pois.OrderBy(x => x.Id).ToList();
+    public async Task<IReadOnlyCollection<POI>> GetPoisAsync() 
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        return await db.Pois.OrderBy(x => x.Id).ToListAsync();
+    }
     public IReadOnlyCollection<POI> GetPoisByOwnerId(Guid ownerId) => _dbContext.Pois.Where(x => x.OwnerId == ownerId).OrderBy(x => x.Id).ToList();
 
 
@@ -475,7 +480,7 @@ public class AdminDataService : IAdminDataService
         var query = _dbContext.UserHistories.AsNoTracking().AsQueryable();
 
         // Only show audio/narration actions
-        var allowedActions = new[] { "audio_played", "listen", "Listen" };
+        var allowedActions = new[] { "audio_played", "poi_viewed" };
         query = query.Where(h => allowedActions.Contains(h.Action));
 
         if (date.HasValue)

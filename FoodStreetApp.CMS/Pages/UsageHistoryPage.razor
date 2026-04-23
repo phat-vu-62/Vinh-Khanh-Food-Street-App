@@ -35,7 +35,7 @@
             <select class="form-select form-select-sm border-subtle" style="width: 200px;" @bind="_selectedAction" @bind:after="OnFilterChanged">
                 <option value="">Tất cả</option>
                 <option value="audio_played">Nghe âm thanh</option>
-                <option value="listen">Xem thuyết minh</option>
+                <option value="poi_viewed">Xem địa điểm</option>
             </select>
         </div>
         <div class="input-group input-group-sm" style="width: 250px;">
@@ -48,7 +48,7 @@
             <table class="saas-table">
                 <thead>
                     <tr>
-                        <th>User</th>
+                        <th>USER</th>
                         <th>Địa điểm</th>
                         <th>Hành động</th>
                         <th>Thời lượng</th>
@@ -126,7 +126,8 @@
     private async Task LoadMetadataAsync()
     {
         try {
-            _pois = DataService.GetPois().ToList();
+            var pois = await DataService.GetPoisAsync();
+            _pois = pois.ToList();
         } catch { }
     }
 
@@ -167,19 +168,19 @@
         await LoadLogsAsync();
     }
 
-    private string FindPoiName(int id) => _pois.FirstOrDefault(p => p.Id == id)?.Name ?? $"POI #{id}";
+    private string FindPoiName(int id) => id > 0 ? (_pois.FirstOrDefault(p => p.Id == id)?.Name ?? $"POI #{id}") : "-";
 
     private string FormatUserId(string? uid) => uid != null && uid.Length > 8 ? $"Guest-{uid.Substring(0, 4)}" : $"Guest-{uid ?? "Unknown"}";
 
     private string GetActionLabel(string? action) => (action?.ToLower() ?? "") switch {
         "audio_played" => "Nghe âm thanh",
-        "listen" => "Xem thuyết minh",
+        "poi_viewed" => "Xem địa điểm",
         _ => action ?? "Tương tác"
     };
 
     private string GetActionBadge(string? action) => (action?.ToLower() ?? "") switch {
-        var a when a.Contains("audio") || a == "listen" => "badge-active",
-        var a when a.Contains("viewed") => "badge-highlight",
+        "audio_played" => "badge-active",
+        "poi_viewed" => "badge-highlight",
         _ => "badge-inactive"
     };
 }

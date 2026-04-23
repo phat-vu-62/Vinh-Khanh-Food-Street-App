@@ -5,6 +5,7 @@ namespace FoodStreetApp.CMS.Interfaces;
 public interface IAdminDataService
 {
     IReadOnlyCollection<POI> GetPois();
+    Task<IReadOnlyCollection<POI>> GetPoisAsync();
     IReadOnlyCollection<POI> GetPoisByOwnerId(Guid ownerId);
 
     POI? GetPoiById(int id);
