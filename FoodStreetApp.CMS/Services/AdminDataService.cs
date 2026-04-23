@@ -607,10 +607,10 @@ public class AdminDataService : IAdminDataService
         var recentThreshold = now.AddSeconds(-4);
         result.ActiveUsersNow = (await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= recentThreshold && (h.Action == "app_ping" || h.Action == "cms_ping"))
-            .Select(h => h.UserId).Distinct().CountAsync())*2;
+            .Select(h => h.UserId).Distinct().CountAsync());
         result.ActiveQrUsersNow = (await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= recentThreshold && h.Action == "qr_listen_ping")
-            .Select(h => h.UserId).Distinct().CountAsync())*2;
+            .Select(h => h.UserId).Distinct().CountAsync());
 
         // ── Revenue (matching /api/auth/revenue logic) ──
         var allHist = db.UserHistories.AsNoTracking();
