@@ -474,6 +474,10 @@ public class AdminDataService : IAdminDataService
     {
         var query = _dbContext.UserHistories.AsNoTracking().AsQueryable();
 
+        // Only show audio/narration actions
+        var allowedActions = new[] { "audio_played", "listen", "Listen" };
+        query = query.Where(h => allowedActions.Contains(h.Action));
+
         if (date.HasValue)
         {
             var utcStart = date.Value.Date.ToUniversalTime();

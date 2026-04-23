@@ -33,18 +33,14 @@
         <div class="d-flex gap-2 align-items-center">
             <span class="small fw-bold text-muted">Lọc theo:</span>
             <select class="form-select form-select-sm border-subtle" style="width: 200px;" @bind="_selectedAction" @bind:after="OnFilterChanged">
-                <option value="">Tất cả hành động</option>
-                <option value="app_ping">App Ping</option>
-                <option value="register_merchant">Đăng ký chủ quán</option>
-                <option value="refund_create_poi">Tạo địa điểm</option>
-                <option value="poi_viewed">Xem địa điểm</option>
+                <option value="">Tất cả</option>
                 <option value="audio_played">Nghe âm thanh</option>
-                <option value="listen">Nghe thuyết minh</option>
+                <option value="listen">Xem thuyết minh</option>
             </select>
         </div>
         <div class="input-group input-group-sm" style="width: 250px;">
             <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-            <input type="text" class="form-control border-start-0" placeholder="Tìm ID hoặc hành động..." @bind="_searchTerm" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
+            <input type="text" class="form-control border-start-0" placeholder="Tìm User hoặc hành động..." @bind="_searchTerm" @bind:event="oninput" @onkeyup="OnSearchKeyUp" />
         </div>
     </div>
 
@@ -52,7 +48,8 @@
             <table class="saas-table">
                 <thead>
                     <tr>
-                        <th>User ID</th>
+                        <th>User</th>
+                        <th>Địa điểm</th>
                         <th>Hành động</th>
                         <th>Thời lượng</th>
                         <th class="text-end">Thời gian</th>
@@ -64,14 +61,14 @@
                         @for (int i = 0; i < 5; i++)
                         {
                             <tr>
-                                <td colspan="4"><SkeletonLoader Height="24px" /></td>
+                                <td colspan="5"><SkeletonLoader Height="24px" /></td>
                             </tr>
                         }
                     }
                     else if (!_pagedHistories.Any())
                     {
                         <tr>
-                            <td colspan="4" class="text-center py-5 text-muted">Không tìm thấy bản ghi nào phù hợp.</td>
+                            <td colspan="5" class="text-center py-5 text-muted">Không tìm thấy bản ghi nào phù hợp.</td>
                         </tr>
                     }
                     else
@@ -80,6 +77,7 @@
                         {
                             <tr>
                                 <td><code class="text-dark">@FormatUserId(log.UserId)</code></td>
+                                <td class="small">@FindPoiName(log.PoiId)</td>
                                 <td><span class="saas-badge @GetActionBadge(log.Action)">@GetActionLabel(log.Action)</span></td>
                                 <td class="small fw-semibold">@(log.DurationSeconds ?? 0)s</td>
                                 <td class="text-end text-muted small">@log.VisitedAtUtc.AddHours(7).ToString("HH:mm:ss, dd/MM")</td>
@@ -174,8 +172,8 @@
     private string FormatUserId(string? uid) => uid != null && uid.Length > 8 ? $"Guest-{uid.Substring(0, 4)}" : $"Guest-{uid ?? "Unknown"}";
 
     private string GetActionLabel(string? action) => (action?.ToLower() ?? "") switch {
-        var a when a.Contains("audio") || a == "listen" => "Nghe âm thanh",
-        var a when a.Contains("viewed") => "Xem địa điểm",
+        "audio_played" => "Nghe âm thanh",
+        "listen" => "Xem thuyết minh",
         _ => action ?? "Tương tác"
     };
 
