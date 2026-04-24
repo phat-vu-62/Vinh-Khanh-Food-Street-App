@@ -156,7 +156,7 @@ namespace FoodStreetApp.Platforms.Android.Services
                         if (!string.IsNullOrEmpty(userId))
                         {
                             var trackingUrl = "https://vinh-khanh-food-street-app-iyhe.onrender.com/api/history";
-                            var payload = new { UserId = userId, PoiId = 0, Action = "app_ping" };
+                            var payload = new { DeviceId = userId, PoiId = 0, Action = "app_ping" };
                             await http.PostAsJsonAsync(trackingUrl, payload);
                             System.Diagnostics.Debug.WriteLine("[BG-HEARTBEAT] Ping sent for User: " + userId);
                         }

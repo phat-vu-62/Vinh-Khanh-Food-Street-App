@@ -107,7 +107,7 @@ public class AdminDataService : IAdminDataService
         {
             _dbContext.UserHistories.Add(new UserHistory 
             {
-                UserId = ownerId.ToString(),
+                DeviceId = ownerId.ToString(),
                 PoiId = deletedId,
                 Action = "refund_create_poi",
                 Amount = -200000,
@@ -372,7 +372,7 @@ public class AdminDataService : IAdminDataService
                 TotalViews = g.Count(l => l.Action == "poi_viewed" || l.Action == "POI viewed" || l.Action == "qr_scanned" || l.Action == "Route_Entry"),
                 HighEngagement = g.Count(l => (l.Action == "audio_played" || l.Action == "Listen") && l.DurationSeconds > 10),
                 AvgDuration = g.Where(l => l.DurationSeconds.HasValue && l.DurationSeconds > 0).Average(l => (double?)l.DurationSeconds) ?? 0,
-                UniqueUsers = g.Select(l => l.UserId).Distinct().Count()
+                UniqueUsers = g.Select(l => l.DeviceId).Distinct().Count()
             })
             .FirstOrDefaultAsync();
 
@@ -445,14 +445,14 @@ public class AdminDataService : IAdminDataService
         var recentThreshold = DateTime.UtcNow.AddSeconds(-4);
         var activeNow = await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= recentThreshold && (h.Action == "app_ping" || h.Action == "cms_ping"))
-            .Select(h => h.UserId)
+            .Select(h => h.DeviceId)
             .Distinct()
             .CountAsync();
 
         // 5b. Active QR Listeners (last 4 seconds)
         var activeQrNow = await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= recentThreshold && h.Action == "qr_listen_ping")
-            .Select(h => h.UserId)
+            .Select(h => h.DeviceId)
             .Distinct()
             .CountAsync();
 
@@ -497,7 +497,7 @@ public class AdminDataService : IAdminDataService
 
         if (!string.IsNullOrWhiteSpace(search))
         {
-            query = query.Where(h => h.UserId.Contains(search) || h.Action.Contains(search));
+            query = query.Where(h => h.DeviceId.Contains(search) || h.Action.Contains(search));
         }
 
         var total = await query.CountAsync();
@@ -574,16 +574,16 @@ public class AdminDataService : IAdminDataService
 
         var activeUsers = (await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= recentThreshold && (h.Action == "app_ping" || h.Action == "cms_ping"))
-            .Select(h => h.UserId).Distinct().CountAsync());
+            .Select(h => h.DeviceId).Distinct().CountAsync());
         var activeQr = (await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= recentThreshold && h.Action == "qr_listen_ping")
-            .Select(h => h.UserId).Distinct().CountAsync());
+            .Select(h => h.DeviceId).Distinct().CountAsync());
         var totalScans = await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= thirtyDaysAgo && ScanActions.Contains(h.Action))
             .CountAsync();
         var uniqueUsers = await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= thirtyDaysAgo && h.Action != "app_ping" && h.Action != "cms_ping" && h.Action != "qr_listen_ping")
-            .Select(h => h.UserId).Distinct().CountAsync();
+            .Select(h => h.DeviceId).Distinct().CountAsync();
 
         return (activeUsers, activeQr, totalScans, uniqueUsers);
     }
@@ -606,16 +606,16 @@ public class AdminDataService : IAdminDataService
         result.TotalQrScans = await last30.CountAsync(h => ScanActions.Contains(h.Action));
         result.TotalUniqueUsers = await last30
             .Where(h => h.Action != "app_ping" && h.Action != "cms_ping" && h.Action != "qr_listen_ping")
-            .Select(h => h.UserId).Distinct().CountAsync();
+            .Select(h => h.DeviceId).Distinct().CountAsync();
 
         // Active users now
         var recentThreshold = now.AddSeconds(-4);
         result.ActiveUsersNow = (await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= recentThreshold && (h.Action == "app_ping" || h.Action == "cms_ping"))
-            .Select(h => h.UserId).Distinct().CountAsync());
+            .Select(h => h.DeviceId).Distinct().CountAsync());
         result.ActiveQrUsersNow = (await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= recentThreshold && h.Action == "qr_listen_ping")
-            .Select(h => h.UserId).Distinct().CountAsync());
+            .Select(h => h.DeviceId).Distinct().CountAsync());
 
         // ── Revenue (matching /api/auth/revenue logic) ──
         var allHist = db.UserHistories.AsNoTracking();
@@ -708,16 +708,16 @@ public class AdminDataService : IAdminDataService
             .ToListAsync();
 
         var totalInteractions = interactionUsers.Count;
-        var distinctUsers = interactionUsers.Select(h => h.UserId).Distinct().Count();
+        var distinctUsers = interactionUsers.Select(h => h.DeviceId).Distinct().Count();
         result.AvgScansPerUser = distinctUsers > 0 ? (double)totalInteractions / distinctUsers : 0;
 
         // New vs Returning (last 7 days)
         var last7dUsers = await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= sevenDaysAgo && InteractionActions.Contains(h.Action))
-            .Select(h => h.UserId).Distinct().ToListAsync();
+            .Select(h => h.DeviceId).Distinct().ToListAsync();
         var usersBeforeLast7d = await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc < sevenDaysAgo && InteractionActions.Contains(h.Action))
-            .Select(h => h.UserId).Distinct().ToListAsync();
+            .Select(h => h.DeviceId).Distinct().ToListAsync();
         var returningSet = new HashSet<string>(usersBeforeLast7d);
         result.ReturningUsersLast7d = last7dUsers.Count(u => returningSet.Contains(u));
         result.NewUsersLast7d = last7dUsers.Count - result.ReturningUsersLast7d;

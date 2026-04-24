@@ -11,7 +11,7 @@ namespace FoodStreetApp.Services
     public class TrackingService : ITrackingService
     {
         private readonly HttpClient _httpClient;
-        private readonly string _userId;
+        private readonly string _deviceId;
 
         public TrackingService()
         {
@@ -21,11 +21,11 @@ namespace FoodStreetApp.Services
 
             _httpClient = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
             
-            _userId = Preferences.Get("tracking_user_id", string.Empty);
-            if (string.IsNullOrEmpty(_userId))
+            _deviceId = Preferences.Get("tracking_user_id", string.Empty);
+            if (string.IsNullOrEmpty(_deviceId))
             {
-                _userId = Guid.NewGuid().ToString();
-                Preferences.Set("tracking_user_id", _userId);
+                _deviceId = Guid.NewGuid().ToString();
+                Preferences.Set("tracking_user_id", _deviceId);
             }
         }
 
@@ -36,7 +36,7 @@ namespace FoodStreetApp.Services
                 // BACKEND SOURCE OF TRUTH: We no longer send VisitedAtUtc from the client
                 var payload = new
                 {
-                    UserId = _userId,
+                    DeviceId = _deviceId,
                     PoiId = poiId,
                     Action = action,
                     DurationSeconds = durationSeconds,

@@ -76,7 +76,7 @@
                         @foreach (var log in _pagedHistories)
                         {
                             <tr>
-                                <td><code class="text-dark">@FormatUserId(log.UserId)</code></td>
+                                <td><code class="text-dark">@FormatDeviceId(log.DeviceId)</code></td>
                                 <td class="small">@FindPoiName(log.PoiId)</td>
                                 <td><span class="saas-badge @GetActionBadge(log.Action)">@GetActionLabel(log.Action)</span></td>
                                 <td class="small fw-semibold">@(log.DurationSeconds ?? 0)s</td>
@@ -170,7 +170,7 @@
 
     private string FindPoiName(int id) => id > 0 ? (_pois.FirstOrDefault(p => p.Id == id)?.Name ?? $"POI #{id}") : "-";
 
-    private string FormatUserId(string? uid) => uid != null && uid.Length > 8 ? $"Guest-{uid.Substring(0, 4)}" : $"Guest-{uid ?? "Unknown"}";
+    private string FormatDeviceId(string? uid) => uid != null && uid.Length > 8 ? $"Guest-{uid.Substring(0, 4)}" : $"Guest-{uid ?? "Unknown"}";
 
     private string GetActionLabel(string? action) => (action?.ToLower() ?? "") switch {
         "audio_played" => "Nghe âm thanh",

@@ -405,7 +405,7 @@ app.MapPost("/api/auth/register-merchant", async (JsonElement body, CmsDbContext
         // Record payment history
         db.UserHistories.Add(new FoodStreetApp.Shared.Entities.UserHistory
         {
-            UserId = user.Id.ToString(),
+            DeviceId = user.Id.ToString(),
             PoiId = poi.Id,
             Action = "register_merchant",
             VisitedAtUtc = DateTime.UtcNow,
@@ -583,7 +583,7 @@ app.MapPost("/api/auth/cms-ping", async (ClaimsPrincipal user, CmsDbContext db) 
 
     var history = new FoodStreetApp.Shared.Entities.UserHistory
     {
-        UserId = userIdStr,
+        DeviceId = userIdStr,
         Action = "cms_ping",
         VisitedAtUtc = DateTime.UtcNow
     };
@@ -597,7 +597,7 @@ app.MapGet("/api/auth/online-users", async (CmsDbContext db) =>
     var threshold = DateTime.UtcNow.AddSeconds(-6);
     var onlineUserIds = await db.UserHistories.AsNoTracking()
         .Where(h => (h.Action == "app_ping" || h.Action == "cms_ping" || h.Action == "qr_listen_ping") && h.VisitedAtUtc >= threshold)
-        .Select(h => h.UserId)
+        .Select(h => h.DeviceId)
         .Distinct()
         .ToListAsync();
     return Results.Ok(onlineUserIds);
@@ -609,7 +609,7 @@ app.MapGet("/api/auth/online-qr-count", async (CmsDbContext db) =>
     var qrThreshold = DateTime.UtcNow.AddSeconds(-4);
     var count = await db.UserHistories.AsNoTracking()
         .Where(h => h.Action == "qr_listen_ping" && h.VisitedAtUtc >= qrThreshold)
-        .Select(h => h.UserId)
+        .Select(h => h.DeviceId)
         .Distinct()
         .CountAsync();
     return Results.Ok(new { count });
@@ -648,7 +648,7 @@ app.MapPost("/api/listen/check-payment", async (JsonElement body, CmsDbContext d
         return Results.BadRequest(new { paid = false });
 
     var paid = await db.UserHistories.AnyAsync(h =>
-        h.UserId == deviceId && h.PoiId == poiId && h.Action == "payment_listen" && h.Amount.HasValue);
+        h.DeviceId == deviceId && h.PoiId == poiId && h.Action == "payment_listen" && h.Amount.HasValue);
 
     return Results.Ok(new { paid });
 });
@@ -667,13 +667,13 @@ app.MapPost("/api/listen/pay", async (JsonElement body, CmsDbContext db) =>
 
         // Check if already paid
         var alreadyPaid = await db.UserHistories.AnyAsync(h =>
-            h.UserId == deviceId && h.PoiId == poiId && h.Action == "payment_listen");
+            h.DeviceId == deviceId && h.PoiId == poiId && h.Action == "payment_listen");
         if (alreadyPaid)
             return Results.Ok(new { success = true, alreadyPaid = true });
 
         db.UserHistories.Add(new FoodStreetApp.Shared.Entities.UserHistory
         {
-            UserId = deviceId!,
+            DeviceId = deviceId!,
             PoiId = poiId,
             Action = "payment_listen",
             VisitedAtUtc = DateTime.UtcNow,
@@ -703,7 +703,7 @@ app.MapPost("/api/owner/pay-create-poi", async (JsonElement body, CmsDbContext d
 
         db.UserHistories.Add(new FoodStreetApp.Shared.Entities.UserHistory
         {
-            UserId = userId!,
+            DeviceId = userId!,
             PoiId = 0, // Will be linked after POI creation
             Action = "payment_create_poi",
             VisitedAtUtc = DateTime.UtcNow,
