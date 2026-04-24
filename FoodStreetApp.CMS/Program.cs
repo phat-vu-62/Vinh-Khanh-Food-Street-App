@@ -147,6 +147,15 @@ _ = Task.Run(async () => {
         await dbContext.Database.ExecuteSqlRawAsync(@"ALTER TABLE ""UserHistories"" ADD COLUMN IF NOT EXISTS ""QRCode"" text");
         await dbContext.Database.ExecuteSqlRawAsync(@"ALTER TABLE ""UserHistories"" ADD COLUMN IF NOT EXISTS ""Amount"" numeric");
 
+        // Rename UserId → DeviceId (safe: only runs if old column still exists)
+        await dbContext.Database.ExecuteSqlRawAsync(@"
+            DO $$ BEGIN
+                IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='UserHistories' AND column_name='UserId') THEN
+                    ALTER TABLE ""UserHistories"" RENAME COLUMN ""UserId"" TO ""DeviceId"";
+                END IF;
+            END $$;
+        ");
+
         // User profile columns
         await dbContext.Database.ExecuteSqlRawAsync(@"ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""FullName"" text");
         await dbContext.Database.ExecuteSqlRawAsync(@"ALTER TABLE ""Users"" ADD COLUMN IF NOT EXISTS ""PhoneNumber"" text");
