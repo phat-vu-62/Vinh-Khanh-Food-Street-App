@@ -509,6 +509,24 @@ public class AdminDataService : IAdminDataService
         return (items, total);
     }
 
+    public async Task<(int AudioCount, int ViewCount)> GetPoiActionStatsAsync(int poiId, DateTime? date = null)
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        var query = db.UserHistories.AsNoTracking().Where(h => h.PoiId == poiId);
+
+        if (date.HasValue)
+        {
+            var utcStart = date.Value.Date.ToUniversalTime();
+            var utcEnd = utcStart.AddDays(1);
+            query = query.Where(h => h.VisitedAtUtc >= utcStart && h.VisitedAtUtc < utcEnd);
+        }
+
+        var audioCount = await query.CountAsync(h => h.Action == "audio_played");
+        var viewCount = await query.CountAsync(h => h.Action == "poi_viewed");
+
+        return (audioCount, viewCount);
+    }
+
     // ================================================================
     // NEW: Full Admin Dashboard
     // ================================================================

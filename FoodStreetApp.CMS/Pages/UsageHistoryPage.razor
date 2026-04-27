@@ -27,15 +27,62 @@
     </div>
 </div>
 
+<!-- POI Stats Cards (only shown when a POI is selected) -->
+@if (_selectedPoiId > 0)
+{
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="saas-card p-3 d-flex align-items-center gap-3" style="border-left: 3px solid #4f46e5;">
+                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; background: rgba(79,70,229,0.1);">
+                    <i class="bi bi-geo-alt-fill" style="color: #4f46e5; font-size: 1.1rem;"></i>
+                </div>
+                <div>
+                    <div class="small text-muted">Địa điểm</div>
+                    <div class="fw-bold">@FindPoiName(_selectedPoiId)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="saas-card p-3 d-flex align-items-center gap-3" style="border-left: 3px solid #f59e0b;">
+                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; background: rgba(245,158,11,0.1);">
+                    <i class="bi bi-headphones" style="color: #f59e0b; font-size: 1.1rem;"></i>
+                </div>
+                <div>
+                    <div class="small text-muted">Nghe âm thanh</div>
+                    <div class="fw-bold fs-5">@_poiAudioCount <span class="small fw-normal text-muted">lượt</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="saas-card p-3 d-flex align-items-center gap-3" style="border-left: 3px solid #10b981;">
+                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px; background: rgba(16,185,129,0.1);">
+                    <i class="bi bi-eye" style="color: #10b981; font-size: 1.1rem;"></i>
+                </div>
+                <div>
+                    <div class="small text-muted">Xem địa điểm</div>
+                    <div class="fw-bold fs-5">@_poiViewCount <span class="small fw-normal text-muted">lượt</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 <!-- Logs Module -->
 <div class="saas-card">
-    <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
-        <div class="d-flex gap-2 align-items-center">
+    <div class="p-3 border-bottom d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div class="d-flex gap-2 align-items-center flex-wrap">
             <span class="small fw-bold text-muted">Lọc theo:</span>
             <select class="form-select form-select-sm border-subtle" style="width: 200px;" @bind="_selectedAction" @bind:after="OnFilterChanged">
                 <option value="">Tất cả</option>
                 <option value="audio_played">Nghe âm thanh</option>
                 <option value="poi_viewed">Xem địa điểm</option>
+            </select>
+            <select class="form-select form-select-sm border-subtle" style="width: 200px;" @bind="_selectedPoiId" @bind:after="OnFilterChanged">
+                <option value="0">Tất cả địa điểm</option>
+                @foreach (var poi in _pois)
+                {
+                    <option value="@poi.Id">@poi.Name</option>
+                }
             </select>
         </div>
         <div class="input-group input-group-sm" style="width: 250px;">
@@ -111,11 +158,16 @@
     // Filtering & Pagination
     private DateTime? _selectedDate;
     private string _selectedAction = "";
+    private int _selectedPoiId = 0;
     private string _searchTerm = string.Empty;
     private int _currentPage = 1;
     private int _pageSize = 15;
     private int _totalLogs = 0;
     private int _totalLogPages => (int)Math.Ceiling((double)_totalLogs / _pageSize);
+
+    // POI stats
+    private int _poiAudioCount = 0;
+    private int _poiViewCount = 0;
 
     protected override async Task OnInitializedAsync()
     {
@@ -135,13 +187,24 @@
     {
         _lastUpdated = DateTime.Now;
         await LoadLogsAsync();
+        if (_selectedPoiId > 0)
+        {
+            await LoadPoiStatsAsync();
+        }
+        else
+        {
+            _poiAudioCount = 0;
+            _poiViewCount = 0;
+        }
     }
 
     private async Task LoadLogsAsync()
     {
         _isLoadingLogs = true;
         try {
-            var result = await DataService.GetUsageHistoriesPagedAsync(_currentPage, _pageSize, _selectedDate, 0, string.IsNullOrEmpty(_selectedAction) ? _searchTerm : _selectedAction);
+            int? poiFilter = _selectedPoiId > 0 ? _selectedPoiId : null;
+            string? searchFilter = string.IsNullOrEmpty(_selectedAction) ? _searchTerm : _selectedAction;
+            var result = await DataService.GetUsageHistoriesPagedAsync(_currentPage, _pageSize, _selectedDate, poiFilter, searchFilter);
             _pagedHistories = result.Items.ToList();
             _totalLogs = result.TotalCount;
         } catch (Exception) {
@@ -149,6 +212,15 @@
         } finally {
             _isLoadingLogs = false;
         }
+    }
+
+    private async Task LoadPoiStatsAsync()
+    {
+        try {
+            var stats = await DataService.GetPoiActionStatsAsync(_selectedPoiId, _selectedDate);
+            _poiAudioCount = stats.AudioCount;
+            _poiViewCount = stats.ViewCount;
+        } catch { }
     }
 
     private async Task OnFilterChanged()

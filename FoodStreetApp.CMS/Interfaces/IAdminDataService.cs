@@ -77,6 +77,11 @@ public interface IAdminDataService
     /// Gets a paged list of usage histories with optional filtering.
     /// </summary>
     Task<(IReadOnlyCollection<UserHistory> Items, int TotalCount)> GetUsageHistoriesPagedAsync(int page, int pageSize, DateTime? date = null, int? poiId = null, string? search = null);
+
+    /// <summary>
+    /// Gets audio_played and poi_viewed counts for a specific POI.
+    /// </summary>
+    Task<(int AudioCount, int ViewCount)> GetPoiActionStatsAsync(int poiId, DateTime? date = null);
 }
 
 
