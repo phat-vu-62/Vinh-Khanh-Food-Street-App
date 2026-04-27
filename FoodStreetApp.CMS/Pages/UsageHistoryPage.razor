@@ -227,6 +227,8 @@
     private bool ShowAppCard => _selectedSource == "" || _selectedSource == "app";
     private bool ShowQrCard => _selectedSource == "" || _selectedSource == "qr";
 
+    private bool _isLoading = false;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadMetadataAsync();
@@ -244,9 +246,15 @@
 
     private async Task LoadAsync()
     {
-        _lastUpdated = DateTime.Now;
-        await LoadLogsAsync();
-        await LoadPoiStatsAsync();
+        if (_isLoading) return;
+        _isLoading = true;
+        try
+        {
+            _lastUpdated = DateTime.Now;
+            await LoadLogsAsync();
+            await LoadPoiStatsAsync();
+        }
+        finally { _isLoading = false; }
     }
 
     private async Task LoadLogsAsync()

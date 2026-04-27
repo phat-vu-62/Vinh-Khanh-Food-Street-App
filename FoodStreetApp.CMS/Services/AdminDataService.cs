@@ -537,6 +537,10 @@ public class AdminDataService : IAdminDataService
         var allowedActions = new[] { "audio_played", "poi_viewed" };
         query = query.Where(h => allowedActions.Contains(h.Action));
 
+        // Hide records from deleted POIs (same as list query)
+        var existingPoiIds = db.Pois.Select(p => p.Id);
+        query = query.Where(h => existingPoiIds.Contains(h.PoiId));
+
         if (poiId > 0)
             query = query.Where(h => h.PoiId == poiId);
 
@@ -643,8 +647,10 @@ public class AdminDataService : IAdminDataService
         var activeQr = (await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= recentThreshold && h.Action == "qr_listen_ping")
             .Select(h => h.DeviceId).Distinct().CountAsync());
+        var liveValidActions = new[] { "audio_played", "poi_viewed" };
+        var liveExistingPoiIds = db.Pois.Select(p => p.Id);
         var totalScans = await db.UserHistories.AsNoTracking()
-            .Where(h => h.VisitedAtUtc >= thirtyDaysAgo && ScanActions.Contains(h.Action))
+            .Where(h => h.VisitedAtUtc >= thirtyDaysAgo && liveValidActions.Contains(h.Action) && liveExistingPoiIds.Contains(h.PoiId))
             .CountAsync();
         var uniqueUsers = await db.UserHistories.AsNoTracking()
             .Where(h => h.VisitedAtUtc >= thirtyDaysAgo && h.Action != "app_ping" && h.Action != "cms_ping" && h.Action != "qr_listen_ping")
@@ -668,7 +674,10 @@ public class AdminDataService : IAdminDataService
 
         var last30 = db.UserHistories.AsNoTracking().Where(h => h.VisitedAtUtc >= thirtyDaysAgo);
 
-        result.TotalQrScans = await last30.CountAsync(h => ScanActions.Contains(h.Action));
+        // Lượt truy cập = only audio_played + poi_viewed from existing POIs
+        var validActions = new[] { "audio_played", "poi_viewed" };
+        var existingPoiIds = db.Pois.Select(p => p.Id);
+        result.TotalQrScans = await last30.CountAsync(h => validActions.Contains(h.Action) && existingPoiIds.Contains(h.PoiId));
         result.TotalUniqueUsers = await last30
             .Where(h => h.Action != "app_ping" && h.Action != "cms_ping" && h.Action != "qr_listen_ping")
             .Select(h => h.DeviceId).Distinct().CountAsync();
