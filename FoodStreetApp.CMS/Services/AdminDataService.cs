@@ -499,11 +499,21 @@ public class AdminDataService : IAdminDataService
             query = query.Where(h => h.PoiId == poiId.Value);
         }
 
-        // Filter by source: app (no QR code) or qr (has QR code)
-        if (source == "app")
-            query = query.Where(h => h.QRCode == null || h.QRCode == "");
-        else if (source == "qr")
-            query = query.Where(h => h.QRCode != null && h.QRCode != "");
+        // Filter by source: check if DeviceId+PoiId has a qr_scanned record
+        if (source == "qr")
+        {
+            var qrPairs = _dbContext.UserHistories.AsNoTracking()
+                .Where(h => h.Action == "qr_scanned")
+                .Select(h => new { h.DeviceId, h.PoiId }).Distinct();
+            query = query.Where(h => qrPairs.Any(q => q.DeviceId == h.DeviceId && q.PoiId == h.PoiId));
+        }
+        else if (source == "app")
+        {
+            var qrPairs = _dbContext.UserHistories.AsNoTracking()
+                .Where(h => h.Action == "qr_scanned")
+                .Select(h => new { h.DeviceId, h.PoiId }).Distinct();
+            query = query.Where(h => !qrPairs.Any(q => q.DeviceId == h.DeviceId && q.PoiId == h.PoiId));
+        }
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -524,7 +534,6 @@ public class AdminDataService : IAdminDataService
         await using var db = await _dbFactory.CreateDbContextAsync();
         var query = db.UserHistories.AsNoTracking().AsQueryable();
 
-        // Only count relevant actions
         var allowedActions = new[] { "audio_played", "poi_viewed" };
         query = query.Where(h => allowedActions.Contains(h.Action));
 
@@ -540,10 +549,29 @@ public class AdminDataService : IAdminDataService
 
         var audioCount = await query.CountAsync(h => h.Action == "audio_played");
         var viewCount = await query.CountAsync(h => h.Action == "poi_viewed");
-        var appCount = await query.CountAsync(h => h.QRCode == null || h.QRCode == "");
-        var qrCount = await query.CountAsync(h => h.QRCode != null && h.QRCode != "");
+
+        // QR = records where same DeviceId+PoiId has a qr_scanned entry
+        var qrPairs = db.UserHistories.AsNoTracking()
+            .Where(h => h.Action == "qr_scanned")
+            .Select(h => new { h.DeviceId, h.PoiId }).Distinct();
+        var qrCount = await query.CountAsync(h => qrPairs.Any(q => q.DeviceId == h.DeviceId && q.PoiId == h.PoiId));
+        var appCount = (audioCount + viewCount) - qrCount;
 
         return (audioCount, viewCount, appCount, qrCount);
+    }
+
+    /// <summary>
+    /// Returns set of (DeviceId, PoiId) pairs that have qr_scanned records, for UI display.
+    /// </summary>
+    public async Task<HashSet<(string DeviceId, int PoiId)>> GetQrDevicePoiPairsAsync()
+    {
+        await using var db = await _dbFactory.CreateDbContextAsync();
+        var pairs = await db.UserHistories.AsNoTracking()
+            .Where(h => h.Action == "qr_scanned")
+            .Select(h => new { h.DeviceId, h.PoiId })
+            .Distinct()
+            .ToListAsync();
+        return pairs.Select(p => (p.DeviceId, p.PoiId)).ToHashSet();
     }
 
     // ================================================================

@@ -118,8 +118,8 @@
                     <option value="@poi.Id">@poi.Name</option>
                 }
             </select>
-            <select class="form-select form-select-sm border-subtle" style="width: 150px;" @bind="_selectedSource" @bind:after="OnFilterChanged">
-                <option value="">Tất cả nguồn</option>
+            <select class="form-select form-select-sm border-subtle" style="width: 160px;" @bind="_selectedSource" @bind:after="OnFilterChanged">
+                <option value="">Tất cả hình thức</option>
                 <option value="app">App</option>
                 <option value="qr">Quét QR</option>
             </select>
@@ -137,7 +137,7 @@
                         <th>USER</th>
                         <th>Địa điểm</th>
                         <th>Hành động</th>
-                        <th>Nguồn</th>
+                        <th>Hình thức</th>
                         <th class="text-end">Thời gian</th>
                     </tr>
                 </thead>
@@ -166,7 +166,7 @@
                                 <td class="small">@FindPoiName(log.PoiId)</td>
                                 <td><span class="saas-badge @GetActionBadge(log.Action)">@GetActionLabel(log.Action)</span></td>
                                 <td>
-                                    @if (!string.IsNullOrEmpty(log.QRCode))
+                                    @if (IsFromQr(log.DeviceId, log.PoiId))
                                     {
                                         <span class="saas-badge" style="background: rgba(236,72,153,0.1); color: #ec4899;"><i class="bi bi-qr-code me-1"></i>QR</span>
                                     }
@@ -201,6 +201,7 @@
     private bool _isLoadingLogs = true;
     private List<UserHistory> _pagedHistories = new();
     private List<POI> _pois = new();
+    private HashSet<(string DeviceId, int PoiId)> _qrPairs = new();
     private DateTime _lastUpdated = DateTime.Now;
     
     // Filtering & Pagination
@@ -237,6 +238,7 @@
         try {
             var pois = await DataService.GetPoisAsync();
             _pois = pois.ToList();
+            _qrPairs = await DataService.GetQrDevicePoiPairsAsync();
         } catch { }
     }
 
@@ -291,6 +293,9 @@
         _currentPage = page;
         await LoadLogsAsync();
     }
+
+    private bool IsFromQr(string? deviceId, int poiId) =>
+        deviceId != null && _qrPairs.Contains((deviceId, poiId));
 
     private string FindPoiName(int id) => id > 0 ? (_pois.FirstOrDefault(p => p.Id == id)?.Name ?? "Đã xóa") : "-";
 

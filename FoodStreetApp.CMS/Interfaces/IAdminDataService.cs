@@ -82,6 +82,11 @@ public interface IAdminDataService
     /// Gets audio_played and poi_viewed counts for a specific POI.
     /// </summary>
     Task<(int AudioCount, int ViewCount, int AppCount, int QrCount)> GetPoiActionStatsAsync(int poiId, DateTime? date = null);
+
+    /// <summary>
+    /// Returns set of (DeviceId, PoiId) pairs that came from QR scans.
+    /// </summary>
+    Task<HashSet<(string DeviceId, int PoiId)>> GetQrDevicePoiPairsAsync();
 }
 
 
