@@ -15,7 +15,7 @@ const HEAT_OPTIONS = {
     }
 };
 
-window.renderHeatmap = (containerId, dataPoints) => {
+window.renderHeatmap = (containerId, dataPoints, poiLabels) => {
     // Always destroy old map completely — simplest way to avoid stale state
     if (adminHeatmapInstance !== null) {
         try { adminHeatmapInstance.remove(); } catch (e) { }
@@ -47,6 +47,21 @@ window.renderHeatmap = (containerId, dataPoints) => {
     // Add heat layer if data exists
     if (dataPoints && dataPoints.length > 0) {
         adminHeatLayer = L.heatLayer(dataPoints, HEAT_OPTIONS).addTo(adminHeatmapInstance);
+    }
+
+    // Add POI name labels as markers
+    if (poiLabels && poiLabels.length > 0) {
+        poiLabels.forEach(poi => {
+            L.marker([poi.lat, poi.lng], {
+                icon: L.divIcon({
+                    className: 'heatmap-poi-label',
+                    html: `<span>${poi.name}</span>`,
+                    iconSize: [0, 0],
+                    iconAnchor: [0, -8]
+                })
+            }).addTo(adminHeatmapInstance)
+              .bindPopup(`<b>${poi.name}</b><br/>Lượt tương tác: ${poi.count}`);
+        });
     }
 
     // Force size recalculation after Blazor render completes

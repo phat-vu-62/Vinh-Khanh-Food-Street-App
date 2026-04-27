@@ -53,16 +53,7 @@ else
                 <div class="progress mt-3" style="height: 4px;"><div class="progress-bar bg-primary" style="width: 100%;"></div></div>
             </div>
         </div>
-        <div class="col-xl col-md-4">
-            <div class="saas-card stats-card border-success h-100">
-                <span class="stats-label">Lượt truy cập (30 ngày)</span>
-                <div class="d-flex align-items-baseline justify-content-between">
-                    <span class="stats-value">@_data.TotalQrScans.ToString("N0")</span>
-                    <i class="bi bi-qr-code text-success"></i>
-                </div>
-                <div class="progress mt-3" style="height: 4px;"><div class="progress-bar bg-success" style="width: 100%;"></div></div>
-            </div>
-        </div>
+
         <div class="col-xl col-md-6">
             <div class="saas-card stats-card border-warning h-100">
                 <span class="stats-label">Tổng doanh thu</span>
@@ -157,41 +148,10 @@ else
        ROW 4: PEAK HOURS + USER BEHAVIOR
     ═══════════════════════════════════════════════════ *@
     <div class="row g-4 mb-4">
-        <div class="col-lg-7">
+        <div class="col-12">
             <div class="saas-card p-4 h-100">
                 <h6 class="fw-bold mb-3"><i class="bi bi-clock me-2 text-danger"></i>Giờ cao điểm (UTC+7)</h6>
                 <div style="height: 240px;"><canvas id="chartPeakHours"></canvas></div>
-            </div>
-        </div>
-        <div class="col-lg-5">
-            <div class="saas-card p-4 h-100">
-                <h6 class="fw-bold mb-3"><i class="bi bi-people me-2" style="color: #8b5cf6;"></i>Hành vi người dùng (7 ngày)</h6>
-                <div class="row g-3 mt-2">
-                    <div class="col-6">
-                        <div class="text-center p-3 rounded-3" style="background: #f0fdf4;">
-                            <div class="fw-bold fs-3 text-success">@_data.NewUsersLast7d</div>
-                            <small class="text-muted">Mới</small>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="text-center p-3 rounded-3" style="background: #eff6ff;">
-                            <div class="fw-bold fs-3 text-primary">@_data.ReturningUsersLast7d</div>
-                            <small class="text-muted">Quay lại</small>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="text-center p-3 rounded-3" style="background: #fefce8;">
-                            <div class="fw-bold fs-3 text-warning">@_data.AvgScansPerUser.ToString("0.1")</div>
-                            <small class="text-muted">TB tương tác/người</small>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="text-center p-3 rounded-3" style="background: #fdf2f8;">
-                            <div class="fw-bold fs-3" style="color: #ec4899;">@_data.PendingApprovals</div>
-                            <small class="text-muted">Chờ duyệt</small>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -363,8 +323,8 @@ else
             {
                 var labels = _data.DailyActivity.Select(d => d.Date.ToString("dd/MM")).ToArray();
                 var datasets = new object[] {
-                    new { label = "Lượt truy cập", data = _data.DailyActivity.Select(d => d.Views).ToArray(), color = "#4f46e5" },
-                    new { label = "Nghe thuyết minh", data = _data.DailyActivity.Select(d => d.Listens).ToArray(), color = "#10b981" }
+                    new { label = "Xem địa điểm", data = _data.DailyActivity.Select(d => d.Views).ToArray(), color = "#4f46e5" },
+                    new { label = "Nghe âm thanh", data = _data.DailyActivity.Select(d => d.Listens).ToArray(), color = "#10b981" }
                 };
                 await JSRuntime.InvokeVoidAsync("chartHelper.renderLineChart", "chartActivity", labels, datasets);
             }
@@ -422,6 +382,7 @@ else
         {
             var data = await DataService.GetHeatmapDataAsync(null);
             var heatData = new List<double[]>();
+            var poiLabels = new List<object>();
 
             if (data.Any())
             {
@@ -430,10 +391,11 @@ else
                 {
                     double intensity = maxCount > 0 ? (double)item.ScanCount / maxCount : 0.5;
                     heatData.Add(new double[] { item.Lat, item.Lng, Math.Max(0.2, intensity) });
+                    poiLabels.Add(new { lat = item.Lat, lng = item.Lng, name = item.PoiName, count = item.ScanCount });
                 }
             }
 
-            await JSRuntime.InvokeVoidAsync("renderHeatmap", "admin-heatmap", heatData);
+            await JSRuntime.InvokeVoidAsync("renderHeatmap", "admin-heatmap", heatData, poiLabels);
         }
         catch (Exception ex)
         {

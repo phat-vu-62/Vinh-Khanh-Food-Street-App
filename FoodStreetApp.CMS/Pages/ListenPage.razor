@@ -1,4 +1,5 @@
 @page "/listen/{PoiId:int}"
+@page "/listen"
 @layout EmptyLayout
 @using FoodStreetApp.CMS.Interfaces
 @using FoodStreetApp.Shared.Entities
@@ -7,6 +8,38 @@
 @inject NavigationManager NavigationManager
 @implements IDisposable
 
+@if (_showList)
+{
+    <div class="list-container">
+        <div class="list-header">
+            <div class="list-header-icon"><i class="bi bi-shop"></i></div>
+            <h1>Phố Ẩm Thực Vĩnh Khánh</h1>
+            <p>Chọn quán để nghe thuyết minh</p>
+        </div>
+        <div class="poi-list">
+            @foreach (var poi in _allPois)
+            {
+                <div class="poi-list-item" @onclick="() => SelectPoi(poi.Id)">
+                    @if (!string.IsNullOrEmpty(poi.ImageUrl))
+                    {
+                        <img src="@FixUrl(poi.ImageUrl)" alt="@poi.Name" class="poi-list-img" />
+                    }
+                    else
+                    {
+                        <div class="poi-list-img-placeholder"><i class="bi bi-shop"></i></div>
+                    }
+                    <div class="poi-list-info">
+                        <h3>@poi.Name</h3>
+                        <p>@(poi.Description ?? "Phố ẩm thực Vĩnh Khánh")</p>
+                    </div>
+                    <i class="bi bi-chevron-right poi-list-arrow"></i>
+                </div>
+            }
+        </div>
+    </div>
+}
+else
+{
 <div class="listen-container">
     @if (_isLoading)
     {
@@ -100,34 +133,47 @@
         @* ===== AUDIO PLAYER (after payment) ===== *@
         <div class="audio-card shadow-lg">
             <div class="gradient-bar"></div>
-            
+
+            @* Back button *@
+            <button class="back-btn" @onclick="GoBackToList"><i class="bi bi-arrow-left"></i></button>
+
+            @* Restaurant Image *@
+            @if (!string.IsNullOrEmpty(_poi?.ImageUrl))
+            {
+                <div class="poi-hero-img">
+                    <img src="@FixUrl(_poi.ImageUrl)" alt="@_poi.Name" />
+                </div>
+            }
+
             <div class="lang-selector">
                 @foreach (var l in new[] { "vi", "en", "zh", "ko", "ja" })
                 {
-                    <button class="lang-btn @(_currentLang == l ? "active" : "")" @onclick='() => ChangeLang(l)'>@l.ToUpper()</button>
+                    <button class="lang-btn @(_currentLang == l ? "active" : "")" @onclick='() => ChangeLang(l)'>@GetLangLabel(l)</button>
                 }
             </div>
 
             <div class="card-content">
-                <div class="icon-circle">
-                    @if (_isBuffering) { <div class="spinner-border text-primary" style="width: 2rem; height: 2rem;"></div> }
-                    else { <i class="bi bi-shop"></i> }
-                </div>
-                
                 <h1 class="restaurant-title">@_currentName</h1>
-                <p class="subtitle @(_hasError ? "text-danger fw-bold" : "")">@_statusMessage</p>
+                <p class="restaurant-desc">@_statusMessage</p>
 
                 @if (_showBrowserWarning)
                 {
                     <div class="alert alert-warning p-2 small mb-3">
                         <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                        Trình duyệt ứng dụng hạn chế âm thanh. Hãy nhấn <b>⋮</b> chọn <b>Mở bằng trình duyệt</b> để nghe tốt nhất.
+                        Hãy nhấn <b>⋮</b> chọn <b>Mở bằng trình duyệt</b> để nghe tốt nhất.
                     </div>
                 }
 
                 <div class="player-controls">
                     <button id="main-play-btn" class="play-btn @(_isPlaying ? "playing" : "")" disabled="@_isBuffering">
-                        <i class="bi @(_isPlaying ? "bi-pause-fill" : "bi-play-fill ms-1")"></i>
+                        @if (_isBuffering)
+                        {
+                            <div class="spinner-border text-white" style="width: 1.5rem; height: 1.5rem;"></div>
+                        }
+                        else
+                        {
+                            <i class="bi @(_isPlaying ? "bi-pause-fill" : "bi-play-fill ms-1")"></i>
+                        }
                     </button>
                 </div>
 
@@ -146,6 +192,7 @@
         </div>
     }
 </div>
+}
 
 <script>
     window.initAudioMobileBridge = function(dotNetHelper, audioElement, playButtonId) {
@@ -464,6 +511,30 @@
         border-radius: 20px;
         padding: 4px 14px;
     }
+
+    /* List View */
+    .list-container { min-height: 100vh; background: #f1f5f9; font-family: 'Inter', sans-serif; }
+    .list-header { background: linear-gradient(135deg, #3b82f6, #06b6d4); color: white; padding: 40px 24px 30px; text-align: center; }
+    .list-header-icon { width: 56px; height: 56px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-size: 1.5rem; }
+    .list-header h1 { font-size: 1.4rem; font-weight: 800; margin: 0 0 4px; }
+    .list-header p { font-size: 0.85rem; opacity: 0.85; margin: 0; }
+    .poi-list { padding: 16px; }
+    .poi-list-item { display: flex; align-items: center; gap: 14px; background: white; border-radius: 16px; padding: 12px; margin-bottom: 10px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid rgba(0,0,0,0.04); }
+    .poi-list-item:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+    .poi-list-item:active { transform: scale(0.98); }
+    .poi-list-img { width: 64px; height: 64px; border-radius: 12px; object-fit: cover; flex-shrink: 0; }
+    .poi-list-img-placeholder { width: 64px; height: 64px; border-radius: 12px; background: #eff6ff; display: flex; align-items: center; justify-content: center; color: #3b82f6; font-size: 1.5rem; flex-shrink: 0; }
+    .poi-list-info { flex: 1; min-width: 0; }
+    .poi-list-info h3 { font-size: 0.95rem; font-weight: 700; color: #1e293b; margin: 0 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .poi-list-info p { font-size: 0.75rem; color: #64748b; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; }
+    .poi-list-arrow { color: #cbd5e1; font-size: 1rem; }
+
+    /* Redesigned Player */
+    .back-btn { position: absolute; top: 16px; left: 16px; z-index: 10; background: rgba(255,255,255,0.9); border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 1.1rem; color: #475569; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .back-btn:hover { background: white; }
+    .poi-hero-img { width: 100%; height: 200px; overflow: hidden; }
+    .poi-hero-img img { width: 100%; height: 100%; object-fit: cover; }
+    .restaurant-desc { font-size: 0.85rem; color: #64748b; line-height: 1.5; margin-bottom: 20px; max-height: 4.5em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
 </style>
 
 @code {
@@ -476,6 +547,10 @@
     private bool _notFound = false;
     private string _currentLang = "vi", _currentName = "", _statusMessage = "", _audioUrl = "";
 
+    // List state
+    private bool _showList = false;
+    private List<POI> _allPois = new();
+
     // Payment state
     private bool _isPaid = false;
     private bool _isPayProcessing = false;
@@ -487,7 +562,34 @@
     private void SelectVnpay() => _payMethod = "vnpay";
     private void SelectBank() => _payMethod = "bank";
 
+    private string GetLangLabel(string lang) => lang switch {
+        "vi" => "🇻🇳 VI",
+        "en" => "🇺🇸 EN",
+        "zh" => "🇨🇳 ZH",
+        "ko" => "🇰🇷 KO",
+        "ja" => "🇯🇵 JA",
+        _ => lang.ToUpper()
+    };
+
+    private void SelectPoi(int poiId)
+    {
+        NavigationManager.NavigateTo($"/listen/{poiId}", forceLoad: true);
+    }
+
+    private void GoBackToList()
+    {
+        NavigationManager.NavigateTo("/listen", forceLoad: true);
+    }
+
     protected override void OnInitialized() {
+        if (PoiId == 0) {
+            // No specific POI → show list
+            _allPois = DataService.GetPois().Where(p => p.IsApproved).OrderBy(p => p.Name).ToList();
+            _showList = true;
+            _isLoading = false;
+            return;
+        }
+
         try {
             _poi = DataService.GetPoiById(PoiId);
             if (_poi != null) {

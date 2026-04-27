@@ -592,8 +592,9 @@ public class AdminDataService : IAdminDataService
     {
         await using var db = await _dbFactory.CreateDbContextAsync();
 
+        var validActions = new[] { "audio_played", "poi_viewed" };
         IQueryable<UserHistory> query = db.UserHistories.AsNoTracking()
-            .Where(h => ScanActions.Contains(h.Action));
+            .Where(h => validActions.Contains(h.Action));
 
         if (date.HasValue)
         {
@@ -702,14 +703,16 @@ public class AdminDataService : IAdminDataService
         result.TotalRevenue = registerRev + listenRev + createPoiGross - result.RevenueRefund;
 
         // ── Growth Analytics: Daily Activity (30d) ──
+        var chartValidActions = new[] { "audio_played", "poi_viewed" };
+        var chartExistingPoiIds = db.Pois.Select(p => p.Id);
         result.DailyActivity = await last30
-            .Where(h => InteractionActions.Contains(h.Action))
+            .Where(h => chartValidActions.Contains(h.Action) && chartExistingPoiIds.Contains(h.PoiId))
             .GroupBy(h => h.VisitedAtUtc.Date)
             .Select(g => new FoodStreetApp.CMS.Models.TrendPoint
             {
                 Date = g.Key,
-                Views = g.Count(x => ScanActions.Contains(x.Action)),
-                Listens = g.Count(x => x.Action == "audio_played" || x.Action == "Listen")
+                Views = g.Count(x => x.Action == "poi_viewed"),
+                Listens = g.Count(x => x.Action == "audio_played")
             })
             .OrderBy(x => x.Date)
             .ToListAsync();
@@ -717,7 +720,7 @@ public class AdminDataService : IAdminDataService
         // ── Top 10 POIs by scans ──
         var topData = await (from h in last30
                              join p in db.Pois on h.PoiId equals p.Id
-                             where ScanActions.Contains(h.Action)
+                             where chartValidActions.Contains(h.Action)
                              group h by new { h.PoiId, p.Name } into g
                              orderby g.Count() descending
                              select new FoodStreetApp.CMS.Models.PoiRankMetric
@@ -734,7 +737,7 @@ public class AdminDataService : IAdminDataService
         // ── Bottom 5 POIs (approved, fewest scans) ──
         var allPoiIds = await db.Pois.Where(p => p.IsApproved).Select(p => new { p.Id, p.Name }).ToListAsync();
         var scanCounts = await last30
-            .Where(h => ScanActions.Contains(h.Action))
+            .Where(h => chartValidActions.Contains(h.Action))
             .GroupBy(h => h.PoiId)
             .Select(g => new { PoiId = g.Key, Count = g.Count() })
             .ToListAsync();
@@ -796,10 +799,10 @@ public class AdminDataService : IAdminDataService
         result.ReturningUsersLast7d = last7dUsers.Count(u => returningSet.Contains(u));
         result.NewUsersLast7d = last7dUsers.Count - result.ReturningUsersLast7d;
 
-        // ── Peak Hours (24h bar chart) ──
+        // ── Peak Hours (UTC → VN time +7) ──
         result.PeakHours = await last30
-            .Where(h => InteractionActions.Contains(h.Action))
-            .GroupBy(h => h.VisitedAtUtc.Hour)
+            .Where(h => chartValidActions.Contains(h.Action) && chartExistingPoiIds.Contains(h.PoiId))
+            .GroupBy(h => (h.VisitedAtUtc.Hour + 7) % 24)
             .Select(g => new FoodStreetApp.CMS.Models.HourlyActivity { Hour = g.Key, Count = g.Count() })
             .OrderBy(x => x.Hour)
             .ToListAsync();
