@@ -475,13 +475,17 @@ public class AdminDataService : IAdminDataService
 
     }
 
-    public async Task<(IReadOnlyCollection<UserHistory> Items, int TotalCount)> GetUsageHistoriesPagedAsync(int page, int pageSize, DateTime? date = null, int? poiId = null, string? search = null)
+    public async Task<(IReadOnlyCollection<UserHistory> Items, int TotalCount)> GetUsageHistoriesPagedAsync(int page, int pageSize, DateTime? date = null, int? poiId = null, string? search = null, string? source = null)
     {
         var query = _dbContext.UserHistories.AsNoTracking().AsQueryable();
 
         // Only show audio/narration actions
         var allowedActions = new[] { "audio_played", "poi_viewed" };
         query = query.Where(h => allowedActions.Contains(h.Action));
+
+        // Hide records from deleted POIs
+        var existingPoiIds = _dbContext.Pois.Select(p => p.Id);
+        query = query.Where(h => existingPoiIds.Contains(h.PoiId));
 
         if (date.HasValue)
         {
@@ -494,6 +498,12 @@ public class AdminDataService : IAdminDataService
         {
             query = query.Where(h => h.PoiId == poiId.Value);
         }
+
+        // Filter by source: app (no QR code) or qr (has QR code)
+        if (source == "app")
+            query = query.Where(h => h.QRCode == null || h.QRCode == "");
+        else if (source == "qr")
+            query = query.Where(h => h.QRCode != null && h.QRCode != "");
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -509,10 +519,17 @@ public class AdminDataService : IAdminDataService
         return (items, total);
     }
 
-    public async Task<(int AudioCount, int ViewCount)> GetPoiActionStatsAsync(int poiId, DateTime? date = null)
+    public async Task<(int AudioCount, int ViewCount, int AppCount, int QrCount)> GetPoiActionStatsAsync(int poiId, DateTime? date = null)
     {
         await using var db = await _dbFactory.CreateDbContextAsync();
-        var query = db.UserHistories.AsNoTracking().Where(h => h.PoiId == poiId);
+        var query = db.UserHistories.AsNoTracking().AsQueryable();
+
+        // Only count relevant actions
+        var allowedActions = new[] { "audio_played", "poi_viewed" };
+        query = query.Where(h => allowedActions.Contains(h.Action));
+
+        if (poiId > 0)
+            query = query.Where(h => h.PoiId == poiId);
 
         if (date.HasValue)
         {
@@ -523,8 +540,10 @@ public class AdminDataService : IAdminDataService
 
         var audioCount = await query.CountAsync(h => h.Action == "audio_played");
         var viewCount = await query.CountAsync(h => h.Action == "poi_viewed");
+        var appCount = await query.CountAsync(h => h.QRCode == null || h.QRCode == "");
+        var qrCount = await query.CountAsync(h => h.QRCode != null && h.QRCode != "");
 
-        return (audioCount, viewCount);
+        return (audioCount, viewCount, appCount, qrCount);
     }
 
     // ================================================================
