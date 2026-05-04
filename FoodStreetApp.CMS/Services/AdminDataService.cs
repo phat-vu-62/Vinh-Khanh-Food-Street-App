@@ -705,9 +705,13 @@ public class AdminDataService : IAdminDataService
         // ── Growth Analytics: Daily Activity (30d) ──
         var chartValidActions = new[] { "audio_played", "poi_viewed" };
         var chartExistingPoiIds = db.Pois.Select(p => p.Id);
-        result.DailyActivity = await last30
+        var dailyRaw = await last30
             .Where(h => chartValidActions.Contains(h.Action) && chartExistingPoiIds.Contains(h.PoiId))
-            .GroupBy(h => h.VisitedAtUtc.Date)
+            .Select(h => new { h.VisitedAtUtc.Date, h.Action })
+            .ToListAsync();
+
+        result.DailyActivity = dailyRaw
+            .GroupBy(h => h.Date)
             .Select(g => new FoodStreetApp.CMS.Models.TrendPoint
             {
                 Date = g.Key,
@@ -715,7 +719,7 @@ public class AdminDataService : IAdminDataService
                 Listens = g.Count(x => x.Action == "audio_played")
             })
             .OrderBy(x => x.Date)
-            .ToListAsync();
+            .ToList();
 
         // ── Top 10 POIs by scans ──
         var topRaw = await (from h in last30
