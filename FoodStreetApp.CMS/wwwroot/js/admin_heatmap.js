@@ -15,19 +15,14 @@ const HEAT_OPTIONS = {
     }
 };
 
-// Google Maps style red pin SVG
-const RED_PIN_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="28" height="40" viewBox="0 0 28 40">
-  <path d="M14 0C6.27 0 0 6.27 0 14c0 10.5 14 26 14 26s14-15.5 14-26C28 6.27 21.73 0 14 0z" fill="#EA4335"/>
-  <circle cx="14" cy="14" r="6" fill="#B31412"/>
-  <circle cx="14" cy="14" r="4" fill="white"/>
-</svg>`;
-
-const redPinIcon = L.divIcon({
-    className: 'heatmap-red-pin',
-    html: RED_PIN_SVG,
-    iconSize: [28, 40],
-    iconAnchor: [14, 40],
-    popupAnchor: [0, -36]
+// Red pin icon using Leaflet marker images
+const redPinIcon = L.icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
 });
 
 window.renderHeatmap = (containerId, dataPoints, poiLabels) => {

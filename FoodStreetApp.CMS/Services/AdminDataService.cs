@@ -718,23 +718,26 @@ public class AdminDataService : IAdminDataService
             .ToListAsync();
 
         // ── Top 10 POIs by scans ──
-        var topData = await (from h in last30
+        var topRaw = await (from h in last30
                              join p in db.Pois on h.PoiId equals p.Id
                              where chartValidActions.Contains(h.Action)
-                             group h by new { h.PoiId, p.Name } into g
-                             orderby g.Count() descending
-                             select new FoodStreetApp.CMS.Models.PoiRankMetric
-                             {
-                                 PoiId = g.Key.PoiId,
-                                 PoiName = g.Key.Name,
-                                 ScanCount = g.Count(),
-                                 ViewCount = g.Count(x => x.Action == "poi_viewed"),
-                                 ListenCount = g.Count(x => x.Action == "audio_played"),
-                                 Revenue = g.Sum(x => x.Amount ?? 0)
-                             })
-                             .Take(10)
+                             select new { h.PoiId, p.Name, h.Action, h.Amount })
                              .ToListAsync();
-        result.Top10Pois = topData;
+
+        result.Top10Pois = topRaw
+            .GroupBy(x => new { x.PoiId, x.Name })
+            .OrderByDescending(g => g.Count())
+            .Take(10)
+            .Select(g => new FoodStreetApp.CMS.Models.PoiRankMetric
+            {
+                PoiId = g.Key.PoiId,
+                PoiName = g.Key.Name,
+                ScanCount = g.Count(),
+                ViewCount = g.Count(x => x.Action == "poi_viewed"),
+                ListenCount = g.Count(x => x.Action == "audio_played"),
+                Revenue = g.Sum(x => x.Amount ?? 0)
+            })
+            .ToList();
 
         // ── Bottom 5 POIs (approved, fewest scans) ──
         var allPoiIds = await db.Pois.Where(p => p.IsApproved).Select(p => new { p.Id, p.Name }).ToListAsync();
@@ -802,12 +805,15 @@ public class AdminDataService : IAdminDataService
         result.NewUsersLast7d = last7dUsers.Count - result.ReturningUsersLast7d;
 
         // ── Peak Hours (UTC → VN time +7) ──
-        result.PeakHours = await last30
+        var peakRaw = await last30
             .Where(h => chartValidActions.Contains(h.Action) && chartExistingPoiIds.Contains(h.PoiId))
-            .GroupBy(h => (h.VisitedAtUtc.Hour + 7) % 24)
-            .Select(g => new FoodStreetApp.CMS.Models.HourlyActivity { Hour = g.Key, Count = g.Count() })
-            .OrderBy(x => x.Hour)
+            .Select(h => h.VisitedAtUtc.Hour)
             .ToListAsync();
+
+        result.PeakHours = peakRaw
+            .GroupBy(utcHour => (utcHour + 7) % 24)
+            .Select(g => new FoodStreetApp.CMS.Models.HourlyActivity { Hour = g.Key, Count = g.Count() })
+            .ToList();
         // Fill missing hours with 0
         var peakDict = result.PeakHours.ToDictionary(x => x.Hour, x => x.Count);
         result.PeakHours = Enumerable.Range(0, 24)
