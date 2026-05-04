@@ -254,9 +254,8 @@ else
 
     private async Task RenderAllChartsAsync()
     {
-        try
-        {
-            // 1. Activity Line Chart (30d)
+        // 1. Activity Line Chart (30d)
+        try {
             if (_data.DailyActivity.Any())
             {
                 var labels = _data.DailyActivity.Select(d => d.Date.ToString("dd/MM")).ToArray();
@@ -266,8 +265,10 @@ else
                 };
                 await JSRuntime.InvokeVoidAsync("chartHelper.renderLineChart", "chartActivity", labels, datasets);
             }
+        } catch (Exception ex) { Console.WriteLine($"Chart 1 error: {ex.Message}"); }
 
-            // 2. Top 10 POIs Stacked Bar (Xem + Nghe)
+        // 2. Top 10 POIs Stacked Bar (Xem + Nghe)
+        try {
             if (_data.Top10Pois.Any())
             {
                 var labels = _data.Top10Pois.Select(p => p.PoiName).Reverse().ToArray();
@@ -277,8 +278,10 @@ else
                 };
                 await JSRuntime.InvokeVoidAsync("chartHelper.renderStackedBarChart", "chartTop10", labels, datasets, true);
             }
+        } catch (Exception ex) { Console.WriteLine($"Chart 2 error: {ex.Message}"); }
 
-            // 3. Revenue Line Chart
+        // 3. Revenue Line Chart
+        try {
             if (_data.RevenueByDay.Any())
             {
                 var labels = _data.RevenueByDay.Select(d => d.Date.ToString("dd/MM")).ToArray();
@@ -287,34 +290,29 @@ else
                 };
                 await JSRuntime.InvokeVoidAsync("chartHelper.renderLineChart", "chartRevenue", labels, datasets);
             }
+        } catch (Exception ex) { Console.WriteLine($"Chart 3 error: {ex.Message}"); }
 
-            // 4. Revenue Doughnut
+        // 4. Revenue Doughnut
+        try {
             if (_data.RevenueByPoi.Any())
             {
                 var labels = _data.RevenueByPoi.Select(p => p.PoiName).ToArray();
                 var data = _data.RevenueByPoi.Select(p => (double)p.Revenue).ToArray();
                 await JSRuntime.InvokeVoidAsync("chartHelper.renderDoughnutChart", "chartRevPie", labels, data, (object?)null);
             }
+        } catch (Exception ex) { Console.WriteLine($"Chart 4 error: {ex.Message}"); }
 
-            // 5. Peak Hours Bar
+        // 5. Peak Hours Bar (data already in VN time from backend)
+        try {
             if (_data.PeakHours.Any())
             {
-                // Reorder by Vietnam time (UTC+7) so chart reads 0h-23h VN
-                var vnOrdered = _data.PeakHours
-                    .Select(h => new { VnHour = (h.Hour + 7) % 24, h.Count })
-                    .OrderBy(h => h.VnHour)
-                    .ToList();
-                var labels = vnOrdered.Select(h => $"{h.VnHour}h").ToArray();
-                var data = vnOrdered.Select(h => h.Count).ToArray();
-                var maxCount = vnOrdered.Max(x => x.Count);
-                var colors = vnOrdered.Select(h => h.Count == maxCount && maxCount > 0 ? "#ef4444" : "#94a3b8").ToArray();
+                var labels = _data.PeakHours.OrderBy(h => h.Hour).Select(h => $"{h.Hour}h").ToArray();
+                var data = _data.PeakHours.OrderBy(h => h.Hour).Select(h => h.Count).ToArray();
+                var maxCount = _data.PeakHours.Max(x => x.Count);
+                var colors = _data.PeakHours.OrderBy(h => h.Hour).Select(h => h.Count == maxCount && maxCount > 0 ? "#ef4444" : "#94a3b8").ToArray();
                 await JSRuntime.InvokeVoidAsync("chartHelper.renderBarChart", "chartPeakHours", labels, data, colors, false);
             }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Chart render error: {ex.Message}");
-        }
+        } catch (Exception ex) { Console.WriteLine($"Chart 5 error: {ex.Message}"); }
     }
 
     private async Task RenderHeatmapAsync()

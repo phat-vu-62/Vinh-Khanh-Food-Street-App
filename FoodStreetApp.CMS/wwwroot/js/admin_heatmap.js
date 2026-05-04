@@ -15,14 +15,13 @@ const HEAT_OPTIONS = {
     }
 };
 
-// Red pin icon using Leaflet marker images
-const redPinIcon = L.icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
+// Red circle marker using inline SVG data URI (no CDN dependency)
+const redPinIcon = L.divIcon({
+    className: '',
+    html: '<div style="width:16px;height:16px;background:#EA4335;border:3px solid white;border-radius:50%;box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>',
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+    popupAnchor: [0, -10]
 });
 
 window.renderHeatmap = (containerId, dataPoints, poiLabels) => {
