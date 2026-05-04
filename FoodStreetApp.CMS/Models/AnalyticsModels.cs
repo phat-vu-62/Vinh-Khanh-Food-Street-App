@@ -119,6 +119,8 @@ public class PoiRankMetric
     public int PoiId { get; set; }
     public string PoiName { get; set; } = "";
     public int ScanCount { get; set; }
+    public int ViewCount { get; set; }
+    public int ListenCount { get; set; }
     public decimal Revenue { get; set; }
 }
 

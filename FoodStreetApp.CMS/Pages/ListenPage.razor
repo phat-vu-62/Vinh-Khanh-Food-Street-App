@@ -233,6 +233,8 @@ else
 
         // 1. On page load (Initial Scanned Event)
         track("qr_scanned", { qrCode: window.location.href });
+        // 2. Track poi_viewed (so it counts in dashboard metrics)
+        track("poi_viewed");
 
         // --- REFACTORED PRECISION SESSION TRACKING ---
         let totalElapsedSeconds = 0;

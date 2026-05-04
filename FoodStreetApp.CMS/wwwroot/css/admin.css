@@ -463,16 +463,24 @@ body {
     100% { background-position: -200% 0; }
 }
 
-/* Heatmap POI Labels */
-.heatmap-poi-label span {
-    background: rgba(255, 255, 255, 0.92);
+/* Heatmap Red Pin & Tooltip */
+.heatmap-red-pin {
+    background: none !important;
+    border: none !important;
+}
+
+.heatmap-poi-tooltip {
+    background: white;
     color: #1e293b;
     font-size: 0.6875rem;
     font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
     white-space: nowrap;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
+.heatmap-poi-tooltip::before {
+    border-top-color: white !important;
+}

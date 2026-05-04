@@ -728,6 +728,8 @@ public class AdminDataService : IAdminDataService
                                  PoiId = g.Key.PoiId,
                                  PoiName = g.Key.Name,
                                  ScanCount = g.Count(),
+                                 ViewCount = g.Count(x => x.Action == "poi_viewed"),
+                                 ListenCount = g.Count(x => x.Action == "audio_played"),
                                  Revenue = g.Sum(x => x.Amount ?? 0)
                              })
                              .Take(10)

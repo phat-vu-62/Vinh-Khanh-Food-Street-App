@@ -141,6 +141,44 @@ window.chartHelper = {
         chartInstances.set(canvasId, chart);
     },
 
+    renderStackedBarChart(canvasId, labels, datasets, horizontal = false) {
+        destroyIfExists(canvasId);
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return;
+
+        const chartDatasets = datasets.map((ds, i) => ({
+            label: ds.label,
+            data: ds.data,
+            backgroundColor: ds.color + 'cc',
+            borderColor: ds.color,
+            borderWidth: 1,
+            borderRadius: 4,
+            maxBarThickness: horizontal ? 14 : 40
+        }));
+
+        const chart = new Chart(ctx, {
+            type: 'bar',
+            data: { labels, datasets: chartDatasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: horizontal ? 'y' : 'x',
+                plugins: {
+                    legend: { display: true, labels: { font: defaultFont, usePointStyle: true, padding: 10, boxWidth: 8 } },
+                    tooltip: {
+                        backgroundColor: '#1e293b', titleFont: defaultFont, bodyFont: defaultFont, padding: 12, cornerRadius: 8,
+                        callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed[horizontal ? 'x' : 'y']}` }
+                    }
+                },
+                scales: {
+                    x: { stacked: true, grid: { display: horizontal }, ticks: { font: defaultFont, color: COLORS.gray } },
+                    y: { stacked: true, beginAtZero: true, grid: { display: !horizontal, color: '#f1f5f9' }, ticks: { font: defaultFont, color: COLORS.gray } }
+                }
+            }
+        });
+        chartInstances.set(canvasId, chart);
+    },
+
     destroyChart(canvasId) {
         destroyIfExists(canvasId);
     }

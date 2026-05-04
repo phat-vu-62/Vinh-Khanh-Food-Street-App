@@ -173,69 +173,7 @@ else
         </div>
     </div>
 
-    @* ═══════════════════════════════════════════════════
-       ROW 6: BOTTOM 5 POIs + ALERTS
-    ═══════════════════════════════════════════════════ *@
-    <div class="row g-4 mb-5 pb-5">
-        <div class="col-lg-6">
-            <div class="saas-card p-4 h-100">
-                <h6 class="fw-bold mb-3"><i class="bi bi-graph-down me-2 text-danger"></i>Địa điểm ít tương tác nhất</h6>
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover mb-0">
-                        <thead class="table-light">
-                            <tr><th>#</th><th>Tên địa điểm</th><th class="text-end">Lượt</th></tr>
-                        </thead>
-                        <tbody>
-                            @{ int rank = 1; }
-                            @foreach (var p in _data.Bottom5Pois)
-                            {
-                                <tr>
-                                    <td>@(rank++)</td>
-                                    <td>@p.PoiName</td>
-                                    <td class="text-end">
-                                        @if (p.ScanCount == 0) { <span class="badge bg-danger bg-opacity-10 text-danger">0</span> }
-                                        else { <span>@p.ScanCount</span> }
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-6">
-            <div class="saas-card p-4 h-100">
-                <h6 class="fw-bold mb-3"><i class="bi bi-bell me-2 text-primary"></i>Thông báo truy cập</h6>
-                @if (!_data.ZeroScanPois.Any() && _data.PendingApprovals == 0)
-                {
-                    <div class="text-center py-4">
-                        <i class="bi bi-check-circle text-success" style="font-size: 2.5rem;"></i>
-                        <p class="text-muted mt-2 mb-0">Không có cảnh báo</p>
-                    </div>
-                }
-                else
-                {
-                    <div class="d-flex flex-column gap-2">
-                        @if (_data.PendingApprovals > 0)
-                        {
-                            <div class="alert alert-warning py-2 px-3 mb-0 d-flex align-items-center gap-2" style="font-size: 0.85rem;">
-                                <i class="bi bi-shield-lock"></i>
-                                <span><strong>@_data.PendingApprovals</strong> địa điểm đang chờ duyệt</span>
-                                <a href="/poi?filter=pending" class="ms-auto btn btn-sm btn-outline-warning py-0">Duyệt</a>
-                            </div>
-                        }
-                        @foreach (var name in _data.ZeroScanPois.Take(5))
-                        {
-                            <div class="alert alert-danger py-2 px-3 mb-0 d-flex align-items-center gap-2" style="font-size: 0.85rem;">
-                                <i class="bi bi-exclamation-circle"></i>
-                                <span><strong>@name</strong> — chưa có lượt truy cập nào trong 30 ngày</span>
-                            </div>
-                        }
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
+
 }
 
 @code {
@@ -329,12 +267,15 @@ else
                 await JSRuntime.InvokeVoidAsync("chartHelper.renderLineChart", "chartActivity", labels, datasets);
             }
 
-            // 2. Top 10 POIs Horizontal Bar
+            // 2. Top 10 POIs Stacked Bar (Xem + Nghe)
             if (_data.Top10Pois.Any())
             {
                 var labels = _data.Top10Pois.Select(p => p.PoiName).Reverse().ToArray();
-                var data = _data.Top10Pois.Select(p => p.ScanCount).Reverse().ToArray();
-                await JSRuntime.InvokeVoidAsync("chartHelper.renderBarChart", "chartTop10", labels, data, (object?)null, true);
+                var datasets = new object[] {
+                    new { label = "Lượt xem", data = _data.Top10Pois.Select(p => p.ViewCount).Reverse().ToArray(), color = "#3b82f6" },
+                    new { label = "Lượt nghe", data = _data.Top10Pois.Select(p => p.ListenCount).Reverse().ToArray(), color = "#10b981" }
+                };
+                await JSRuntime.InvokeVoidAsync("chartHelper.renderStackedBarChart", "chartTop10", labels, datasets, true);
             }
 
             // 3. Revenue Line Chart
@@ -382,8 +323,8 @@ else
         {
             var data = await DataService.GetHeatmapDataAsync(null);
             var heatData = new List<double[]>();
-            var poiLabels = new List<object>();
 
+            // Build heat layer from interaction data
             if (data.Any())
             {
                 var maxCount = data.Max(x => x.ScanCount);
@@ -391,9 +332,18 @@ else
                 {
                     double intensity = maxCount > 0 ? (double)item.ScanCount / maxCount : 0.5;
                     heatData.Add(new double[] { item.Lat, item.Lng, Math.Max(0.2, intensity) });
-                    poiLabels.Add(new { lat = item.Lat, lng = item.Lng, name = item.PoiName, count = item.ScanCount });
                 }
             }
+
+            // Get ALL approved POIs for pins (not just those with data)
+            var allPois = DataService.GetPois().Where(p => p.IsApproved && p.Latitude != 0 && p.Longitude != 0).ToList();
+            var dataDict = data.ToDictionary(x => x.PoiId, x => x.ScanCount);
+            var poiLabels = allPois.Select(p => new {
+                lat = p.Latitude,
+                lng = p.Longitude,
+                name = p.Name,
+                count = dataDict.GetValueOrDefault(p.Id, 0)
+            }).ToList<object>();
 
             await JSRuntime.InvokeVoidAsync("renderHeatmap", "admin-heatmap", heatData, poiLabels);
         }
