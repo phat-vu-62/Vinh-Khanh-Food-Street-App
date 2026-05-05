@@ -242,7 +242,12 @@ else
         let hasSentFinalTracking = false;
 
         function startTracking() {
-            if (timerInterval || hasSentFinalTracking) return;
+            if (timerInterval) return;
+            // If already sent for previous play, reset for new play session
+            if (hasSentFinalTracking) {
+                hasSentFinalTracking = false;
+                totalElapsedSeconds = 0;
+            }
             timerInterval = setInterval(() => {
                 totalElapsedSeconds++;
             }, 1000);
@@ -704,7 +709,7 @@ else
         }
     }
 
-    private string FixUrl(string? u) => string.IsNullOrEmpty(u) ? "" : (u.Contains("://") ? u : $"{NavigationManager.BaseUri.TrimEnd('/')}/{u.TrimStart('/')}");
+    private string FixUrl(string? u) => string.IsNullOrEmpty(u) ? "" : (u.Contains("://") || u.StartsWith("data:") ? u : $"{NavigationManager.BaseUri.TrimEnd('/')}/{u.TrimStart('/')}");
 
     private async Task ChangeLang(string l) { 
         await JSRuntime.InvokeVoidAsync("eval", "if(window.audioState){ window.audioState.isPlaying = false; if(window.speechSynthesis) window.speechSynthesis.cancel(); }");
