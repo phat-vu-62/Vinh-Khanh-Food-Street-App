@@ -639,7 +639,7 @@ public class AdminDataService : IAdminDataService
     public async Task<(int ActiveUsers, int ActiveQr, int TotalScans, int UniqueUsers)> GetLiveMetricsAsync()
     {
         await using var db = await _dbFactory.CreateDbContextAsync();
-        var recentThreshold = DateTime.UtcNow.AddSeconds(-4);
+        var recentThreshold = DateTime.UtcNow.AddSeconds(-10);
         var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
 
         var activeUsers = (await db.UserHistories.AsNoTracking()

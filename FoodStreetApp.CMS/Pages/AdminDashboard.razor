@@ -205,17 +205,35 @@ else
     }
 
     private bool _chartsNeedRender;
+    private int _silentRefreshCount;
 
     private async Task SilentRefreshAsync()
     {
         try
         {
+            _silentRefreshCount++;
             var (activeUsers, activeQr, totalScans, uniqueUsers) = await DataService.GetLiveMetricsAsync();
             _data.ActiveUsersNow = activeUsers;
             _data.ActiveQrUsersNow = activeQr;
             _data.TotalQrScans = totalScans;
             _data.TotalUniqueUsers = uniqueUsers;
             _lastUpdated = DateTime.UtcNow.AddHours(7);
+
+            // Full chart refresh every 30 seconds (6 ticks × 5s)
+            if (_silentRefreshCount % 6 == 0)
+            {
+                _data = await DataService.GetAdminDashboardAsync();
+                // Preserve live metrics just fetched
+                _data.ActiveUsersNow = activeUsers;
+                _data.ActiveQrUsersNow = activeQr;
+                _data.TotalQrScans = totalScans;
+                _data.TotalUniqueUsers = uniqueUsers;
+                StateHasChanged();
+                await Task.Delay(50);
+                await RenderAllChartsAsync();
+                await RenderHeatmapAsync();
+            }
+
             StateHasChanged();
         }
         catch { /* ignore silent refresh errors */ }
