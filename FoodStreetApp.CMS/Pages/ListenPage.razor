@@ -322,14 +322,7 @@ else
                             u.voice = bestVoice;
                             u.lang = bestVoice.lang;
                         }
-
-                        // Check if we actually have a voice for this language
-                        const hasVoice = bestVoice || voices.some(v => v.lang.startsWith(langCode));
-                        if (!hasVoice && voices.length > 0) {
-                            dotNetHelper.invokeMethodAsync('OnPlaybackError', 
-                                "Thiết bị không hỗ trợ giọng đọc " + window.audioState.ttsLang.split('-')[0].toUpperCase() + ". Vui lòng cài thêm gói ngôn ngữ trong Cài đặt → Ngôn ngữ & Nhập liệu → Chuyển văn bản thành giọng nói.");
-                            return;
-                        }
+                        // Always try to speak even if no voice found (some devices report empty list but still work)
 
                         u.onstart = () => {
                             window.audioState.isPlaying = true;
@@ -773,7 +766,7 @@ else
     
     [JSInvokable] public void OnPlaybackError(string m) { 
         _isPlaying = false; _isBuffering = false; _hasError = true; 
-        _statusMessage = "Sự cố âm thanh";
+        _statusMessage = m.StartsWith("Voice Error") ? "Thiết bị chưa hỗ trợ ngôn ngữ này" : m;
         StateHasChanged(); 
     }
 
