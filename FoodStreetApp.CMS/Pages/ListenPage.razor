@@ -236,6 +236,12 @@ else
         // 2. Track poi_viewed (so it counts in dashboard metrics)
         track("poi_viewed");
 
+        // Pre-load TTS voices (Samsung loads async, need to trigger early)
+        if (window.speechSynthesis) {
+            window.speechSynthesis.getVoices();
+            window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
+        }
+
         // --- REFACTORED PRECISION SESSION TRACKING ---
         let totalElapsedSeconds = 0;
         let timerInterval = null;
@@ -302,16 +308,37 @@ else
                             return;
                         }
                         window.speechSynthesis.cancel();
+
                         const u = new SpeechSynthesisUtterance(window.audioState.ttsText);
                         u.lang = window.audioState.ttsLang;
+
+                        // Find the best matching voice for this language
+                        const voices = window.speechSynthesis.getVoices();
+                        const langCode = window.audioState.ttsLang.split('-')[0]; // 'ko', 'ja', 'zh', etc.
+                        let bestVoice = voices.find(v => v.lang === window.audioState.ttsLang)
+                            || voices.find(v => v.lang.startsWith(langCode))
+                            || voices.find(v => v.lang.toLowerCase().startsWith(langCode));
+                        if (bestVoice) {
+                            u.voice = bestVoice;
+                            u.lang = bestVoice.lang;
+                        }
+
+                        // Check if we actually have a voice for this language
+                        const hasVoice = bestVoice || voices.some(v => v.lang.startsWith(langCode));
+                        if (!hasVoice && voices.length > 0) {
+                            dotNetHelper.invokeMethodAsync('OnPlaybackError', 
+                                "Thiết bị không hỗ trợ giọng đọc " + window.audioState.ttsLang.split('-')[0].toUpperCase() + ". Vui lòng cài thêm gói ngôn ngữ trong Cài đặt → Ngôn ngữ & Nhập liệu → Chuyển văn bản thành giọng nói.");
+                            return;
+                        }
+
                         u.onstart = () => {
                             window.audioState.isPlaying = true;
-                            startTracking(); // Start only when audible
+                            startTracking();
                             dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', true);
                         };
                         u.onend = () => {
                             window.audioState.isPlaying = false;
-                            sendFinalTracking(); // End of audio = send
+                            sendFinalTracking();
                             dotNetHelper.invokeMethodAsync('OnPlaybackStateChanged', false);
                         };
                         u.onerror = (e) => {
