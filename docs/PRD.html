@@ -1087,23 +1087,25 @@
         </div>
 
         <h3 class="seq-title">UC04: Truy Cập Điểm Đến Qua Mã QR (User)</h3>
-        <p>Sử dụng AppLinks MAUI để bắt scheme "foodstreet://".</p>
+        <p>Quét mã QR để mở trang Web Audio (Listen Page) hợp nhất, không cần cài App.</p>
         <div class="mermaid">
             sequenceDiagram
             autonumber
             actor User
-            participant Cam as Camera / Browser
-            participant App as App.xaml.cs (OnAppLinkRequestReceived)
-            participant GeoSVC as GeofenceService
-            participant NarSVC as NarrationService
+            participant Cam as Camera Điện Thoại
+            participant Web as ListenPage.razor
+            participant TTS as Web Speech API
 
-            User->>Cam: Cầm máy quét mã dán trên bàn
-            Cam->>App: Mở uri foodstreet://poi?id=ID_123
-            App->>App: Extract parse ra poiId (ID_123)
-            App->>GeoSVC: Bypass Geofence → trực tiếp resolve POI
-            GeoSVC->>NarSVC: PlayNarrationAsync(poi, isManual=true)
-            NarSVC->>NarSVC: StopNarrationAsync() + ProcessSingleNarrationAsync(poi)
-            NarSVC->>User: Phát Audio Ngay Lập Tức (không cần GPS)
+            User->>Cam: Quét mã QR tại phố ẩm thực
+            Cam->>Web: Mở URL https://domain/listen
+            Web->>Web: Track event "qr_scanned" và "poi_viewed"
+            Web->>User: Hiển thị danh sách Quán / Điểm đến
+            User->>Web: Chọn Quán & Ngôn Ngữ
+            Web->>TTS: Text-to-Speech (hoặc Play Audio URL)
+            Web->>Web: setInterval đo thời gian nghe thực tế
+            TTS-->>User: Phát thuyết minh
+            User->>Web: Bấm Dừng hoặc Nghe xong
+            Web->>Web: Track event "audio_played" (Kèm duration)
         </div>
 
         <h3 class="seq-title">UC05: Cài Đặt Ngôn Ngữ Ứng Dụng (User)</h3>
@@ -1305,8 +1307,8 @@
         </div>
 
         <h3 class="seq-title">UC15: Giám Sát Dashboard & Báo Cáo (Admin)</h3>
-        <p>Full load khi mở trang + auto-refresh 5 giây qua timer nhẹ. Không render lại charts khi refresh.</p>
-        <div class="seq-note">📌 Full load: <code>LoadAsync()</code> → <code>GetAdminDashboardAsync()</code> → <code>RenderAllChartsAsync()</code> &nbsp;|&nbsp; Refresh: <code>SilentRefreshAsync()</code> → <code>GetLiveMetricsAsync()</code> (4 queries)</div>
+        <p>Full load khi mở trang + auto-refresh 5 giây qua timer nhẹ. Tự động render lại charts mỗi 30 giây.</p>
+        <div class="seq-note">💡 Full load: <code>LoadAsync()</code> → <code>GetAdminDashboardAsync()</code> → <code>RenderAllChartsAsync()</code> &nbsp;|&nbsp; Refresh: <code>SilentRefreshAsync()</code> → <code>GetLiveMetricsAsync()</code> (4 queries)</div>
         <div class="mermaid">
             sequenceDiagram
             autonumber
@@ -1326,32 +1328,40 @@
             DB-->>SVC: AdminDashboardData
             SVC-->>Razor: _chartsNeedRender=true
             Razor->>JS: renderLineChart / renderBarChart / renderDoughnutChart (5 charts)
-            Razor->>Admin: Dashboard đầy đủ ✅ | new Timer(5000).Start()
+            Razor->>Admin: Dashboard đầy đủ 📊 | new Timer(5000).Start()
 
-            loop Mỗi 5 giây — KHÔNG render lại charts
+            loop Mỗi 5 giây (Live Stats) và 30 giây (Charts)
             Timer->>Razor: SilentRefreshAsync()
             Razor->>SVC: GetLiveMetricsAsync()
-            SVC->>DB: COUNT app_ping/cms_ping trong 4s gần nhất
+            SVC->>DB: COUNT app_ping/cms_ping trong 10s gần nhất
             SVC->>DB: COUNT qr_listen_ping, ScanActions(30d), DistinctUsers(30d)
             DB-->>SVC: (ActiveUsers, ActiveQr, TotalScans, UniqueUsers)
             Razor->>Razor: _lastUpdated = DateTime.UtcNow.AddHours(7)
             Razor->>Admin: StateHasChanged() — KPI cards nhảy live
+            opt Mỗi 6 chu kỳ (30 giây)
+                Razor->>SVC: GetAdminDashboardAsync()
+                SVC-->>Razor: AdminDashboardData
+                Razor->>JS: RenderAllChartsAsync() & RenderHeatmapAsync()
+            end
             end
         </div>
 
         <h3 class="seq-title">UC16: Tạo & Xuất Mã QR (Admin)</h3>
-        <p>Module xử lý Logic Ảnh tĩnh QR.</p>
+        <p>Tạo mã QR hợp nhất truy cập Web CMS (Listen Page).</p>
         <div class="mermaid">
             sequenceDiagram
             autonumber
             actor Admin
-            participant UI as QrPage.razor
-            participant JS as JS Interop (generateQR)
+            participant UI as QRCodesPage.razor
+            participant API as qrserver.com
+            participant JS as JS Interop (fetch)
 
-            Admin->>UI: Bấm Xuất File QR
-            UI->>JS: JSRuntime.InvokeVoidAsync("generateQR", "foodstreet://poi?id=ID_QUA_A")
-            JS-->>UI: Base64 PNG Source (nền trong suốt)
-            UI->>Admin: Hiển thị QR → Nhấn lưu vào máy/in bạt
+            Admin->>UI: Bấm Tải Xuống
+            UI->>JS: JSRuntime.InvokeVoidAsync(eval fetch QR image)
+            JS->>API: GET https://api.qrserver.com/v1/create-qr-code/?data=https://.../listen
+            API-->>JS: PNG Image Blob
+            JS->>JS: CreateObjectURL & Trigger Download
+            JS-->>Admin: Lưu file QR_PhoAmThuc_VinhKhanh.png
         </div>
 
         <h3 class="seq-title">UC17: Xử Lý Vùng Phủ Sóng Chồng Lấn (User)</h3>
