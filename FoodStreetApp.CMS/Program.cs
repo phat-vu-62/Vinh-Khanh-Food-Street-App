@@ -362,7 +362,7 @@ app.MapPost("/api/auth/register-merchant", async (JsonElement body, CmsDbContext
         var email = body.TryGetProperty("email", out var emailProp) ? emailProp.GetString() : null;
         var address = body.TryGetProperty("address", out var addrProp) ? addrProp.GetString() : null;
         var poiName = body.GetProperty("poiName").GetString();
-        var amount = body.TryGetProperty("amount", out var amtProp) ? amtProp.GetDecimal() : 200000*1.5m;
+        var amount = body.TryGetProperty("amount", out var amtProp) ? amtProp.GetDecimal() : 300000m;
 
         if (string.IsNullOrWhiteSpace(fullName) || string.IsNullOrWhiteSpace(phone) || string.IsNullOrWhiteSpace(poiName))
             return Results.BadRequest(new { message = "Họ tên, SĐT và tên địa điểm là bắt buộc" });
@@ -705,7 +705,7 @@ app.MapPost("/api/owner/pay-create-poi", async (JsonElement body, CmsDbContext d
     try
     {
         var userId = body.GetProperty("userId").GetString();
-        var amount = body.TryGetProperty("amount", out var amtProp) ? amtProp.GetDecimal() : 200000*1.5m;
+        var amount = body.TryGetProperty("amount", out var amtProp) ? amtProp.GetDecimal() : 300000m;
 
         if (string.IsNullOrWhiteSpace(userId))
             return Results.BadRequest(new { message = "User ID bắt buộc" });
