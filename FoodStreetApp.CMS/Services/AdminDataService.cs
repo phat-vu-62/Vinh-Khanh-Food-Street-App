@@ -110,7 +110,7 @@ public class AdminDataService : IAdminDataService
                 DeviceId = ownerId.ToString(),
                 PoiId = deletedId,
                 Action = "refund_create_poi",
-                Amount = -200000*1.5,
+                Amount = -300000,
                 VisitedAtUtc = DateTime.UtcNow
             });
         }
