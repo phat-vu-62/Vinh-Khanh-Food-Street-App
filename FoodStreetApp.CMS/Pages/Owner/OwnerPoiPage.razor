@@ -633,7 +633,7 @@ else if (!_isLoading)
             var response = await Http.PostAsJsonAsync("api/owner/pay-create-poi", new
             {
                 userId = _currentUserId.ToString(),
-                amount = 200000
+                amount = 200000*1.5
             });
 
             if (response.IsSuccessStatusCode)

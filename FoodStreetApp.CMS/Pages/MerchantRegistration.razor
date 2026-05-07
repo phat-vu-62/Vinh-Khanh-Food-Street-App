@@ -552,7 +552,7 @@
                 email = _email,
                 address = _address,
                 poiName = _poiName,
-                amount = 200000
+                amount = 200000*1.5
             };
 
             var response = await Http.PostAsJsonAsync("api/auth/register-merchant", payload);
